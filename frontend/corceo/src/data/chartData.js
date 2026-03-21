@@ -13,3 +13,16 @@ export const chartData = {
     { label: 'Orange', group: 'Orange', data: [0,0,0,0,0,3], backgroundColor: 'orange' }
   ]
 };
+export const doughnutChartData = {
+  labels: ['Red','Blue','Yellow','Green','Purple','Orange'],
+  datasets: [
+    {
+      label: 'My Doughnut Chart',
+      data: [12,19,8,5,2,3], // original values never changed
+      backgroundColor: ['red','blue','#FFF176','green','purple','orange'],
+      borderColor: ['white','white','white','white','white','white'],
+      borderWidth: 2,
+      hiddenSlices: [false,false,false,false,false,false] // only store visibility
+    }
+  ]
+};

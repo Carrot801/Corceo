@@ -1,158 +1,181 @@
-// VirtualLegend.jsx
 import { useState, useMemo } from "react";
-import { FixedSizeList as List } from "react-window";
 
-function VirtualLegend({ chartData, setChartData, height = 400, width = 300, rowHeight = 30 }) {
+function Legend({ chartData, setChartData }) {
   const [openGroups, setOpenGroups] = useState({});
 
-  const groups = useMemo(() => {
-    const g = {};
-    chartData.datasets.forEach((ds, index) => {
-      if (!g[ds.group]) g[ds.group] = [];
-      g[ds.group].push({ ...ds, index });
-    });
-    return g;
-  }, [chartData.datasets]);
+  const isPieOrDoughnut = chartData.datasets.length === 1 && Array.isArray(chartData.datasets[0].data) && chartData.labels;
 
-  const flatItems = useMemo(() => {
-    const items = [];
-    Object.keys(groups).forEach(group => {
-      const groupItems = groups[group];
-      const hasSubsections = groupItems.length > 1;
-      const isGroupHidden = groupItems.every(ds => ds.hidden);
-
-      items.push({
+  // Flatten items differently for Bar vs Doughnut
+  const items = useMemo(() => {
+    if (isPieOrDoughnut) {
+      const ds = chartData.datasets[0];
+      return chartData.labels.map((label, index) => ({
+        type: "slice",
+        label,
+        color: ds.backgroundColor[index],
+        index,
+        hidden: ds.hiddenSlices?.[index] || false
+      }));
+    } else {
+      const groups = {};
+      chartData.datasets.forEach((ds, index) => {
+        if (!groups[ds.group]) groups[ds.group] = [];
+        groups[ds.group].push({ ...ds, index });
+      });
+      return Object.keys(groups).map(group => ({
         type: "group",
         group,
-        hasSubsections,
-        isGroupHidden,
-        items: groupItems
-      });
+        items: groups[group],
+        hasSubsections: groups[group].length > 1
+      }));
+    }
+  }, [chartData, isPieOrDoughnut]);
 
-      if (hasSubsections && openGroups[group]) {
-        groupItems.forEach(ds => {
-          items.push({
-            type: "dataset",
-            ds
-          });
-        });
-      }
+  // Toggle functions
+  const toggleSlice = (index) => {
+    setChartData(prev => {
+      const ds = prev.datasets[0];
+      const hiddenSlices = ds.hiddenSlices ? [...ds.hiddenSlices] : ds.data.map(() => false);
+      hiddenSlices[index] = !hiddenSlices[index];
+      return {
+        ...prev,
+        datasets: [
+          {
+            ...ds,
+            hiddenSlices
+          }
+        ]
+      };
     });
-    return items;
-  }, [groups, openGroups]);
+  };
 
-  const Row = ({ index, style }) => {
-    const item = flatItems[index];
-
-    if (item.type === "group") {
-      const { group, hasSubsections, isGroupHidden } = item;
-
-      return (
-        <div
-          style={{
-            ...style,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            cursor: "pointer"
-          }}
-        >
-          {hasSubsections && (
-            <span
-              onClick={() =>
-                setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }))
-              }
-            >
-              {openGroups[group] ? "▼" : "▶"}
-            </span>
-          )}
-
-          {!hasSubsections && (
-            <div
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                background: item.items[0].backgroundColor,
-                opacity: item.items[0].hidden ? 0.5 : 1
-              }}
-            />
-          )}
-
-          {/* Group label */}
-          <span
-            style={{
-              fontWeight: "bold",
-              textDecoration: isGroupHidden ? "line-through" : "none",
-              opacity: isGroupHidden ? 0.5 : 1,
-              flexGrow: 1
-            }}
-            onClick={() => {
-              const groupItems = item.items;
-              const shouldHide = groupItems.some(ds => !ds.hidden);
-              setChartData(prev => ({
-                ...prev,
-                datasets: prev.datasets.map(ds =>
-                  ds.group === group ? { ...ds, hidden: shouldHide } : ds
-                )
-              }));
-            }}
-          >
-            {group}
-          </span>
-        </div>
+  const toggleDataset = (index) => {
+    setChartData(prev => {
+      const newDatasets = prev.datasets.map((ds, i) =>
+        i === index ? { ...ds, hidden: !ds.hidden } : ds
       );
-    }
+      return { ...prev, datasets: newDatasets };
+    });
+  };
 
-    if (item.type === "dataset") {
-      const { ds } = item;
-      return (
-        <div
-          style={{
-            ...style,
-            marginLeft: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            textDecoration: ds.hidden ? "line-through" : "none",
-            opacity: ds.hidden ? 0.5 : 1
-          }}
-          onClick={() => {
-            setChartData(prev => ({
-              ...prev,
-              datasets: prev.datasets.map((d, i) =>
-                i === ds.index ? { ...d, hidden: !d.hidden } : d
-              )
-            }));
-          }}
-        >
-          <div
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              background: ds.backgroundColor,
-              opacity: ds.hidden ? 0.5 : 1
-            }}
-          />
-          {ds.label}
-        </div>
+  const toggleGroup = (groupName) => {
+    setChartData(prev => {
+      const groupDatasets = prev.datasets.filter(ds => ds.group === groupName);
+      const shouldHide = groupDatasets.some(ds => !ds.hidden);
+
+      const newDatasets = prev.datasets.map(ds =>
+        ds.group === groupName ? { ...ds, hidden: shouldHide } : ds
       );
-    }
 
-    return null;
+      return { ...prev, datasets: newDatasets };
+    });
   };
 
   return (
-    <List
-      height={height} 
-      itemCount={flatItems.length}
-      itemSize={rowHeight} 
-      width={width} 
-    >
-      {Row}
-    </List>
+    <div>
+      {isPieOrDoughnut
+        ? // Doughnut/Pie slices
+        items.map(item => (
+            <div
+              key={item.label}
+              onClick={() => toggleSlice(item.index)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+                textDecoration: item.hidden ? "line-through" : "none",
+                opacity: item.hidden ? 0.5 : 1
+              }}
+            >
+              <div
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  background: item.color,
+                  opacity: item.hidden ? 0.5 : 1
+                }}
+              />
+              {item.label}
+            </div>
+          ))
+        : // Bar/Line grouped datasets
+        items.map(groupItem => {
+            const { group, items: datasets, hasSubsections } = groupItem;
+            const isGroupHidden = datasets.every(ds => ds.hidden);
+            return (
+              <div key={group}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {hasSubsections && (
+                    <span
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }))
+                      }
+                    >
+                      {openGroups[group] ? "▼" : "▶"}
+                    </span>
+                  )}
+
+                  {!hasSubsections && (
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: datasets[0].backgroundColor,
+                        opacity: datasets[0].hidden ? 0.5 : 1
+                      }}
+                    />
+                  )}
+
+                  <span
+                    style={{
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      textDecoration: isGroupHidden ? "line-through" : "none",
+                      opacity: isGroupHidden ? 0.5 : 1
+                    }}
+                    onClick={() => toggleGroup(group)}
+                  >
+                    {group}
+                  </span>
+                </div>
+
+                {hasSubsections &&
+                  openGroups[group] &&
+                  datasets.map(ds => (
+                    <div
+                      key={ds.label}
+                      onClick={() => toggleDataset(ds.index)}
+                      style={{
+                        marginLeft: 20,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        cursor: "pointer",
+                        textDecoration: ds.hidden ? "line-through" : "none",
+                        opacity: ds.hidden ? 0.5 : 1
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: ds.backgroundColor,
+                          opacity: ds.hidden ? 0.5 : 1
+                        }}
+                      />
+                      {ds.label}
+                    </div>
+                  ))}
+              </div>
+            );
+          })}
+    </div>
   );
 }
 
-export default VirtualLegend;
+export default Legend;
