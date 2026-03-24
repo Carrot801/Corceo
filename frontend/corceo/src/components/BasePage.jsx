@@ -91,6 +91,10 @@ const createFolder = async () => {
         </div>
       ));
   };
+  const renderFoldersForProjects = (parentId = null) => {
+    return folders
+      .filter(folder => folder.parent_id === parentId)
+  };
   useEffect(() => {
     const init = async () => {
       const res = await fetch("http://localhost:5000/folders");
@@ -119,7 +123,7 @@ const createFolder = async () => {
 
       <div className="w-[240px] bg-white border-r p-5 flex flex-col gap-4">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/NewVisualization")}
           className="bg-blue-500 text-white py-2 rounded"
         >
           + New visualization
@@ -190,11 +194,23 @@ const createFolder = async () => {
           >
             + Create project
           </div>
-
+          {renderFoldersForProjects(activeFolder).map((folder) => (
+            <div
+              key={folder.id}
+              
+              onClick={() => setActiveFolder(folder.id)}
+              className="bg-white p-4 rounded-lg border hover:shadow cursor-pointer"
+            >
+              <div className="text-lg text-gray-500 font-semibold">
+                {folder.name}
+              </div>
+            </div>
+          ))}
 
           {projects.map((project) => (
             <div
               key={project.id}
+              onClick={()=>navigate('/projects')}
               className="bg-white p-4 rounded-lg border hover:shadow cursor-pointer"
             >
               <div className="text-lg text-gray-500 font-semibold">
@@ -206,6 +222,7 @@ const createFolder = async () => {
               </div> */}
             </div>
           ))}
+          
 
         </div>
 

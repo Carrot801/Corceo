@@ -5,7 +5,8 @@ import Legend from "./custom/Legend";
 import { chartData as initialData } from "./data/chartData";
 import { doughnutChartData as initialDoughnutData } from "./data/chartData";
 import BasePage from "./components/BasePage";
-
+import Projects from "./components/Projects";
+import NewVisualization from "./components/NewVisualization";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 
 function ChartsPage() {
@@ -53,6 +54,8 @@ function App() {
       <Routes>
         <Route path="/" element={<ChartsPage />} />
         <Route path="/base" element={<BasePage />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/NewVisualization" element={<NewVisualization />} />
       </Routes>
     </BrowserRouter>
   );
