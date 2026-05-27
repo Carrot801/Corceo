@@ -18,11 +18,11 @@ export const doughnutChartData = {
   datasets: [
     {
       label: 'My Doughnut Chart',
-      data: [12,19,8,5,2,3], // original values never changed
+      data: [12,19,8,5,2,3], 
       backgroundColor: ['red','blue','#FFF176','green','purple','orange'],
       borderColor: ['white','white','white','white','white','white'],
       borderWidth: 2,
-      hiddenSlices: [false,false,false,false,false,false] // only store visibility
+      hiddenSlices: [false,false,false,false,false,false] 
     }
   ]
 };

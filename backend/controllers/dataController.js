@@ -83,7 +83,6 @@ const getAllRows = async (req, res) => {
 const saveDataset = async (req, res) => {
   const { rows, project_id } = req.body;
   try {
-    // 1. Get or create dataset
     let dataset = await pool.query("SELECT id FROM datasets WHERE project_id = $1", [project_id]);
     let datasetId;
 
@@ -97,10 +96,8 @@ const saveDataset = async (req, res) => {
       datasetId = dataset.rows[0].id;
     }
 
-    // 2. Clear ONLY the rows for this dataset
     await pool.query("DELETE FROM rows WHERE dataset_id = $1", [datasetId]);
 
-    // 3. Batch Insert current grid state
     if (rows.length > 0) {
       const values = [];
       const placeholders = rows.map((row, i) => {

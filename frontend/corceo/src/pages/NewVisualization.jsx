@@ -64,7 +64,7 @@ function NewVisualization() {
     try {
       const dataUrl = await toPng(chartRef.current, {
         cacheBust: true,
-        pixelRatio: 2, // sharper export
+        pixelRatio: 2, 
       });
 
       const link = document.createElement("a");
