@@ -11,17 +11,26 @@ function BasePage() {
   const [folders, setFolders] = useState([]);
   const [openFolders, setOpenFolders] = useState({});
   const createProject = async () => {
-    await fetch("http://localhost:5000/projects", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: "New Project",
-        folder_id: activeFolder
-      })
-    });
-    getProjects(activeFolder);
+    try {
+      const res = await fetch("http://localhost:5000/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "New Project",
+          folder_id: activeFolder,
+        }),
+      });
+
+      const newProject = await res.json();
+
+      setProjects((prev) => [...prev, newProject]);
+
+      navigate(`/newVisualization/${newProject.id}`);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    }
   };
   const getFolders = async () => {
     const res = await fetch("http://localhost:5000/folders");
@@ -119,7 +128,7 @@ const createFolder = async () => {
   
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen min-w-screen bg-gray-100">
 
       <div className="w-[240px] bg-white border-r p-5 flex flex-col gap-4">
         <button
@@ -171,7 +180,7 @@ const createFolder = async () => {
       </div>
 
 
-      <div className="flex-1 p-8">
+      <div className="flex flex-1 p-8 flex-col">
 
         <div className="flex justify-between mb-8">
 
@@ -186,10 +195,10 @@ const createFolder = async () => {
         </div>
 
 
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-4 ">
 
           <div
-            className="border-dashed border-2 border-gray-300 h-[150px] flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-50"
+            className="border-dashed border-2 border-gray-300 h-[280px] w-[280px] flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-50"
             onClick={createProject}
           >
             + Create project
@@ -199,7 +208,7 @@ const createFolder = async () => {
               key={folder.id}
               
               onClick={() => setActiveFolder(folder.id)}
-              className="bg-white p-4 rounded-lg border hover:shadow cursor-pointer"
+              className="bg-white h-[280px] w-[280px] flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
             >
               <div className="text-lg text-gray-500 font-semibold">
                 {folder.name}
@@ -210,8 +219,8 @@ const createFolder = async () => {
           {projects.map((project) => (
             <div
               key={project.id}
-              onClick={()=>navigate('/projects')}
-              className="bg-white p-4 rounded-lg border hover:shadow cursor-pointer"
+              onClick={()=>navigate(`/newVisualization/${project.id}`)}
+              className="bg-white h-[280px] w-[280px] p-4 rounded-lg border hover:shadow cursor-pointer"
             >
               <div className="text-lg text-gray-500 font-semibold">
                 {project.name}

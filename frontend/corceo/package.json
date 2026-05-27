@@ -11,12 +11,17 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "chroma-js": "^3.2.0",
+    "html-to-image": "^1.11.13",
+    "lucide-react": "^1.9.0",
+    "papaparse": "^5.5.3",
     "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.1",
-    "react-window": "^2.2.7"
+    "react-window": "^2.2.7",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

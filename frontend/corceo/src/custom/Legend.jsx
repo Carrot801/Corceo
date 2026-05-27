@@ -1,179 +1,102 @@
 import { useState, useMemo } from "react";
 
-function Legend({ chartData, setChartData }) {
-  const [openGroups, setOpenGroups] = useState({});
+function Legend({
+  chartData = [],
+  generatedColors = [],
+  settings = {},
+}) {
 
-  const isPieOrDoughnut = chartData.datasets.length === 1 && Array.isArray(chartData.datasets[0].data) && chartData.labels;
+  if (!settings.showLegend) return null;
 
-  // Flatten items differently for Bar vs Doughnut
-  const items = useMemo(() => {
-    if (isPieOrDoughnut) {
-      const ds = chartData.datasets[0];
-      return chartData.labels.map((label, index) => ({
-        type: "slice",
-        label,
-        color: ds.backgroundColor[index],
-        index,
-        hidden: ds.hiddenSlices?.[index] || false
-      }));
-    } else {
-      const groups = {};
-      chartData.datasets.forEach((ds, index) => {
-        if (!groups[ds.group]) groups[ds.group] = [];
-        groups[ds.group].push({ ...ds, index });
-      });
-      return Object.keys(groups).map(group => ({
-        type: "group",
-        group,
-        items: groups[group],
-        hasSubsections: groups[group].length > 1
-      }));
-    }
-  }, [chartData, isPieOrDoughnut]);
+  const sizeMap = {
+    small: {
+      dot: 10,
+      text: "text-xs",
+      gap: 6,
+    },
 
-  // Toggle functions
-  const toggleSlice = (index) => {
-    setChartData(prev => {
-      const ds = prev.datasets[0];
-      const hiddenSlices = ds.hiddenSlices ? [...ds.hiddenSlices] : ds.data.map(() => false);
-      hiddenSlices[index] = !hiddenSlices[index];
-      return {
-        ...prev,
-        datasets: [
-          {
-            ...ds,
-            hiddenSlices
-          }
-        ]
-      };
-    });
+    medium: {
+      dot: 14,
+      text: "text-sm",
+      gap: 10,
+    },
+
+    large: {
+      dot: 18,
+      text: "text-base",
+      gap: 14,
+    },
   };
 
-  const toggleDataset = (index) => {
-    setChartData(prev => {
-      const newDatasets = prev.datasets.map((ds, i) =>
-        i === index ? { ...ds, hidden: !ds.hidden } : ds
-      );
-      return { ...prev, datasets: newDatasets };
-    });
+  const currentSize =
+    sizeMap[settings.legendSize || "medium"];
+
+  const justifyMap = {
+    start: "justify-start",
+    center: "justify-center",
+    end: "justify-end",
   };
 
-  const toggleGroup = (groupName) => {
-    setChartData(prev => {
-      const groupDatasets = prev.datasets.filter(ds => ds.group === groupName);
-      const shouldHide = groupDatasets.some(ds => !ds.hidden);
-
-      const newDatasets = prev.datasets.map(ds =>
-        ds.group === groupName ? { ...ds, hidden: shouldHide } : ds
-      );
-
-      return { ...prev, datasets: newDatasets };
-    });
+  const positionMap = {
+    top: "order-first mb-4",
+    bottom: "order-last mt-4",
+    left: "mr-6",
+    right: "ml-6",
   };
+
+  const direction =
+    settings.legendDirection === "column"
+      ? "flex-col"
+      : "flex-row flex-wrap";
 
   return (
-    <div>
-      {isPieOrDoughnut
-        ? // Doughnut/Pie slices
-        items.map(item => (
-            <div
-              key={item.label}
-              onClick={() => toggleSlice(item.index)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-                textDecoration: item.hidden ? "line-through" : "none",
-                opacity: item.hidden ? 0.5 : 1
-              }}
-            >
-              <div
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  background: item.color,
-                  opacity: item.hidden ? 0.5 : 1
-                }}
-              />
-              {item.label}
-            </div>
-          ))
-        : // Bar/Line grouped datasets
-        items.map(groupItem => {
-            const { group, items: datasets, hasSubsections } = groupItem;
-            const isGroupHidden = datasets.every(ds => ds.hidden);
-            return (
-              <div key={group}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {hasSubsections && (
-                    <span
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }))
-                      }
-                    >
-                      {openGroups[group] ? "▼" : "▶"}
-                    </span>
-                  )}
+    <div
+      className={`
+        flex
+        ${direction}
+        ${justifyMap[settings.legendAlign || "center"]}
+        ${positionMap[settings.legendPosition || "bottom"]}
+      `}
+      style={{
+        gap: `${settings.legendGap || currentSize.gap}px`,
+      }}
+    >
 
-                  {!hasSubsections && (
-                    <div
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        background: datasets[0].backgroundColor,
-                        opacity: datasets[0].hidden ? 0.5 : 1
-                      }}
-                    />
-                  )}
+      {/* TITLE */}
+      {settings.legendTitle && (
+        <div className="w-full text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">
+          {settings.legendTitle}
+        </div>
+      )}
 
-                  <span
-                    style={{
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      textDecoration: isGroupHidden ? "line-through" : "none",
-                      opacity: isGroupHidden ? 0.5 : 1
-                    }}
-                    onClick={() => toggleGroup(group)}
-                  >
-                    {group}
-                  </span>
-                </div>
+      {/* ITEMS */}
+      {chartData.map((item, index) => (
+        <div
+          key={index}
+          className="flex items-center gap-2"
+        >
+          {/* COLOR */}
+          <div
+            className="rounded-sm shrink-0"
+            style={{
+              width: currentSize.dot,
+              height: currentSize.dot,
+              backgroundColor:
+                generatedColors[index],
+            }}
+          />
 
-                {hasSubsections &&
-                  openGroups[group] &&
-                  datasets.map(ds => (
-                    <div
-                      key={ds.label}
-                      onClick={() => toggleDataset(ds.index)}
-                      style={{
-                        marginLeft: 20,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        cursor: "pointer",
-                        textDecoration: ds.hidden ? "line-through" : "none",
-                        opacity: ds.hidden ? 0.5 : 1
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "50%",
-                          background: ds.backgroundColor,
-                          opacity: ds.hidden ? 0.5 : 1
-                        }}
-                      />
-                      {ds.label}
-                    </div>
-                  ))}
-              </div>
-            );
-          })}
+          {/* LABEL */}
+          <span
+            className={`
+              ${currentSize.text}
+              text-slate-700
+            `}
+          >
+            {item.x}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

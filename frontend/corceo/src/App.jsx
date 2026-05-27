@@ -6,7 +6,8 @@ import { chartData as initialData } from "./data/chartData";
 import { doughnutChartData as initialDoughnutData } from "./data/chartData";
 import BasePage from "./components/BasePage";
 import Projects from "./components/Projects";
-import NewVisualization from "./components/NewVisualization";
+import NewVisualization from "./pages/NewVisualization";
+import PublishedChart from "./pages/PublishedChart";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 
 function ChartsPage() {
@@ -14,7 +15,6 @@ function ChartsPage() {
 
   const [chartData, setChartData] = useState(initialData);
   const [doughnutChartData, setDoughnutChartData] = useState(initialDoughnutData);
-
   return (
     <div>
       <button onClick={() => navigate("/base")}>
@@ -53,9 +53,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<ChartsPage />} />
-        <Route path="/base" element={<BasePage />} />
+        <Route path="/base" element={<BasePage/>} />
         <Route path="/projects" element={<Projects />} />
-        <Route path="/NewVisualization" element={<NewVisualization />} />
+        <Route path="/NewVisualization/:id" element={<NewVisualization/>} />
+        <Route path="/published/:chartId" element={<PublishedChart/>} />
       </Routes>
     </BrowserRouter>
   );

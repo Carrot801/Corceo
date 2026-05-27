@@ -8,8 +8,6 @@ const fetchFolders = async (req, res) => {
         console.error("Error fetching folders:", error);
         res.status(500).json({ error: "Failed to fetch folders" });
     }
-  const result = await getFolders();
-  res.json(result.rows);
 };
 
 const addFolder = async (req, res) => {

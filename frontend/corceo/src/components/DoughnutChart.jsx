@@ -4,7 +4,6 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 function DoughnutChart({ chartData }) {
-  // dynamically apply hiddenSlices
   const transformedData = {
     ...chartData,
     datasets: chartData.datasets.map(ds => ({
