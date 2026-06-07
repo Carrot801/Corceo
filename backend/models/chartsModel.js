@@ -6,7 +6,8 @@ const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data
       `INSERT INTO charts (project_id, dataset_id, chart_type, x_axis, y_axis, settings)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (project_id) DO UPDATE 
-       SET chart_type = EXCLUDED.chart_type, 
+       SET dataset_id = EXCLUDED.dataset_id,
+       chart_type = EXCLUDED.chart_type, 
            x_axis = EXCLUDED.x_axis, 
            y_axis = EXCLUDED.y_axis, 
            settings = EXCLUDED.settings

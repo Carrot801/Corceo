@@ -2,18 +2,56 @@ import { useEffect, useState } from "react";
 import Papa from "papaparse";
 
 function useProjectData(id) {
-    
+    const MIN_ROWS = 30;
     const [columns, setColumns] = useState([
-    "Column 1",
-    "Column 2"
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
     ]);
 
-    const [data, setData] = useState([
-    {
-        "Column 1": "",
-        "Column 2": ""
-    }
-    ]);
+    const [data, setData] = useState(() => {
+    const cols = columns;
+
+    const emptyRows = Array.from({ length: MIN_ROWS }, () => {
+        const row = {};
+        cols.forEach(c => (row[c] = ""));
+        return row;
+    });
+
+    return emptyRows;
+    });
+    const applyCSV = (rows) => {
+        if (!rows?.length) return;
+
+        const cols = Object.keys(rows[0]);
+
+        const normalized = rows.map(row => {
+            const clean = {};
+            cols.forEach(c => {
+            clean[c] = row?.[c] ?? "";
+            });
+            return clean;
+        });
+
+        setColumns(cols);
+        setData(normalized);
+    };
+    const resetSheet = (rows, cols) => {
+    const normalized = rows.map(row => {
+        const clean = {};
+        cols.forEach(c => {
+        clean[c] = row?.[c] ?? "";
+        });
+        return clean;
+    });
+
+    setColumns(cols);
+    setData(normalized);
+    };
+
     const [datasetId, setDatasetId] = useState(null);
 
     const [savedChart, setSavedChart] = useState(null);
@@ -68,40 +106,44 @@ function useProjectData(id) {
       console.error(err);
     }
   };
+    const uploadCSV = async (file) => {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
 
-  const uploadCSV = async (file) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
+            complete: async (result) => {
+            try {
+                const response = await fetch(
+                "http://localhost:5000/upload-csv",
+                {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                    project_id: id,
+                    rows: result.data,
+                    }),
+                }
+                );
 
-      complete: async (result) => {
-        try {
-          const response = await fetch(
-            "http://localhost:5000/upload-csv",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                project_id: id,
-                rows: result.data,
-              }),
+                const savedDataset = await response.json();
+                setDatasetId(savedDataset.id);
+
+                const csvRows = result.data || [];
+                if (!csvRows.length) return;
+
+                const cols = Object.keys(csvRows[0]);
+
+                // 🧠 HARD RESET (THIS FIXES EVERYTHING)
+                resetSheet(csvRows, cols);
+
+            } catch (err) {
+                console.error(err);
             }
-          );
-
-          const savedDataset = await response.json();
-
-          setDatasetId(savedDataset.id);
-          setData(result.data);
-          setColumns(Object.keys(result.data[0]));
-
-        } catch (err) {
-          console.error(err);
-        }
-      },
-    });
-  };
+            }
+        });
+        };
 const saveDataset = async () => {
   try {
     const response = await fetch(
@@ -129,18 +171,23 @@ const saveDataset = async () => {
         try {
             const response = await fetch(
             "http://localhost:5000/charts",
-            {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                project_id: id,
-                dataset_id: datasetId,
-                ...chart,
-                }),
-            }
+                {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                    project_id: id,
+                    dataset_id: datasetId,
+                    ...chart,
+                    }),
+                }
             );
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Server Error Response:", errorText);
+                throw new Error("Server responded with an error");
+            }
             const savedChart = await response.json();
             setSavedChart(savedChart);
 

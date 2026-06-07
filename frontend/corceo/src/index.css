@@ -30,7 +30,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
-
+.animate-in { animation: fadeIn 0.1s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 a {
   font-weight: 500;
   color: #646cff;

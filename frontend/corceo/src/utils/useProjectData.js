@@ -37,6 +37,7 @@ function useProjectData(projectId) {
           `http://localhost:5000/data/rows?dataset_id=${dataset.id}`
         );
 
+        
         if (rowsRes.ok) {
           const rows = await rowsRes.json();
 

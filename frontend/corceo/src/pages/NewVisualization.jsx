@@ -1,4 +1,4 @@
-import { useRef, useState,useEffect } from "react";
+import React, { useRef, useState,useEffect } from "react";
 import {toPng} from "html-to-image";
 import { useParams,useNavigate } from "react-router-dom";
 
@@ -26,9 +26,45 @@ function NewVisualization() {
     saveDataset,
   } = useProjectData(id);
 
+
+  const removeFieldFromAxis = (axis) => {
+    setChartConfig((prev) => ({
+      ...prev,
+      [axis]: null,
+    }));
+  };
+  const swapAxes = () => {
+    setChartConfig((prev) => ({
+      ...prev,
+      x: prev.y,
+      y: prev.x
+    }));
+  };
+  const columnTypes = React.useMemo(() => {
+    if (!data || data.length === 0) return {};
+    
+    const firstRow = data[0];
+    const types = {};
+    
+    Object.keys(firstRow).forEach((key) => {
+      const val = firstRow[key];
+      // Simple logic: if it's a number or a string that looks like a number
+      if (typeof val === 'number' || (!isNaN(val) && !isNaN(parseFloat(val)))) {
+        types[key] = 'number';
+      } else if (typeof val === 'string' && !isNaN(Date.parse(val)) && val.length > 5) {
+        types[key] = 'date';
+      } else {
+        types[key] = 'string';
+      }
+    });
+    
+    return types;
+  }, [data]);
+
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem(`activeTab-${id}`) || "data"
   );  
+  
   const [settings, setSettings] = useState({
     title: "",
     subtitle: "",
@@ -58,23 +94,46 @@ function NewVisualization() {
     sort: "none",
   });
 
-  const exportPNG = async () => {
-    if (!chartRef.current) return;
+const exportPNG = async () => {
+  if (!chartRef.current) return;
 
-    try {
-      const dataUrl = await toPng(chartRef.current, {
-        cacheBust: true,
-        pixelRatio: 2, 
-      });
+  const node = chartRef.current;
 
-      const link = document.createElement("a");
-      link.download = "chart.png";
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
-  };
+  // Save original styles
+  const originalWidth = node.style.width;
+  const originalHeight = node.style.height;
+  const originalOverflow = node.style.overflow;
+
+  try {
+    // Force fixed export size
+    node.style.width = "1400px";
+    node.style.height = "900px";
+    node.style.overflow = "visible";
+
+    // Wait for Recharts to re-render
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    const dataUrl = await toPng(node, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+    });
+
+    const link = document.createElement("a");
+    link.download = "chart.png";
+    link.href = dataUrl;
+    link.click();
+
+  } catch (err) {
+    console.error("Export failed:", err);
+
+  } finally {
+    // Restore original styles
+    node.style.width = originalWidth;
+    node.style.height = originalHeight;
+    node.style.overflow = originalOverflow;
+  }
+};
   const updateSetting = (key, value) => {
     setSettings(prev => ({
       ...prev,
@@ -99,12 +158,34 @@ function NewVisualization() {
     settings,
   });
 
+  const isUsed = (col) => col === chartConfig.x || col === chartConfig.y;
+
   const saveChart = async () => {
+    let base64Image = null;
+
+    if (chartRef.current) {
+      try {
+        base64Image = await toPng(chartRef.current, {
+          cacheBust: true,
+          pixelRatio: 1, 
+          width: 1400,  
+          height: 600,
+          style: {
+            transform: 'none',
+            overflow: 'visible',
+          }
+        });
+      } catch (err) {
+        console.error("Failed to generate background preview image:", err);
+      }
+    }
+    console.log("Saving chart with ID:", datasetId);
     await saveChartToBackend({
       dataset_id: datasetId,
       chart_type: chartConfig.type,
       x_axis: chartConfig.x,
       y_axis: chartConfig.y,
+      image_data: base64Image,
       settings: {
         ...settings,
         aggregation: chartConfig.aggregation,
@@ -233,6 +314,7 @@ function NewVisualization() {
           setData={setData}
           columns={columns}
           setColumns={setColumns}
+          datasetId={datasetId} 
           uploadCSV={uploadCSV}
         />
       ) : (
@@ -241,48 +323,61 @@ function NewVisualization() {
     <div className="w-64 border-r bg-white">
       <FieldsPanel
         columns={columns}
+        types={columnTypes}
+        setChartConfig={setChartConfig}
+        isUsed={isUsed}
         onDragStart={(e, col) => {
           e.dataTransfer.setData("col", col);
         }}
+
       />
     </div>
 
     <div className="flex-1 p-4 bg-slate-50 overflow-hidden">
 
-      <div className="mb-4 space-y-2 shrink-0">
-        
+      <div className="mb-4 space-y-2 w-full">
+        <div className="flex gap-2 items-center mb-2">
+          <button
+            onClick={swapAxes}
+            className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded text-sm text-slate-700"
+            title="Swap X and Y Axes"
+          >
+            ⇄ Swap Axes
+          </button>
+        </div>
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("x")}
-          className="
-            p-3
-            border-2
-            border-dashed
-            rounded-lg
-            bg-black/5
-            text-slate-600
-          "
+          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600 flex justify-between items-center"
         >
-          X Axis: {chartConfig.x || "Drop field here"}
+          <span>X Axis: {chartConfig.x || "Drop field here"}</span>
+          
+          {chartConfig.x && (
+            <button 
+              onClick={() => removeFieldFromAxis("x")}
+              className="text-red-500 hover:text-red-700 font-bold px-2"
+            >
+              ✕
+            </button>
+          )}
         </div>
-
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("y")}
-          className="
-            p-3
-            border-2
-            border-dashed
-            rounded-lg
-            bg-black/5
-            text-slate-600
-          "
+          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600 flex justify-between items-center"
         >
-          Y Axis: {chartConfig.y || "Drop field here"}
+          <span>Y Axis: {chartConfig.y || "Drop field here"}</span>
+          
+          {chartConfig.y && (
+            <button 
+              onClick={() => removeFieldFromAxis("y")}
+              className="text-red-500 hover:text-red-700 font-bold px-2"
+            >
+              ✕
+            </button>
+          )}
         </div>
-
-        <div 
-        ref={chartRef}
+        <div
         className="flex-1 border rounded-lg bg-white p-4"
         >
           <div className="w-full h-[600px]">
@@ -300,6 +395,40 @@ function NewVisualization() {
         </div>
       </div>
       
+    </div>
+    <div
+      style={{
+        position: "fixed",
+        left: "-99999px",
+        top: 0,
+        width: "auto",
+        minHeight: "900px",
+        background: "white",
+        zIndex: -1,
+        
+          display: "inline-block",
+      }}
+    >
+      <div
+        ref={chartRef}
+        style={{
+          width: "1400px",
+          minheight: "900px",
+          padding: "40px",
+          background: "white",
+          display: "inline-block",
+        }}
+      >
+        <ChartPreview
+          chartData={chartData}
+          chartConfig={chartConfig}
+          setChartConfig={setChartConfig}
+          columns={columns}
+          generatedColors={generatedColors}
+          settings={settings}
+          exportMode={true}
+        />
+      </div>
     </div>
 
     <Sidebar

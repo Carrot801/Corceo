@@ -68,7 +68,7 @@ const getAllRows = async (req, res) => {
     const { dataset_id } = req.query;
 
     const result = await pool.query(
-      "SELECT data FROM rows WHERE dataset_id = $1 LIMIT 10",
+      "SELECT data FROM rows WHERE dataset_id = $1",
       [dataset_id]
     );
 
@@ -117,5 +117,28 @@ const saveDataset = async (req, res) => {
     res.status(500).json({ error: "Save failed" });
   }
 };
+const renameColumn = async (req, res) => {
+  const { dataset_id, oldName, newName } = req.body;
 
-module.exports = { getColumns, getColumnValues, getDataset, deleteDataset, getAllRows, saveDataset };
+  try {
+    await pool.query(
+      `
+      UPDATE rows
+      SET data =
+        (data - $1) ||
+        jsonb_build_object($2, data->$1)
+      WHERE dataset_id = $3
+      `,
+      [oldName, newName, dataset_id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Failed to rename column",
+    });
+  }
+};
+
+module.exports = { getColumns, getColumnValues, getDataset, deleteDataset, getAllRows, saveDataset, renameColumn };

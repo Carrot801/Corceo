@@ -8,32 +8,6 @@ function PublishedChart() {
 
   const [chart, setChart] = useState(null);
   const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    loadChart();
-  }, []);
-
-  const loadChart = async () => {
-    try {
-      const chartRes = await fetch(
-        `http://localhost:5000/charts/${chartId}`
-      );
-      const chartData = await chartRes.json();
-      setChart(chartData);
-
-      const rowsRes = await fetch(
-        `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`
-      );
-      const datasetRows = await rowsRes.json();
-      
-      const cleanRows = datasetRows.map(r => r.data ? r.data : r);
-      setRows(cleanRows);
-
-    } catch (err) {
-      console.error("Failed to load published chart resources:", err);
-    }
-  };
-
   const parsedSettings = chart?.settings
     ? typeof chart.settings === "string"
       ? JSON.parse(chart.settings)
@@ -48,12 +22,47 @@ function PublishedChart() {
     sort: parsedSettings.sort || "none",
   };
 
+  useEffect(() => {
+    loadChart();
+  }, []);
+    const loadChart = async () => {
+
+        try {
+        const chartRes = await fetch(
+            `http://localhost:5000/charts/${chartId}`
+        );
+        const chartData = await chartRes.json();
+        setChart(chartData);
+
+        console.log("Loaded chart data:", chartData);
+        const rowsRes = await fetch(
+            `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`
+        );
+        const datasetRows = await rowsRes.json();
+        console.log("datset_id:", chartData.dataset_id);
+        console.log("Loaded dataset rows:", datasetRows);
+    const rowsArray =
+    Array.isArray(datasetRows)
+        ? datasetRows
+        : Array.isArray(datasetRows?.rows)
+        ? datasetRows.rows
+        : [];
+
+    const cleanRows = rowsArray.map(r => r?.data ?? r);
+
+    setRows(cleanRows);
+
+    } catch (err) {
+      console.error("Failed to load published chart resources:", err);
+    }
+  };
+
+
   const { chartData, generatedColors } = useChartData({
     data: rows,
     chartConfig,
     settings: parsedSettings,
   });
-
   if (!chart) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500 font-medium">
@@ -64,7 +73,7 @@ function PublishedChart() {
 
   return (
     <div className="min-h-screen bg-white p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-5xl h-[600px] border border-slate-100 rounded-xl shadow-sm p-6 bg-white">
+      <div className="w-full max-w-5xl h-full border border-slate-100 rounded-xl shadow-sm p-6 bg-white">
         <ChartPreview
           chartData={chartData} 
           chartConfig={chartConfig}

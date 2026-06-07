@@ -1,30 +1,7 @@
 import { useMemo } from "react";
 import { generatePalette } from "../custom/colorPallets";
 
-function useChartData({ data, chartConfig, settings }) {
-  
-  const processedData = useMemo(() => {
-    if (!data || !chartConfig.x || !chartConfig.y) return [];
-
-    let aggregated = aggregateData(
-      data,
-      chartConfig.x,
-      chartConfig.y,
-      chartConfig.aggregation
-    );
-
-    return sortData(aggregated, chartConfig.sort);
-  }, [data, chartConfig.x, chartConfig.y, chartConfig.aggregation, chartConfig.sort]);
-
-  const generatedColors = useMemo(() => {
-    return generatePalette(
-      settings.palette,
-      settings.paletteMode,
-      processedData.length
-    );
-  }, [settings.palette, settings.paletteMode, processedData.length]);
-
-  function aggregateData(rawData, x, y, mode) {
+function aggregateData(rawData, x, y, mode) {
     if (mode === "none") {
       return rawData.map((row) => ({
         x: row[x],
@@ -66,7 +43,6 @@ function useChartData({ data, chartConfig, settings }) {
       return { x: key, y: aggregated };
     });
   }
-
   function sortData(chartRows, sortMode) {
     if (sortMode === "asc") {
       return [...chartRows].sort((a, b) => a.y - b.y);
@@ -76,6 +52,34 @@ function useChartData({ data, chartConfig, settings }) {
     }
     return chartRows;
   }
+function useChartData({ data, chartConfig, settings }) {
+  
+  
+  const processedData = useMemo(() => {
+    
+    if (!data || !chartConfig.x || !chartConfig.y) return [];
+
+    let aggregated = aggregateData(
+      data,
+      chartConfig.x,
+      chartConfig.y,
+      chartConfig.aggregation
+    );
+
+    return sortData(aggregated, chartConfig.sort);
+  }, [data, chartConfig.x, chartConfig.y, chartConfig.aggregation, chartConfig.sort]);
+
+
+
+  const generatedColors = useMemo(() => {
+    return generatePalette(
+      settings.palette,
+      settings.paletteMode,
+      processedData.length
+    );
+  }, [settings.palette, settings.paletteMode, processedData.length]);
+
+  
 
   return {
     chartData: processedData, 
