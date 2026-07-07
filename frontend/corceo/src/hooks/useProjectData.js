@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Papa from "papaparse";
-
+import * as XLSX from "xlsx";
 function useProjectData(id) {
     const MIN_ROWS = 30;
     const [columns, setColumns] = useState([
@@ -59,7 +59,12 @@ function useProjectData(id) {
     const loadChart = async () => {
     try {
         const res = await fetch(
-        `http://localhost:5000/charts?project_id=${id}`
+        `http://localhost:5000/charts?project_id=${id}`,
+            {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            }
         );
 
         const chart = await res.json();
@@ -79,7 +84,12 @@ function useProjectData(id) {
   const loadProject = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/data/datasets?project_id=${id}`
+        `http://localhost:5000/data/datasets?project_id=${id}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        }
       );
 
       const dataset = await res.json();
@@ -91,7 +101,12 @@ function useProjectData(id) {
       setDatasetId(dataset.id);
 
       const rowsRes = await fetch(
-        `http://localhost:5000/data/rows?dataset_id=${dataset.id}`
+        `http://localhost:5000/data/rows?dataset_id=${dataset.id}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        }
       );
 
       const rows = await rowsRes.json();
@@ -106,75 +121,118 @@ function useProjectData(id) {
       console.error(err);
     }
   };
-    const uploadCSV = async (file) => {
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
+const uploadCSV = async (file) => {
+  if (!file) return;
 
-            complete: async (result) => {
-            try {
-                const response = await fetch(
-                "http://localhost:5000/upload-csv",
-                {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                    project_id: id,
-                    rows: result.data,
-                    }),
-                }
-                );
+  const isCSV =
+    file.name.endsWith(".csv") ||
+    file.type === "text/csv";
 
-                const savedDataset = await response.json();
-                setDatasetId(savedDataset.id);
+  const isXLSX =
+    file.name.endsWith(".xlsx") ||
+    file.name.endsWith(".xls");
 
-                const csvRows = result.data || [];
-                if (!csvRows.length) return;
-
-                const cols = Object.keys(csvRows[0]);
-
-                // 🧠 HARD RESET (THIS FIXES EVERYTHING)
-                resetSheet(csvRows, cols);
-
-            } catch (err) {
-                console.error(err);
-            }
-            }
-        });
-        };
-const saveDataset = async () => {
   try {
+    let rows = [];
+    if (isCSV) {
+      rows = await new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (result) => resolve(result.data),
+          error: (err) => reject(err),
+        });
+      });
+    }
+    else if (isXLSX) {
+      const data = await file.arrayBuffer();
+
+      const workbook = XLSX.read(data, {
+        type: "array",
+      });
+
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      rows = XLSX.utils.sheet_to_json(sheet, {
+        defval: "",
+      });
+    }
+    else {
+      alert("Unsupported file type");
+      return;
+    }
+
+    if (!rows.length) return;
+
     const response = await fetch(
-      "http://localhost:5000/data/save_dataset",
+      "http://localhost:5000/upload-csv",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
         },
         body: JSON.stringify({
           project_id: id,
-          rows: data
-        })
+          rows,
+        }),
       }
     );
 
-    return await response.json();
+    const savedDataset = await response.json();
+    setDatasetId(savedDataset.datasetId);
 
-  } catch(err) {
+    const cols = Object.keys(rows[0]);
+
+    resetSheet(rows, cols);
+  } catch (err) {
+    console.error("Upload failed:", err);
+  }
+};
+
+
+const saveDataset = async () => {
+  try {
+    const response = await fetch("http://localhost:5000/data/save_dataset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        project_id: id,
+        rows: data,
+      }),
+    });
+
+    const saved = await response.json();
+
+    if (saved.datasetId) {
+      setDatasetId(saved.datasetId);
+    }
+
+    return saved;
+  } catch (err) {
     console.error(err);
   }
 };
 
     const saveChartToBackend = async (chart) => {
-        try {
+        console.log("SENDING:", chart);
+  
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            throw new Error("No token found");
+        }
             const response = await fetch(
             "http://localhost:5000/charts",
                 {
                     method: "POST",
                     headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                     },
                     body: JSON.stringify({
                     project_id: id,

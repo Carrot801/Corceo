@@ -1,12 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { getColumns, getColumnValues, getDataset, getAllRows, deleteDataset, saveDataset, getPublishedChart, renameColumn} = require("../controllers/dataController");
+const { getColumns, getColumnValues, getDataset, getAllRows, deleteDataset, saveDataset, getPublishedChart, renameColumn, deleteColumn, addColumn} = require("../controllers/dataController");
 
-router.get("/columns", getColumns);
-router.put("/columns/rename", renameColumn);
-router.get("/values", getColumnValues);
-router.get("/datasets", getDataset);
-router.get("/rows", getAllRows);
-router.post("/save_dataset", saveDataset);
-router.delete("/datasets/:dataset_id", deleteDataset);
+const authMiddleware = require("../middleware/authMiddleware");
+router.get("/columns",authMiddleware, getColumns);
+router.put("/columns/rename", authMiddleware, renameColumn);
+router.delete("/columns/delete", authMiddleware, deleteColumn);
+router.post("/columns/add", authMiddleware, addColumn);
+router.get("/values", authMiddleware, getColumnValues);
+router.get("/datasets", authMiddleware, getDataset);
+router.get("/rows", authMiddleware, getAllRows);
+router.post("/save_dataset", authMiddleware, saveDataset);
+router.delete("/datasets/:dataset_id", authMiddleware, deleteDataset);
 module.exports = router;

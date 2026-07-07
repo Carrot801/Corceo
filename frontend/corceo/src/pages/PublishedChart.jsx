@@ -6,6 +6,7 @@ import useChartData from "../hooks/useChartData"; // 1. Import your data-process
 function PublishedChart() {
   const { chartId } = useParams();
 
+  
   const [chart, setChart] = useState(null);
   const [rows, setRows] = useState([]);
   const parsedSettings = chart?.settings
@@ -14,13 +15,19 @@ function PublishedChart() {
       : chart.settings
     : {};
 
-  const chartConfig = {
-    x: chart?.x_axis || null,
-    y: chart?.y_axis || null,
-    type: chart?.chart_type || "bar",
-    aggregation: parsedSettings.aggregation || "none",
-    sort: parsedSettings.sort || "none",
-  };
+    const parsedY = chart?.y_axis
+      ? typeof chart.y_axis === "string"
+        ? JSON.parse(chart.y_axis)
+        : chart.y_axis
+      : [];
+
+    const chartConfig = {
+      x: chart?.x_axis || null,
+      y: Array.isArray(parsedY) ? parsedY : [parsedY],
+      type: chart?.chart_type || "bar",
+      aggregation: parsedSettings.aggregation || "none",
+      sort: parsedSettings.sort || "none",
+    };
 
   useEffect(() => {
     loadChart();
@@ -28,19 +35,33 @@ function PublishedChart() {
     const loadChart = async () => {
 
         try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            console.error("No token found in localStorage");
+            return;
+          }
         const chartRes = await fetch(
-            `http://localhost:5000/charts/${chartId}`
+            `http://localhost:5000/charts/${chartId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
         );
         const chartData = await chartRes.json();
         setChart(chartData);
 
-        console.log("Loaded chart data:", chartData);
         const rowsRes = await fetch(
-            `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`
+            `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
         );
+        
         const datasetRows = await rowsRes.json();
-        console.log("datset_id:", chartData.dataset_id);
-        console.log("Loaded dataset rows:", datasetRows);
+
     const rowsArray =
     Array.isArray(datasetRows)
         ? datasetRows
@@ -72,8 +93,8 @@ function PublishedChart() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-5xl h-full border border-slate-100 rounded-xl shadow-sm p-6 bg-white">
+    <div className="min-h-screen h-[800px] bg-white p-8 flex flex-col items-center justify-center">
+      <div className="w-full max-w-5xl h-full min-h-screen border border-slate-100 rounded-xl shadow-sm p-6 bg-white">
         <ChartPreview
           chartData={chartData} 
           chartConfig={chartConfig}

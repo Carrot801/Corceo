@@ -62,11 +62,27 @@ function ChartTypeSelector({
           <button
             key={type.id}
             onClick={() =>
-              setChartConfig((prev) => ({
-                ...prev,
-                type: type.id,
-              }))
-            }
+  setChartConfig((prev) => {
+    const multiYCharts = ["bar", "line", "area", "composed"];
+    const nextIsMultiYChart = multiYCharts.includes(type.id);
+
+    return {
+      ...prev,
+      type: type.id,
+      y: nextIsMultiYChart
+        ? Array.isArray(prev.y)
+          ? prev.y
+          : prev.y
+            ? [prev.y]
+            : []
+        : Array.isArray(prev.y)
+          ? prev.y.slice(0, 1)
+          : prev.y
+            ? [prev.y]
+            : [],
+    };
+  })
+}
             className={`
               w-full
               flex items-center justify-between

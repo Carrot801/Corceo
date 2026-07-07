@@ -12,7 +12,8 @@ function DataTable({
   const MIN_ROWS = 30;
   const [editingColumn, setEditingColumn] = useState(null);
   const [newColumnName, setNewColumnName] = useState("");
-  
+  const [columnError, setColumnError] = useState("");
+  const [newColumnCreated, setNewColumnCreated] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState(null);
   const [contextMenu, setContextMenu] =
   useState({
@@ -21,83 +22,133 @@ function DataTable({
     y: 0,
     column: null,
   });
-  const addColumn = async () => {
-  const columnName = prompt("Column name");
+const addColumn = () => {
+  const tempName = `__new_${Date.now()}__`;
 
-  if (!columnName?.trim()) return;
-
-  if (columns.includes(columnName)) {
-    alert("Column already exists");
-    return;
-  }
-
-  try {
-    await fetch(
-      "http://localhost:5000/data/columns/add",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dataset_id: datasetId,
-          columnName,
-          defaultValue: "",
-        }),
-      }
-    );
-
-    const updated = data.map(row => ({
+  setData(prev =>
+    prev.map(row => ({
       ...row,
-      [columnName]: "",
-    }));
+      [tempName]: "",
+    }))
+  );
 
-    setData(updated);
-    setColumns(prev => [...prev, columnName]);
+  setColumns(prev => [...prev, tempName]);
 
-  } catch (err) {
-    console.error(err);
-  }
+  setEditingColumn(tempName);
+  setNewColumnName("");
+
+  setNewColumnCreated(true);
 };
-  const renameColumn = async (oldName, newName) => {
-  if (!newName.trim()) return;
-  if (columns.includes(newName)) {
-    alert("Column already exists");
-    return;
-  }
-  await fetch(
-    `http://localhost:5000/data/columns/rename`,
+const createColumn = async (columnName) => {
+  const response = await fetch(
+    "http://localhost:5000/data/columns/add",
     {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify({
-        datasetId,
-        oldName,
-        newName,
+        dataset_id: datasetId,
+        columnName,
+        defaultValue: "",
       }),
     }
   );
 
-    const updatedData = data.map(row => {
-    const newRow = { ...row };
+  const result = await response.json();
 
-    newRow[newName] = newRow[oldName];
-    delete newRow[oldName];
+  if (!response.ok) {
+    throw new Error(result.error);
+  }
 
-    return newRow;
-  });
+  return result;
+};const renameColumn = async (oldName, newName) => {
+  newName = newName.trim();
 
+  if (!newName) {
+    setColumnError("Column name is required");
+    return;
+  }
 
-  setData(updatedData);
-  setColumns(prev =>
-    prev.map(col =>
-      col === oldName ? newName : col
-    )
-  );
-  setEditingColumn(null);
-  setNewColumnName("");
+  if (
+    columns.includes(newName) &&
+    oldName !== newName
+  ) {
+    setColumnError("Column already exists");
+    return;
+  }
+
+  try {
+    if (newColumnCreated) {
+      await createColumn(newName);
+
+      const updated = data.map(row => {
+        const newRow = { ...row };
+
+        newRow[newName] = newRow[oldName];
+        delete newRow[oldName];
+
+        return newRow;
+      });
+
+      setData(updated);
+
+      setColumns(prev =>
+        prev.map(col =>
+          col === oldName ? newName : col
+        )
+      );
+
+      setNewColumnCreated(false);
+    } else {
+      const response = await fetch(
+        "http://localhost:5000/data/columns/rename",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify({
+            dataset_id: datasetId,
+            oldName,
+            newName,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error);
+      }
+
+      const updated = data.map(row => {
+        const newRow = { ...row };
+
+        newRow[newName] = newRow[oldName];
+        delete newRow[oldName];
+
+        return newRow;
+      });
+
+      setData(updated);
+
+      setColumns(prev =>
+        prev.map(col =>
+          col === oldName ? newName : col
+        )
+      );
+    }
+
+    setColumnError("");
+    setEditingColumn(null);
+
+  } catch (err) {
+    console.error(err);
+    setColumnError(err.message);
+  }
 };
 
 const deleteColumn = async(columnName) => {
@@ -108,6 +159,7 @@ const deleteColumn = async(columnName) => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
         },
         body: JSON.stringify({
           dataset_id: datasetId,
@@ -161,10 +213,7 @@ const deleteColumn = async(columnName) => {
 
     uploadCSV(file);
   };
-
-  if (!data || data.length === 0 || !columns?.length) {
-    return <DropUpload uploadCSV={uploadCSV} />;
-  }
+  
 useEffect(() => {
   const handleKeyDown = (e) => {
 
@@ -226,6 +275,10 @@ useEffect(() => {
     );
 
 }, []);
+
+  if (!data || data.length === 0 || !columns?.length) {
+    return <DropUpload uploadCSV={uploadCSV} />;
+  }
   return (
     <div 
     className="w-full p-4 overflow-auto"
@@ -271,6 +324,7 @@ useEffect(() => {
                 editingColumn === col ? (
                   <input
                     autoFocus
+                    placeholder="Column name"
                     value={newColumnName}
                     onChange={(e) =>
                       setNewColumnName(e.target.value)
@@ -285,14 +339,35 @@ useEffect(() => {
                       }
 
                       if (e.key === "Escape") {
+
+                        if (newColumnCreated) {
+
+                          setData(prev =>
+                            prev.map(row => {
+                              const copy = { ...row };
+                              delete copy[col];
+                              return copy;
+                            })
+                          );
+
+                          setColumns(prev =>
+                            prev.filter(c => c !== col)
+                          );
+
+                          setNewColumnCreated(false);
+                        }
+
                         setEditingColumn(null);
+                        setColumnError("");
                       }
 
                     }}
                     className="text-black px-1"
                   />
                 ) : (
-                  col
+                  col.startsWith("__new_")
+                    ? ""
+                    : col
                 )
               }
             </th>
@@ -326,6 +401,11 @@ useEffect(() => {
         </tbody>
 
       </table>
+      {columnError && (
+        <div className="text-red-500 text-sm mt-2">
+          {columnError}
+        </div>
+      )}
       {contextMenu.visible && (
       <div
         className="fixed bg-white border rounded shadow-lg z-50"

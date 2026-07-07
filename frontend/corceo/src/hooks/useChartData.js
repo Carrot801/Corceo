@@ -1,88 +1,162 @@
 import { useMemo } from "react";
 import { generatePalette } from "../custom/colorPallets";
 
-function aggregateData(rawData, x, y, mode) {
-    if (mode === "none") {
-      return rawData.map((row) => ({
-        x: row[x],
-        y: Number(row[y]) || 0,
-      }));
-    }
+function normalizeDateValue(value) {
+  if (!value) return "";
 
-    const map = new Map();
+  const str = String(value);
 
-    rawData.forEach((row) => {
-      const key = row[x];
-      const value = Number(row[y]) || 0;
+  // 2024
+  if (/^\d{4}$/.test(str)) return str;
 
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(value);
+  // 2024 Q1
+  if (/^\d{4}\sQ[1-4]$/.test(str)) return str;
+
+  // 2024-01
+  if (/^\d{4}-\d{2}$/.test(str)) return str;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return str;
+
+  return date.toISOString().slice(0, 10);
+}
+
+function getSortValue(row, sortBy) {
+  if (!sortBy) return row.x;
+  return row[sortBy] ?? row.x;
+}
+
+function aggregateData(rawData, x, yFields, mode) {
+  const yKeys = Array.isArray(yFields) ? yFields : yFields ? [yFields] : [];
+
+  if (mode === "none") {
+    return rawData.map((row) => {
+      const result = { x: row[x] };
+
+      yKeys.forEach((key) => {
+        result[key] = Number(row[key]) || 0;
+      });
+
+      return result;
     });
+  }
 
-    return Array.from(map.entries()).map(([key, values]) => {
-      let aggregated = 0;
+  const map = new Map();
+
+  rawData.forEach((row) => {
+    const xValue = row[x];
+
+    if (!map.has(xValue)) map.set(xValue, {});
+
+    yKeys.forEach((key) => {
+      const value = Number(row[key]) || 0;
+
+      if (!map.get(xValue)[key]) map.get(xValue)[key] = [];
+
+      map.get(xValue)[key].push(value);
+    });
+  });
+
+  return Array.from(map.entries()).map(([xValue, valuesByKey]) => {
+    const result = { x: xValue };
+
+    yKeys.forEach((key) => {
+      const values = valuesByKey[key] || [];
 
       switch (mode) {
         case "avg":
-          aggregated = values.reduce((a, b) => a + b, 0) / values.length;
+          result[key] = values.reduce((a, b) => a + b, 0) / values.length;
           break;
         case "min":
-          aggregated = Math.min(...values);
+          result[key] = Math.min(...values);
           break;
         case "max":
-          aggregated = Math.max(...values);
+          result[key] = Math.max(...values);
           break;
         case "count":
-          aggregated = values.length;
+          result[key] = values.length;
           break;
         case "sum":
         default:
-          aggregated = values.reduce((a, b) => a + b, 0);
+          result[key] = values.reduce((a, b) => a + b, 0);
       }
-
-      return { x: key, y: aggregated };
     });
-  }
-  function sortData(chartRows, sortMode) {
-    if (sortMode === "asc") {
-      return [...chartRows].sort((a, b) => a.y - b.y);
-    }
-    if (sortMode === "desc") {
-      return [...chartRows].sort((a, b) => b.y - a.y);
-    }
-    return chartRows;
-  }
-function useChartData({ data, chartConfig, settings }) {
-  
-  
-  const processedData = useMemo(() => {
-    
-    if (!data || !chartConfig.x || !chartConfig.y) return [];
 
-    let aggregated = aggregateData(
+    return result;
+  });
+}
+function sortData(chartRows, chartConfig, yFields) {
+  const yKeys = Array.isArray(yFields) ? yFields : yFields ? [yFields] : [];
+  const firstKey = yKeys[0];
+
+  if (chartConfig.sort === "none") return chartRows;
+
+  const sortKey = chartConfig.sortBy || firstKey;
+  if (!sortKey) return chartRows;
+
+  return [...chartRows].sort((a, b) => {
+    const av = Number(a[sortKey]) || 0;
+    const bv = Number(b[sortKey]) || 0;
+
+    return chartConfig.sort === "desc" ? bv - av : av - bv;
+  });
+}
+
+function useChartData({ data, chartConfig, settings }) {
+  const processedData = useMemo(() => {
+    const yKeys = Array.isArray(chartConfig.y)
+      ? chartConfig.y
+      : chartConfig.y
+        ? [chartConfig.y]
+        : [];
+
+    if (!data || !chartConfig.x || yKeys.length === 0) return [];
+
+    let result = aggregateData(
       data,
       chartConfig.x,
-      chartConfig.y,
+      yKeys,
       chartConfig.aggregation
     );
 
-    return sortData(aggregated, chartConfig.sort);
-  }, [data, chartConfig.x, chartConfig.y, chartConfig.aggregation, chartConfig.sort]);
+    result = sortData(result, chartConfig, yKeys);
 
+    if (chartConfig.limit) {
+      result = result.slice(0, Number(chartConfig.limit));
+    }
 
+    return result;
+  }, [
+    data,
+    chartConfig.x,
+    chartConfig.y,
+    chartConfig.aggregation,
+    chartConfig.sort,
+    chartConfig.sortBy,
+    chartConfig.limit,
+  ]);
 
   const generatedColors = useMemo(() => {
+    const yCount = Array.isArray(chartConfig.y)
+      ? chartConfig.y.length
+      : chartConfig.y
+        ? 1
+        : processedData.length;
+
     return generatePalette(
       settings.palette,
       settings.paletteMode,
-      processedData.length
+      Math.max(yCount, processedData.length)
     );
-  }, [settings.palette, settings.paletteMode, processedData.length]);
-
-  
+  }, [
+    settings.palette,
+    settings.paletteMode,
+    processedData.length,
+    chartConfig.y,
+  ]);
 
   return {
-    chartData: processedData, 
+    chartData: processedData,
     generatedColors,
   };
 }

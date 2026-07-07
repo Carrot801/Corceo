@@ -1,23 +1,25 @@
 const pool = require("../db");
 
 const createChart = async (req, res) => {
-const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data } = req.body;  try {
-    const result = await pool.query(
-      `INSERT INTO charts (project_id, dataset_id, chart_type, x_axis, y_axis, settings)
-       VALUES ($1, $2, $3, $4, $5, $6)
+const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data,chart_config } = req.body;  try {
+  const userId = req.user.userId;  
+  const result = await pool.query(
+      `INSERT INTO charts (project_id, dataset_id, chart_type, x_axis, y_axis, settings, chart_config, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (project_id) DO UPDATE 
        SET dataset_id = EXCLUDED.dataset_id,
        chart_type = EXCLUDED.chart_type, 
            x_axis = EXCLUDED.x_axis, 
            y_axis = EXCLUDED.y_axis, 
-           settings = EXCLUDED.settings
+           settings = EXCLUDED.settings,
+           chart_config = EXCLUDED.chart_config
        RETURNING *`, 
-      [project_id, dataset_id, chart_type, x_axis, y_axis, JSON.stringify(settings)]
+      [project_id, dataset_id, chart_type, x_axis, y_axis, JSON.stringify(settings), JSON.stringify(chart_config), userId]
     );
     if (image_data) {
       await pool.query(
-        "UPDATE projects SET image_url = $1 WHERE id = $2",
-        [image_data, project_id]
+        "UPDATE projects SET image_url = $1 WHERE id = $2 AND user_id = $3",
+        [image_data, project_id, userId]
       );
     }
     res.json(result.rows[0]);
@@ -30,9 +32,10 @@ const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data
 const getCharts = async (req, res) => {
   const { project_id } = req.query;
   try {
+    const userId = req.user.userId;
     const result = await pool.query(
-      `SELECT * FROM charts WHERE project_id = $1 LIMIT 1`,
-      [project_id]
+      `SELECT * FROM charts WHERE project_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1`,
+      [project_id, userId]
     );
     res.json(result.rows[0] || null); 
   } catch (err) {
@@ -69,4 +72,8 @@ const getPublishedChart = async (req, res) => {
   }
 };
 
-module.exports = { createChart, getCharts, getPublishedChart };
+module.exports = { 
+  createChart,
+  getCharts,
+  getPublishedChart
+ };

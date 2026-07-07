@@ -13,6 +13,7 @@ function NewVisualization() {
   const { id } = useParams();
 
   const chartRef = useRef(null);
+  
   const navigate = useNavigate();
   const {
     data,
@@ -26,20 +27,21 @@ function NewVisualization() {
     saveDataset,
   } = useProjectData(id);
 
+const removeFieldFromAxis = (axis, field) => {
+  setChartConfig((prev) => {
+    if (axis === "y") {
+      return {
+        ...prev,
+        y: prev.y.filter((item) => item !== field),
+      };
+    }
 
-  const removeFieldFromAxis = (axis) => {
-    setChartConfig((prev) => ({
+    return {
       ...prev,
       [axis]: null,
-    }));
-  };
-  const swapAxes = () => {
-    setChartConfig((prev) => ({
-      ...prev,
-      x: prev.y,
-      y: prev.x
-    }));
-  };
+    };
+  });
+};
   const columnTypes = React.useMemo(() => {
     if (!data || data.length === 0) return {};
     
@@ -80,58 +82,90 @@ function NewVisualization() {
     showGrid: true,
 
     legendPosition: "right",
-  legendDirection: "column",
-  legendAlign: "center",
-  legendSize: "medium",
-  legendTitle: "",
-  legendGap: 12,
+    legendDirection: "column",
+    legendAlign: "center",
+    legendSize: "medium",
+    legendTitle: "",
+    legendGap: 12,
+    legendFields: [],
+    labelType: "percentage",
+    labelPosition: "inside", 
+    showLabels: true,
+    hideZeros: false,
+
+
+    tooltipFields: ["name", "value"],
+
+    formatMode: "decimal",
+    compactNumbers: false,
+    numberFormat: "default",
+    decimalPlaces: 2,
   });
   const [chartConfig, setChartConfig] = useState({
-    x: null,
-    y: null,
-    type: "bar",
-    aggregation: "none",
-    sort: "none",
-  });
+  x: null,
+  y: [],
+  type: "bar",
+  aggregation: "none",
+  xHierarchy: [],
+  dateHierarchySource: null,
+  sort: "none",
+  groupSmallCategories: false,
+  filterField: null,
 
+  timeGroupBy: "none",
+  limit: null,
+  sortBy: null,
+});
+    const multiYCharts = ["bar", "line", "area", "composed"];
+
+  const isMultiYChart = multiYCharts.includes(chartConfig.type);
 const exportPNG = async () => {
   if (!chartRef.current) return;
 
   const node = chartRef.current;
 
-  // Save original styles
-  const originalWidth = node.style.width;
-  const originalHeight = node.style.height;
-  const originalOverflow = node.style.overflow;
+  // Store original styles to restore them later
+  const originalStyle = {
+    width: node.style.width,
+    height: node.style.height,
+    overflow: node.style.overflow,
+    position: node.style.position,
+    maxHeight: node.style.maxHeight
+  };
 
   try {
-    // Force fixed export size
+    // 1. Force the node to expand to its full content height
     node.style.width = "1400px";
-    node.style.height = "900px";
-    node.style.overflow = "visible";
+    node.style.height = "auto"; // Let it grow to fit the legend
+    node.style.minHeight = "900px";
+    node.style.overflow = "visible"; 
+    node.style.position = "relative";
+    node.style.maxHeight = "none";
 
-    // Wait for Recharts to re-render
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-
+    // 2. IMPORTANT: Wait for React/Recharts to re-render at this new height
+    await new Promise((resolve) => setTimeout(resolve, 600));
+console.log(
+  chartRef.current.querySelector(".recharts-responsive-container")
+    ?.getBoundingClientRect()
+);
+    // 3. Capture
     const dataUrl = await toPng(node, {
       cacheBust: true,
       pixelRatio: 2,
       backgroundColor: "#ffffff",
+      // Ensure the canvas gets the full height of the element
+      height: node.scrollHeight, 
     });
 
     const link = document.createElement("a");
     link.download = "chart.png";
     link.href = dataUrl;
     link.click();
-
   } catch (err) {
     console.error("Export failed:", err);
-
   } finally {
-    // Restore original styles
-    node.style.width = originalWidth;
-    node.style.height = originalHeight;
-    node.style.overflow = originalOverflow;
+    // Restore styles
+    Object.assign(node.style, originalStyle);
   }
 };
   const updateSetting = (key, value) => {
@@ -140,14 +174,33 @@ const exportPNG = async () => {
       [key]: value,
     }));
   };
-  const handleDropAxis = (axis) => (e) => {
-    const col = e.dataTransfer.getData("col");
+const handleDropAxis = (axis) => (e) => {
+  const col = e.dataTransfer.getData("col");
 
-    setChartConfig((prev) => ({
+  setChartConfig((prev) => {
+    if (axis === "y") {
+      const multiYCharts = ["bar", "line", "area", "composed"];
+      const isMultiYChart = multiYCharts.includes(prev.type);
+
+      if (!isMultiYChart) {
+        return {
+          ...prev,
+          y: [col],
+        };
+      }
+
+      return {
+        ...prev,
+        y: prev.y.includes(col) ? prev.y : [...prev.y, col],
+      };
+    }
+
+    return {
       ...prev,
       [axis]: col,
-    }));
-  };
+    };
+  });
+};
 
   const {
     chartData,
@@ -158,7 +211,10 @@ const exportPNG = async () => {
     settings,
   });
 
-  const isUsed = (col) => col === chartConfig.x || col === chartConfig.y;
+
+  
+const isUsed = (col) =>
+  col === chartConfig.x || chartConfig.y.includes(col);
 
   const saveChart = async () => {
     let base64Image = null;
@@ -179,34 +235,99 @@ const exportPNG = async () => {
         console.error("Failed to generate background preview image:", err);
       }
     }
-    console.log("Saving chart with ID:", datasetId);
-    await saveChartToBackend({
-      dataset_id: datasetId,
-      chart_type: chartConfig.type,
-      x_axis: chartConfig.x,
-      y_axis: chartConfig.y,
-      image_data: base64Image,
-      settings: {
-        ...settings,
-        aggregation: chartConfig.aggregation,
-        sort: chartConfig.sort
-      }
-    });
-    console.log("saved", chartConfig);
-  };
+    
+await saveDataset();
 
+  await saveChartToBackend({
+    dataset_id: datasetId,
+    chart_type: chartConfig.type,
+    x_axis: chartConfig.x,
+    y_axis: JSON.stringify(chartConfig.y),
+    settings: {
+      ...settings,
+      aggregation: chartConfig.aggregation,
+      sort: chartConfig.sort,
+    },
+    chart_config: chartConfig,
+  });
+};
+
+  const recreateDateHierarchy = (field) => {
+  const newFields = [
+    `${field}_Year`,
+    `${field}_Quarter`,
+    `${field}_Month`,
+  ];
+
+  setColumns((prev) => [...new Set([...prev, ...newFields])]);
+
+  setData((prevData) =>
+    prevData.map((row) => {
+      const date = new Date(row[field]);
+      if (isNaN(date)) return row;
+
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const quarter = `Q${Math.floor((month - 1) / 3) + 1}`;
+
+      return {
+        ...row,
+        [`${field}_Year`]: String(year),
+        [`${field}_Quarter`]: `${year} ${quarter}`,
+        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`,
+      };
+    })
+  );
+};
+useEffect(() => {
+  if (!data || data.length === 0) return;
+  if (!chartConfig.dateHierarchySource) return;
+
+  const field = chartConfig.dateHierarchySource;
+
+  const newFields = [
+    `${field}_Year`,
+    `${field}_Quarter`,
+    `${field}_Month`,
+  ];
+
+  const alreadyExists = newFields.every((f) => columns.includes(f));
+  if (alreadyExists) return;
+
+  setColumns((prev) => [...new Set([...prev, ...newFields])]);
+
+  setData((prevData) =>
+    prevData.map((row) => {
+      const date = new Date(row[field]);
+      if (isNaN(date)) return row;
+
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const quarter = `Q${Math.floor((month - 1) / 3) + 1}`;
+
+      return {
+        ...row,
+        [`${field}_Year`]: String(year),
+        [`${field}_Quarter`]: `${year} ${quarter}`,
+        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`,
+      };
+    })
+  );
+}, [chartConfig.dateHierarchySource, columns, data.length]);
   const publishChart = async () => {
     try {
       const saved = await saveChartToBackend({
         dataset_id: datasetId,
         chart_type: chartConfig.type,
         x_axis: chartConfig.x,
-        y_axis: chartConfig.y,
+        y_axis: JSON.stringify(chartConfig.y),
         settings: {
           ...settings,
           aggregation: chartConfig.aggregation,
           sort: chartConfig.sort,
         },
+      chart_config: chartConfig,
+
       });
 
       if (!saved?.id) {
@@ -226,20 +347,71 @@ const exportPNG = async () => {
     localStorage.setItem(`activeTab-${id}`, activeTab);
   }, [activeTab, id]);
   useEffect(() => {
+    
     if (!savedChart) return;
+      console.log("Loaded savedChart:", savedChart);
+  console.log("Loaded chart_config:", savedChart.chart_config);
 
-    const settings =
-      typeof savedChart.settings === "string"
-        ? JSON.parse(savedChart.settings)
-        : savedChart.settings || {};
 
-    setChartConfig({
-      x: savedChart.x_axis,
-      y: savedChart.y_axis,
-      type: savedChart.chart_type || "bar",
-      aggregation: settings.aggregation || "none",
-      sort: settings.sort || "none",
-    });
+   const settings =
+  typeof savedChart.settings === "string"
+    ? JSON.parse(savedChart.settings)
+    : savedChart.settings || {};
+
+
+
+const savedConfig =
+  typeof savedChart.chart_config === "string"
+    ? JSON.parse(savedChart.chart_config)
+    : savedChart.chart_config || {};
+    const inferredDateSource =
+      savedConfig.dateHierarchySource ||
+      (savedConfig.x?.endsWith("_Month")
+        ? savedConfig.x.replace("_Month", "")
+        : null);
+
+      const inferredHierarchy = inferredDateSource
+        ? [
+            `${inferredDateSource}_Year`,
+            `${inferredDateSource}_Quarter`,
+            `${inferredDateSource}_Month`,
+          ]
+        : [];
+  setChartConfig({
+    x: savedConfig.x || savedChart.x_axis,
+
+    y:
+      savedConfig.y ||
+      (() => {
+        try {
+          const parsed = JSON.parse(savedChart.y_axis);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          return savedChart.y_axis ? [savedChart.y_axis] : [];
+        }
+      })(),
+
+    type: savedConfig.type || savedChart.chart_type || "bar",
+
+    aggregation: savedConfig.aggregation || "none",
+    sort: savedConfig.sort || "none",
+
+    xHierarchy: savedConfig.xHierarchy?.length
+      ? savedConfig.xHierarchy
+      : inferredHierarchy,
+
+    dateHierarchySource: inferredDateSource,
+
+    timeGroupBy: inferredDateSource
+      ? "hierarchy"
+      : savedConfig.timeGroupBy || "none",
+
+    groupSmallCategories: savedConfig.groupSmallCategories || false,
+    filterField: savedConfig.filterField || null,
+
+    limit: savedConfig.limit || null,
+    sortBy: savedConfig.sortBy || null,
+  });
 
     setSettings(prev => ({
       ...prev,
@@ -323,6 +495,9 @@ const exportPNG = async () => {
     <div className="w-64 border-r bg-white">
       <FieldsPanel
         columns={columns}
+        setColumns={setColumns}
+        data={data}
+        setData={setData}
         types={columnTypes}
         setChartConfig={setChartConfig}
         isUsed={isUsed}
@@ -336,15 +511,7 @@ const exportPNG = async () => {
     <div className="flex-1 p-4 bg-slate-50 overflow-hidden">
 
       <div className="mb-4 space-y-2 w-full">
-        <div className="flex gap-2 items-center mb-2">
-          <button
-            onClick={swapAxes}
-            className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded text-sm text-slate-700"
-            title="Swap X and Y Axes"
-          >
-            ⇄ Swap Axes
-          </button>
-        </div>
+        
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("x")}
@@ -364,25 +531,36 @@ const exportPNG = async () => {
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("y")}
-          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600 flex justify-between items-center"
+          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600"
         >
-          <span>Y Axis: {chartConfig.y || "Drop field here"}</span>
-          
-          {chartConfig.y && (
-            <button 
-              onClick={() => removeFieldFromAxis("y")}
-              className="text-red-500 hover:text-red-700 font-bold px-2"
-            >
-              ✕
-            </button>
-          )}
+          <div className="mb-2">
+            Y Axis: {chartConfig.y.length ? "" : "Drop fields here"}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {chartConfig.y.map((field) => (
+              <span
+                key={field}
+                className="px-2 py-1 bg-white border rounded flex items-center gap-2"
+              >
+                {field}
+                <button
+                  onClick={() => removeFieldFromAxis("y", field)}
+                  className="text-red-500 font-bold"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
         <div
         className="flex-1 border rounded-lg bg-white p-4"
         >
-          <div className="w-full h-[600px]">
+          <div className="w-full h-[530px]">
             <ChartPreview
             chartData={chartData}
+            rawData={data}
             chartConfig={chartConfig}
             setChartConfig={setChartConfig}
             columns={columns}
@@ -396,41 +574,39 @@ const exportPNG = async () => {
       </div>
       
     </div>
-    <div
-      style={{
-        position: "fixed",
-        left: "-99999px",
-        top: 0,
-        width: "auto",
-        minHeight: "900px",
-        background: "white",
-        zIndex: -1,
-        
-          display: "inline-block",
-      }}
-    >
-      <div
-        ref={chartRef}
-        style={{
-          width: "1400px",
-          minheight: "900px",
-          padding: "40px",
-          background: "white",
-          display: "inline-block",
-        }}
-      >
-        <ChartPreview
-          chartData={chartData}
-          chartConfig={chartConfig}
-          setChartConfig={setChartConfig}
-          columns={columns}
-          generatedColors={generatedColors}
-          settings={settings}
-          exportMode={true}
-        />
-      </div>
-    </div>
-
+{/* HIDDEN EXPORT LAYER */}
+<div
+  style={{
+    position: "fixed",
+    left: "-99999px",
+    top: 0,
+    width: "auto",
+    height: "auto", // Allows the system to stretch infinitely downwards
+    background: "white",
+    zIndex: -1,
+    display: "inline-block",
+  }}
+>
+  <div
+    ref={chartRef}
+    style={{
+      width: "1400px",
+      minHeight: "900px", // Fixed casing typo from 'minheight'
+      padding: "40px",
+      background: "white",
+      display: "inline-block",
+    }}
+  >
+    <ChartPreview
+      chartData={chartData}
+      chartConfig={chartConfig}
+      setChartConfig={setChartConfig}
+      columns={columns}
+      generatedColors={generatedColors}
+      settings={{ ...settings, exportMode: true }}
+    />
+  </div>
+</div>
     <Sidebar
       settings={settings}
       updateSetting={updateSetting}

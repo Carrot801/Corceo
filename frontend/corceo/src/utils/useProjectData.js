@@ -86,6 +86,7 @@ function useProjectData(projectId) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
           },
           body: JSON.stringify({
             project_id: projectId,
@@ -115,6 +116,7 @@ function useProjectData(projectId) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
           },
           body: JSON.stringify({
             project_id: projectId,

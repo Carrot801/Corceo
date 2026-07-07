@@ -1,8 +1,9 @@
 const { getFolders, createFolder } = require("../models/foldersModel");
 
 const fetchFolders = async (req, res) => {
-    try {       
-        const result = await getFolders();
+    try { 
+        const userId = req.user.userId;      
+        const result = await getFolders(userId);
         res.json(result);
     } catch (error) {
         console.error("Error fetching folders:", error);
@@ -13,7 +14,9 @@ const fetchFolders = async (req, res) => {
 const addFolder = async (req, res) => {
     try {
         const { name, parent_id } = req.body;
-        const result = await createFolder(name, parent_id);
+        const userId = req.user.userId;
+
+        const result = await createFolder(name, parent_id, userId);
         res.json(result.rows[0]);
     } catch (error) {
         console.error("Error creating folder:", error);

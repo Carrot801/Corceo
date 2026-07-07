@@ -17,13 +17,21 @@ const getProjects = async (folder_id) => {
   return result.rows;
 };
 
-const createProject = async (name, folder_id) => {
+const createProject = async (name, folder_id, user_id) => {
   const result = await pool.query(
-    "INSERT INTO projects (name, folder_id) VALUES ($1, $2) RETURNING *",
-    [name, folder_id]
+    "INSERT INTO projects (name, folder_id, user_id) VALUES ($1, $2, $3) RETURNING *",
+    [name, folder_id, user_id]
   );
 
   return result.rows[0];
 };
+const getAllProjects = async () => {
+  const result = await pool.query(`
+    SELECT *
+    FROM projects
+  `);
 
-module.exports = { getProjects, createProject };
+  return result.rows;
+};
+
+module.exports = { getProjects, createProject, getAllProjects };

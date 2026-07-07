@@ -1,63 +1,122 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-
+import Header from "./Header";
    
 function BasePage() {
   const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const [activeFolder, setActiveFolder] = useState(null);
+  const [treeProjects, setTreeProjects] = useState([]);
+  const [treeStories, setTreeStories] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [activeFolder, setActiveFolder] = useState(null);
   const [folders, setFolders] = useState([]);
   const [openFolders, setOpenFolders] = useState({});
   const [openMenu, setOpenMenu] = useState(null);
   const [renamingProject, setRenamingProject] = useState(null);
   const [newProjectName, setNewProjectName] = useState("");
   const [search, setSearch] = useState("");
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
 
   const [searchResults, setSearchResults] = useState({
   folders: [],
   projects: [],
+  stories: [],
 });
-  const createProject = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: "New Project",
-          folder_id: activeFolder,
-        }),
-      });
+const createProject = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
-      const newProject = await res.json();
+    const res = await fetch("http://localhost:5000/projects", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: "New Project",
+        folder_id: activeFolder || null,
+      }),
+    });
 
-      setProjects((prev) => [...prev, newProject]);
+    const newProject = await res.json();
 
-      navigate(`/newVisualization/${newProject.id}`);
-    } catch (err) {
-      console.error("Failed to create project:", err);
+    if (!res.ok) {
+      console.error("Create project failed:", newProject);
+      return;
     }
-  };
+
+    console.log("Created project:", newProject);
+
+    setProjects((prev) => [...prev, newProject]);
+
+    navigate(`/newVisualization/${newProject.id}`);
+  } catch (err) {
+    console.error("Failed to create project:", err);
+  }
+};
+const loadTreeItemsForFolder = async (folderId) => {
+  const token = localStorage.getItem("token");
+
+  let projectUrl = "http://localhost:5000/projects";
+  let storyUrl = "http://localhost:5000/stories";
+
+  if (folderId !== null && folderId !== undefined) {
+    projectUrl += `?folder_id=${folderId}`;
+    storyUrl += `?folder_id=${folderId}`;
+  }
+
+  const [projectRes, storyRes] = await Promise.all([
+    fetch(projectUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    fetch(storyUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  ]);
+
+  const projectData = await projectRes.json();
+  const storyData = await storyRes.json();
+
+  setTreeProjects(prev => [
+    ...prev.filter(p => p.folder_id !== folderId),
+    ...projectData,
+  ]);
+
+  setTreeStories(prev => [
+    ...prev.filter(s => s.folder_id !== folderId),
+    ...storyData,
+  ]);
+};
   const getFolders = async () => {
-    const res = await fetch("http://localhost:5000/folders");
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("http://localhost:5000/folders", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     const data = await res.json();
     setFolders(data);
+    await loadTreeItemsForFolder(null);
   };
+  
 const createFolder = async () => {
 
   if (!folderName.trim()) return;
 
+  const token = localStorage.getItem("token");
+
   await fetch("http://localhost:5000/folders", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       name: folderName,
-      parent_id: activeFolder
+      parent_id: activeFolder || null,
     })
   });
   await getFolders();
@@ -72,7 +131,11 @@ const createFolder = async () => {
         url += `?folder_id=${folderId}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
@@ -85,80 +148,171 @@ const createFolder = async () => {
       console.error("getProjects failed:", err);
     }
   };
+   const getStories = async (folderId) => {
+    try {
+      let url = "http://localhost:5000/stories";
+
+      if (folderId !== null && folderId !== undefined) {
+        url += `?folder_id=${folderId}`;
+      }
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      setStories(data);
+    } catch (err) {
+      console.error("getStories failed:", err);
+    }
+  };
   const toggleFolder = (id) => {
     setOpenFolders(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
   };
-  const renderFolders = (parentId = null, level = 0) => {
-    return folders
-      .filter(folder => folder.parent_id === parentId)
-      .map(folder => (
-        <div key={folder.id}>
 
-          <div
+  const renderFolders = (parentId = null, level = 0) => {
+  const currentFolders = folders.filter((f) => f.parent_id === parentId);
+  const currentProjects = treeProjects.filter((p) => p.folder_id === parentId);
+  const currentStories = treeStories.filter((s) => s.folder_id === parentId);
+  return (
+    <div className="flex flex-col">
+      {currentFolders.map((folder) => (
+        <div key={`folder-${folder.id}`}>
+          {/* FOLDER ROW */}
+          <div 
+            className={`flex items-center gap-1 py-1.5 text-sm transition-colors cursor-pointer
+            ${activeFolder === folder.id ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"}            `}
+            style={{ paddingLeft: `${level * 16 + 8}px` }}
+          >
+           <span
             onClick={(e) => {
               e.stopPropagation();
-              setActiveFolder(folder.id);
-              toggleFolder(folder.id);
-            }}
-            className={`cursor-pointer hover:bg-gray-100 flex items-center gap-2 py-1
-              ${activeFolder === folder.id ? "bg-gray-200 font-semibold" : "bg-transparent"}`}
-            style={{ marginLeft: level * 12 }}
-          >
-            <span>
-              {openFolders[folder.id] ? "▼" : "▶"}
-            </span>
 
-            📁 {folder.name}
+              setOpenFolders(prev => ({
+                ...prev,
+                [folder.id]: !prev[folder.id],
+              }));
+
+              loadTreeItemsForFolder(folder.id);
+            }}
+            className="w-5 flex justify-center text-gray-400 cursor-pointer hover:text-gray-600"
+          >
+            {openFolders[folder.id] ? "▼" : "▶"}
+          </span>
+
+          <div
+            className="flex-1 flex items-center gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+
+              setActiveFolder(folder.id);
+
+              setOpenFolders(prev => ({
+                ...prev,
+                [folder.id]: true,
+              }));
+
+              loadTreeItemsForFolder(folder.id);
+            }}
+          >
+            <span>📁</span>
+            {folder.name}
+          </div>
           </div>
 
-          {openFolders[folder.id] &&
-            renderFolders(folder.id, level + 1)
-          }
-
+          {/* RECURSIVE FOLDER CONTENT */}
+          {openFolders[folder.id] && renderFolders(folder.id, level + 1)}
         </div>
-      ));
-  };
+      ))}
+      {currentStories.map((story) => (
+        <div
+          key={`story-${story.id}`}
+          onClick={() => navigate(`/newStory/${story.id}`)}
+          className="cursor-pointer hover:bg-gray-100 py-1.5 text-sm flex items-center gap-2 text-gray-500"
+          style={{ paddingLeft: `${level * 16 + 10}px` }}
+        >
+          <span>📖</span>
+          {story.name}
+        </div>
+      ))}
+
+      {/* PROJECT ROWS */}
+      {currentProjects.map((project) => (
+        <div
+          key={`project-${project.id}`}
+          onClick={() => navigate(`/newVisualization/${project.id}`)}
+          className={`cursor-pointer hover:bg-gray-100 py-1.5 text-sm flex items-center gap-2 text-gray-500`}
+          style={{ paddingLeft: `${(level ) * 16 +10}px` }} // Extra padding to align with children
+        >
+          <span>📄</span>
+          {project.name}
+        </div>
+      ))}
+    </div>
+  );
+};
   const renderFoldersForProjects = (parentId = null) => {
     return folders
       .filter(folder => folder.parent_id === parentId)
   };
-  useEffect(() => {
-const init = async () => {
-  try {
-    const res = await fetch(
-      "http://localhost:5000/folders"
-    );
+useEffect(() => {
+  const init = async () => {
+    await getFolders();
+    await getProjects(null);
+    await getStories(null);
+    await loadTreeItemsForFolder(null);
+  };
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+  init();
+}, []);
 
-    const data = await res.json();
-
-    setFolders(data);
-
-  } catch (err) {
-    console.error("Folders fetch failed:", err);
-  }
-};
-
-    init();
-  }, []);
-  useEffect(() => {
-  getProjects(activeFolder);
-}, [activeFolder]);
 
 const searchItems = async (value) => {
   const res = await fetch(
-    `http://localhost:5000/search?q=${encodeURIComponent(value)}`
+    `http://localhost:5000/search?q=${encodeURIComponent(value)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
   );
 
   const data = await res.json();
 
   setSearchResults(data);
+};
+
+useEffect(() => {
+  getProjects(activeFolder);
+  getStories(activeFolder);
+}, [activeFolder]);
+
+const createFolderWithParent = async (parentId) => {
+  const token = localStorage.getItem("token");
+  if (!folderName.trim()) return;
+
+  await fetch("http://localhost:5000/folders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name: folderName, parent_id: parentId })
+  });
+  
+  await getFolders();
+  setFolderName("");
+  setContextMenu({ visible: false, x: 0, y: 0, folderId: null });
 };
 useEffect(() => {
   const timeout = setTimeout(() => {
@@ -182,6 +336,7 @@ const navigate = useNavigate();
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
             name: newProjectName,
@@ -217,6 +372,9 @@ const navigate = useNavigate();
         `http://localhost:5000/projects/duplicate/${projectId}`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
       );
 
@@ -227,12 +385,16 @@ const navigate = useNavigate();
       console.error(err);
     }
   };
+  
   const deleteProject = async (projectId) => {
     try {
       const res = await fetch(
         `http://localhost:5000/projects/${projectId}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
       );
 
@@ -251,30 +413,128 @@ const navigate = useNavigate();
       console.error("Network error:", err);
     }
   };
+  const createStory = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/stories", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ 
+        name: "Untitled Story",
+        slides: [],
+      folder_id: activeFolder ?? null,
+     }),
+    });
+    const data = await res.json();
+
+
+    if (data.id) {
+      navigate(`/newStory/${data.id}`);
+    } else {
+
+    console.log("Server did not return an ID:", data.id);
+
+    }
+  } catch (err) {
+    console.error("Failed to initialize story:", err);
+  }
+};
+const duplicateStory = async (storyId) => {
+  try {
+    const res = await fetch(
+      `http://localhost:5000/stories/duplicate/${storyId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    const duplicated = await res.json();
+
+    if (!res.ok) {
+      console.error("Duplicate story failed:", duplicated);
+      return;
+    }
+
+    setStories((prev) => [...prev, duplicated]);
+    setTreeStories((prev) => [...prev, duplicated]);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const deleteStory = async (storyId) => {
+  try {
+    const res = await fetch(`http://localhost:5000/stories/${storyId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Delete story failed:", data);
+      return;
+    }
+
+    setStories((prev) => prev.filter((s) => s.id !== storyId));
+    setTreeStories((prev) => prev.filter((s) => s.id !== storyId));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
     // Determine what to display
     const isSearching = search.trim().length > 0;
-    const displayedProjects = isSearching ? searchResults.projects : projects;
-    const displayedFolders = isSearching ? searchResults.folders : renderFoldersForProjects(activeFolder);
+    const displayedProjects = isSearching 
+      ? searchResults.projects 
+      : projects;
+
+    const displayedStories = isSearching 
+      ? searchResults.stories 
+      : stories;
+
+    const displayedFolders = isSearching
+      ? (searchResults.folders || [])
+      : (folders || []).filter(f => f.parent_id === activeFolder);
+
+
   return (
+    <>
+    <Header />
     <div className="flex min-h-screen min-w-screen bg-gray-100">
 
       <div className="w-[240px] bg-white border-r p-5 flex flex-col gap-4">
         <button
-          onClick={() => navigate("/NewVisualization")}
+          onClick={createProject}
           className="bg-blue-500 text-white py-2 rounded"
         >
           + New visualization
         </button>
 
-        <button className="bg-gray-200 py-2 rounded">
+        <button 
+        onClick={(createStory)}
+        className="bg-gray-200 py-2 rounded"
+        >
           + New story
         </button>
 
         <div className="mt-6 flex flex-col gap-2 text-gray-600">
             <span className="font-semibold">Projects</span>
             <button
-                className="bg-gray-200 text-sm text-left text-gray-700 py-2 rounded">
-                My projects
+              onClick={() => {
+                setActiveFolder(null);
+                loadTreeItemsForFolder(null);
+              }}
+              className="bg-gray-200 text-sm text-left text-gray-700 py-2 rounded"
+            >
+              My projects
             </button>
             <div className="left-5 relative">
               {renderFolders(null)}
@@ -340,15 +600,91 @@ const navigate = useNavigate();
           {displayedFolders.map((folder) => (
             <div
               key={folder.id}
-              onClick={() => setActiveFolder(folder.id)}
+              onClick={() => {
+              setActiveFolder(folder.id);
+
+              setOpenFolders(prev => ({
+                ...prev,
+                [folder.id]: true,
+              }));
+
+              loadTreeItemsForFolder(folder.id);
+            }}
               className="bg-white h-[280px] w-[280px] flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
+            
             >
               <div className="text-lg text-gray-500 font-semibold">
                 {folder.name}
               </div>
             </div>
           ))}
+          {displayedStories.map((story) => (
+            <div
+              key={story.id}
+              className="relative bg-white h-[280px] w-[280px] rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="absolute top-2 right-2 z-20">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenu(openMenu === `story-${story.id}` ? null : `story-${story.id}`);
+                  }}
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                >
+                  ⋮
+                </button>
 
+                {openMenu === `story-${story.id}` && (
+                  <div
+                    className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg w-40 py-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => duplicateStory(story.id)}
+                    >
+                      Duplicate
+                    </button>
+
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
+                      onClick={() => deleteStory(story.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div
+                onClick={() => navigate(`/newStory/${story.id}`)}
+                className="h-full flex flex-col cursor-pointer"
+              >
+                <div className="flex-1 bg-white border-b flex items-center justify-center">
+                  {story.image_url ? (
+                    <img
+                      src={story.image_url}
+                      alt={story.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-slate-300 text-4xl">
+                      📖
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3">
+                  <div className="font-semibold truncate">
+                    {story.name}
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    Click to edit story
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
           {/* 3. Map through displayedProjects (either current folder or search results) */}
           {displayedProjects.map((project) => (
             <div
@@ -420,14 +756,14 @@ const navigate = useNavigate();
                     <img
                       src={project.image_url}
                       alt={project.name}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full"
                     />
                   ) : (
                     <div className="text-slate-300">
                       📊
                     </div>
                   )}
-                </div>
+                </div> 
 
                 <div className="p-3">
                   {renamingProject === project.id ? (
@@ -466,8 +802,32 @@ const navigate = useNavigate();
         </div>
 
       </div>
+      {contextMenu.visible && (
+          <div
+            className="fixed bg-white border shadow-xl rounded-lg p-3 z-50 w-48"
+            style={{ top: contextMenu.y, left: contextMenu.x }}
+            onMouseLeave={() => setContextMenu({ ...contextMenu, visible: false })}
+          >
+            <div className="text-xs font-bold mb-2 text-gray-500 uppercase">New Item</div>
+            <input
+              autoFocus
+              placeholder="Folder name..."
+              className="border rounded w-full p-1 mb-2 text-sm"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  // You need to ensure your createFolder function accepts a parentId
+                  // logic: createFolder(contextMenu.folderId)
+                  createFolderWithParent(contextMenu.folderId);
+                }
+              }}
+            />
+          </div>
+        )}
 
     </div>
+  </>
   );
 }
 

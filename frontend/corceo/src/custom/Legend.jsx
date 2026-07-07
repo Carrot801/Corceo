@@ -2,12 +2,40 @@ import { useState, useMemo } from "react";
 
 function Legend({
   chartData = [],
+  rawData = [],
   generatedColors = [],
   settings = {},
+  xField,
 }) {
+    const safeChartData = Array.isArray(chartData)
+    ? chartData
+    : [];
 
-  if (!settings.showLegend) return null;
+  const topXValues = new Set(
+    safeChartData.map((item) => item.x).filter(Boolean)
+  );
+  const customLegendFields = settings.legendFields || [];
 
+  const limitedRawData = rawData.filter((row) =>
+    topXValues.has(row[xField])
+  );
+  console.log({
+  xField,
+  rawSample: rawData[0],
+  limitedRawData,
+  customLegendFields,
+});
+
+  const legendItems =
+    customLegendFields.length > 0
+      ? [
+          ...new Set(
+            limitedRawData.flatMap((row) =>
+              customLegendFields.map((field) => row[field])
+            )
+          ),
+        ].filter(Boolean)
+      : chartData.map((item) => item.x).filter(Boolean);
   const sizeMap = {
     small: {
       dot: 10,
@@ -70,7 +98,7 @@ function Legend({
       )}
 
       {/* ITEMS */}
-      {chartData.map((item, index) => (
+      {legendItems.map((field, index) => (
         <div
           key={index}
           className="flex items-center gap-2"
@@ -93,7 +121,7 @@ function Legend({
               text-slate-700
             `}
           >
-            {item.x}
+            {field}
           </span>
         </div>
       ))}
