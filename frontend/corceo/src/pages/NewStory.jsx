@@ -17,7 +17,14 @@ function NewStory() {
   const [storyName, setStoryName] = useState("Untitled Story");
   const [availableProjects, setAvailableProjects] = useState([]);
   const [search, setSearch] = useState("");
-  const [slides, setSlides] = useState([{ id: 1, content: [], description: "", annotations: [] }]);
+  const [slides, setSlides] = useState([
+    {
+      id: `temp-${Date.now()}`,
+      content: [],
+      description: "",
+      annotations: [],
+    },
+  ]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedAnnoId, setSelectedAnnoId] = useState(null);
@@ -28,6 +35,10 @@ function NewStory() {
   const dragContext = useRef({ type: null, annoId: null });
 
   const currentSlide = slides[activeSlideIndex] || { content: [], annotations: [], description: "" };
+
+  const hasLoadedStoryRef = useRef(false);
+  const autosaveTimerRef = useRef(null);
+
 
 const exportStoryPDF = async () => {
   const slideElements = document.querySelectorAll(".export-slide");
@@ -85,15 +96,16 @@ const exportStoryPDF = async () => {
 
   const addSlide = () =>
     setSlides([
-      ...slides,
-      {
-        id: `temp-${Date.now()}`,
-        content: [],
-        description: "",
-        annotations: []
-      }
-    ]);
-  
+    {
+      id: `temp-${Date.now()}`,
+      content: [],
+      description: "",
+      annotations: [],
+    },
+  ]);
+
+
+    
    const duplicateSlide = async (index) => {
   try {
     isSlideActionRef.current = true;
@@ -283,6 +295,7 @@ const handleProjectClick = async (projectId) => {
         return res.json();
       })
       .then(data => {
+        hasLoadedStoryRef.current = true;
         setStoryName(data.name);
         if (data.slides?.length) {
           setSlides(data.slides.map(s => ({
@@ -296,6 +309,20 @@ const handleProjectClick = async (projectId) => {
       })
       .catch(err => console.error("Fetch error:", err));
   }, [storyId]);
+
+  useEffect(() => {
+  if (!hasLoadedStoryRef.current) return;
+  if (storyId === "new" || !storyId) return;
+  if (isSlideActionRef.current) return;
+
+  clearTimeout(autosaveTimerRef.current);
+
+  autosaveTimerRef.current = setTimeout(() => {
+    saveStory();
+  }, 1200);
+
+  return () => clearTimeout(autosaveTimerRef.current);
+}, [storyName, slides]);
 const cleanSlides = slides.map(slide => {
   const isTemp = String(slide.id).startsWith("temp-");
 
@@ -624,40 +651,40 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
   
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-800 font-sans select-none">
+    <div className="app-page flex h-screen font-sans select-none">
       
       {/* LEFT SIDEBAR: Slide Deck */}
-      <div className="w-72 bg-white border-r flex flex-col p-4 gap-4 shrink-0">
+      <div className="app-surface app-border w-72 border-r flex flex-col p-4 gap-4 shrink-0">
         <div className="flex justify-between items-center gap-2">
           <input 
             type="text" 
             value={storyName}
             onChange={(e) => setStoryName(e.target.value)}
-            className="text-xl font-bold border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none p-1 w-2/3"
+            className="app-text bg-transparent text-xl font-bold border-b border-transparent hover:border-[rgb(var(--color-border-strong))] focus:border-[rgb(var(--color-highlight))] focus:outline-none p-1 w-2/3"
           />
           
           <button
             onClick={exportStoryPDF}
-            className="bg-gray-900 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-800 shadow-sm"
+            className="btn-secondary px-4 py-2 text-sm shadow-sm"
           >
             Export
           </button>
           {/* <button
             onClick={publishStory}
-            className="bg-gray-900 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-800 shadow-sm"
+            className="btn-secondary px-4 py-2 text-sm shadow-sm"
           >
             Publish
           </button> */}
           <button 
             onClick={saveStory}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 shadow-sm"
+            className="btn-primary px-4 py-2 text-sm shadow-sm"
           >
             Save
           </button>
         </div>
 
-        <button onClick={() => navigate(-1)} className="text-sm text-gray-500 hover:text-gray-700 text-left">&larr; Back to projects</button>
-        <hr />
+        <button onClick={() => navigate(-1)} className="app-text-muted hover:text-[rgb(var(--color-text))] text-sm text-left transition-colors">&larr; Back to projects</button>
+        <hr className="app-border" />
 
 
         <div className="flex flex-col w-full justify-between items-center gap-2 overflow-y-scroll">
@@ -666,10 +693,10 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
             <div
               key={s.id}
               onClick={() => setActiveSlideIndex(i)}
-              className={`relative shrink-0 group my-2 w-[97%] h-36 border rounded cursor-pointer flex items-center justify-center font-semibold text-gray-400 ${
+              className={`relative shrink-0 group my-2 w-[97%] h-36 border rounded cursor-pointer flex items-center justify-center font-semibold app-text-muted ${
                 activeSlideIndex === i
-                  ? "ring-2 ring-blue-500 bg-blue-50/20 border-blue-300 text-blue-600"
-                  : "bg-gray-50 hover:border-gray-300"
+                  ? "ring-2 ring-[rgb(var(--color-highlight))] bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                  : "app-surface-secondary app-text-muted hover:border-[rgb(var(--color-border-strong))]"
               }`}
             >
               <span>Slide {i + 1}</span>
@@ -685,7 +712,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                 <button
                   onClick={() => duplicateSlide(i)}
                   title="Duplicate slide"
-                  className="w-7 h-7 rounded bg-white border shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400"
+                  className="app-surface app-border app-text-secondary w-7 h-7 rounded border shadow-sm hover:text-[rgb(var(--color-primary))] hover:border-[rgb(var(--color-primary))]"
                 >
                   ⧉
                 </button>
@@ -693,7 +720,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                 <button
                   onClick={() => deleteSlide(i)}
                   title="Delete slide"
-                  className="w-7 h-7 rounded bg-white border shadow-sm text-gray-600 hover:text-red-600 hover:border-red-400"
+                  className="app-surface app-border app-text-secondary w-7 h-7 rounded border shadow-sm hover:text-[rgb(var(--color-danger))] hover:border-[rgb(var(--color-danger))]"
                 >
                   🗑
                 </button>
@@ -702,12 +729,12 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
           ))}
         </div>
         
-        <button onClick={addSlide} className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors">+ Add Slide</button>
+        <button onClick={addSlide} className="w-full py-2.5 rounded-lg text-sm font-semibold bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-surface-hover))] transition-colors">+ Add Slide</button>
       </div>
 
       {/* CENTRAL MAIN CANVAS */}
       <div className="flex-1 p-8 flex flex-col items-center justify-center overflow-hidden">
-        <div className="story-slide w-full max-w-4xl bg-white shadow-xl h-[620px] rounded-2xl p-6 flex flex-col gap-4 border border-gray-100 relative">          
+        <div className="story-slide app-card w-full max-w-4xl shadow-xl h-[620px] rounded-2xl p-6 flex flex-col gap-4 relative">          
           <input
             type="text"
             placeholder="Enter slide title or description narrative..."
@@ -717,13 +744,13 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
               updatedSlides[activeSlideIndex].description = e.target.value;
               setSlides(updatedSlides);
             }}
-            className="w-full text-2xl font-bold border-b border-transparent hover:border-gray-200 focus:border-blue-500 outline-none pb-2 transition-colors"
+            className="app-text bg-transparent w-full text-2xl font-bold border-b border-transparent hover:border-[rgb(var(--color-border))] focus:border-[rgb(var(--color-highlight))] outline-none pb-2 transition-colors"
           />
 
           {/* Core Interactive Bounding Canvas Wrapper */}
           <div 
             ref={canvasRef}
-            className="flex-1 border border-gray-200 rounded-xl bg-gray-50 relative group"
+            className="app-surface-secondary app-border flex-1 border rounded-xl relative group"
             onClick={(e) => { if (e.target === e.currentTarget) setSelectedAnnoId(null); }}
           >
             {/* Chart Renderer Layer */}
@@ -741,7 +768,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
               {currentSlide.content.length === 0 && (
                 <button 
                   onClick={() => setShowPicker(true)} 
-                  className="w-full h-full border-dashed border-2 border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-100/50 rounded-lg gap-2 transition-all"
+                  className="app-text-muted w-full h-full border-dashed border-2 border-[rgb(var(--color-border-strong))] flex flex-col items-center justify-center hover:bg-[rgb(var(--color-surface-hover))] rounded-lg gap-2 transition-all"
                 >
                   <span className="text-2xl">📊</span>
                   <span className="text-xs font-semibold">Connect Component Data Map</span>
@@ -847,7 +874,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       {isSelected && anno.markerType !== "dot" && (
                         <div 
                           onMouseDown={(e) => handleDragStart(e, "resize", anno.id, anno)}
-                          className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full translate-x-1/2 translate-y-1/2 cursor-se-resize shadow-md hover:scale-125 transition-transform z-50"
+                          className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[rgb(var(--color-primary))] border-2 border-[rgb(var(--color-surface))] rounded-full translate-x-1/2 translate-y-1/2 cursor-se-resize shadow-md hover:scale-125 transition-transform z-50"
                           title="Drag to resize shape frame layout"
                         />
                       )}
@@ -886,24 +913,24 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
           </div>
 
           {/* LOWER CONTROLS */}
-          <div className="flex justify-between items-center pt-3 border-t mt-auto">
+          <div className="app-border flex justify-between items-center pt-3 border-t mt-auto">
             <div className="flex gap-2">
               <button 
                 onClick={() => { setActiveSlideIndex(Math.max(0, activeSlideIndex - 1)); setSelectedAnnoId(null); }}
                 disabled={activeSlideIndex === 0}
-                className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-semibold rounded-xl disabled:opacity-40 transition-colors"
+                className="btn-secondary px-5 py-2 text-sm rounded-xl disabled:opacity-40"
               >
                 &larr; Previous
               </button>
               <button 
                 onClick={() => { setActiveSlideIndex(Math.min(slides.length - 1, activeSlideIndex + 1)); setSelectedAnnoId(null); }}
                 disabled={activeSlideIndex === slides.length - 1}
-                className="px-5 py-2 bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold rounded-xl disabled:opacity-40 transition-colors"
+                className="btn-primary px-5 py-2 text-sm rounded-xl disabled:opacity-40"
               >
                 Next &rarr;
               </button>
             </div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="app-text-muted text-xs font-bold uppercase tracking-wider">
               Slide {activeSlideIndex + 1} / {slides.length}
             </span>
           </div>
@@ -911,40 +938,40 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       </div>
 
       {/* RIGHT SIDEBAR: Flourish-Style Option Matrix Panels */}
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+      <div className="app-surface app-border w-80 border-l flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
         
         <div className="flex flex-col gap-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Annotations Matrix</h3>
+          <h3 className="app-text-muted text-xs font-bold uppercase tracking-wider">Annotations Matrix</h3>
           <button 
             onClick={addAnnotation}
-            className="w-full py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
+            className="btn-secondary w-full py-2 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5"
           >
             <span>➕</span> Add Annotation Point
           </button>
         </div>
 
-        <hr className="border-gray-100" />
+        <hr className="app-border" />
 
         <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
-          <h4 className="text-[10px] font-bold uppercase text-gray-400 tracking-wide">Points on this slide</h4>
+          <h4 className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Points on this slide</h4>
           
           {(currentSlide.annotations || []).length === 0 ? (
-            <div className="text-center text-xs text-gray-400 italic py-6">No annotations on this slide view.</div>
+            <div className="app-text-muted text-center text-xs italic py-6">No annotations on this slide view.</div>
           ) : (
             (currentSlide.annotations || []).map((anno, listIdx) => {
               const isEditingThis = selectedAnnoId === anno.id;
               return (
                 <div 
                   key={anno.id} 
-                  className={`border rounded-xl transition-all overflow-hidden bg-white ${
-                    isEditingThis ? 'border-blue-500 shadow-md ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'
+                  className={`app-card rounded-xl transition-all overflow-hidden ${
+                    isEditingThis ? 'border-[rgb(var(--color-primary))] shadow-md ring-1 ring-[rgb(var(--color-highlight))]' : 'border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-border-strong))]'
                   }`}
                 >
                   {/* Summary Bar Card Header Trigger */}
                   <div 
                     onClick={() => setSelectedAnnoId(anno.id)}
                     className={`p-3 cursor-pointer flex items-center justify-between text-xs font-bold transition-colors ${
-                      isEditingThis ? 'bg-blue-50/50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                      isEditingThis ? 'bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))]' : 'app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]'
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
@@ -953,28 +980,28 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       </span>
                       <span className="truncate font-medium">{anno.text || "Untitled point note..."}</span>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeAnnotation(anno.id); }} className="text-gray-400 hover:text-red-500 font-bold px-1">✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); removeAnnotation(anno.id); }} className="app-text-muted hover:text-[rgb(var(--color-danger))] font-bold px-1">✕</button>
                   </div>
 
                   {/* ACTIVE PROPERTIES NESTED SUBPANEL */}
                   {isEditingThis && (
-                    <div className="p-3 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-4 text-xs max-h-[400px] overflow-y-auto">
+                    <div className="app-surface-secondary app-border p-3 border-t flex flex-col gap-4 text-xs max-h-[400px] overflow-y-auto">
                       
                       {/* Text Entry Field */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Annotation Text</label>
+                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Annotation Text</label>
                         <textarea 
                           value={anno.text}
                           onChange={(e) => updateAnnotation(anno.id, "text", e.target.value)}
                           rows={2}
-                          className="w-full border border-gray-200 bg-white rounded-lg p-2 text-xs focus:border-blue-500 outline-none resize-none leading-normal font-medium"
+                          className="app-input w-full rounded-lg p-2 text-xs resize-none leading-normal font-medium"
                         />
                       </div>
 
                       {/* Marker Types Form Matrix */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Marker Type</label>
-                        <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-md text-center font-semibold text-gray-600">
+                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Marker Type</label>
+                        <div className="app-surface-secondary app-text-secondary grid grid-cols-3 gap-1 p-1 rounded-md text-center font-semibold">
                           {[
                             { id: "none", label: "None" },
                             { id: "dot", label: "Dot •" },
@@ -984,7 +1011,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                             <button 
                               key={m.id}
                               onClick={() => updateAnnotation(anno.id, "markerType", m.id)}
-                              className={`py-1 rounded text-[10px] transition-all ${anno.markerType === m.id ? 'bg-white shadow-xs font-bold text-blue-600' : 'hover:text-gray-900'}`}
+                              className={`py-1 rounded text-[10px] transition-all ${anno.markerType === m.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
                             >
                               {m.label}
                             </button>
@@ -994,8 +1021,8 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
 
                       {/* Connector Vector Options */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Connector Type</label>
-                        <div className="grid grid-cols-4 gap-1 bg-gray-100 p-1 rounded-md text-center font-semibold text-gray-600">
+                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Connector Type</label>
+                        <div className="app-surface-secondary app-text-secondary grid grid-cols-4 gap-1 p-1 rounded-md text-center font-semibold">
                           {[
                             { id: "none", label: "None" },
                             { id: "curved", label: "Arc" },
@@ -1005,7 +1032,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                             <button 
                               key={c.id}
                               onClick={() => updateAnnotation(anno.id, "connectorType", c.id)}
-                              className={`py-1 rounded text-[9px] transition-all truncate px-0.5 ${anno.connectorType === c.id ? 'bg-white shadow-xs font-bold text-blue-600' : 'hover:text-gray-900'}`}
+                              className={`py-1 rounded text-[9px] transition-all truncate px-0.5 ${anno.connectorType === c.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
                             >
                               {c.label}
                             </button>
@@ -1016,24 +1043,24 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       {/* Accent / Marker Sizing metrics */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Fill Color</label>
+                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Fill Color</label>
                           <input 
                             type="color" 
                             value={anno.fillColor || "#3b82f6"} 
                             onChange={(e) => updateAnnotation(anno.id, "fillColor", e.target.value)}
-                            className="w-full h-8 border border-gray-200 rounded-lg p-0.5 cursor-pointer bg-white"
+                            className="app-surface app-border w-full h-8 border rounded-lg p-0.5 cursor-pointer"
                           />
                         </div>
 
                         
                         {anno.markerType === "dot" && (
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Radius Size</label>
+                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Radius Size</label>
                           <input 
                             type="number" step="1" min="3" max="20"
                             value={anno.radius || 6} 
                             onChange={(e) => updateAnnotation(anno.id, "radius", parseFloat(e.target.value) || 6)}
-                            className="w-full h-8 border border-gray-200 rounded-lg px-2 text-center bg-white outline-none focus:border-blue-500"
+                            className="app-input w-full h-8 rounded-lg px-2 text-center"
                           />
                         </div>
                         )}
@@ -1043,33 +1070,33 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       {/* Marker Center Text Label Input */}
                       {anno.markerType !== "none" && (
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Marker Center Label</label>
+                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Marker Center Label</label>
                           <input 
                             type="text" maxLength={2} placeholder="e.g. 1"
                             value={anno.markerLabel || ""} 
                             onChange={(e) => updateAnnotation(anno.id, "markerLabel", e.target.value)}
-                            className="w-full h-8 border border-gray-200 rounded-lg px-2 bg-white outline-none focus:border-blue-500"
+                            className="app-input w-full h-8 rounded-lg px-2"
                           />
                         </div>
                       )}
 
                       {/* Text styling & layout parameters wrapper */}
-                      <div className="border-t border-gray-200/60 pt-3 flex flex-col gap-3">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Text and Connector Styles</span>
+                      <div className="app-border border-t pt-3 flex flex-col gap-3">
+                        <span className="app-text-muted text-[10px] font-bold uppercase tracking-wider block mb-1">Text and Connector Styles</span>
                         
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Weight</label>
-                            <div className="flex bg-gray-100 p-0.5 rounded-md mt-1">
+                            <label className="app-text-secondary text-[10px] font-semibold">Weight</label>
+                            <div className="app-surface-secondary flex p-0.5 rounded-md mt-1">
                               <button 
                                 onClick={() => updateAnnotation(anno.id, "fontWeight", "normal")}
-                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight !== "bold" ? "bg-white shadow-xs text-blue-600 font-bold" : "text-gray-500"}`}
+                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight !== "bold" ? "app-surface shadow-xs text-[rgb(var(--color-primary))] font-bold" : "app-text-secondary"}`}
                               >
                                 Normal
                               </button>
                               <button 
                                 onClick={() => updateAnnotation(anno.id, "fontWeight", "bold")}
-                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight === "bold" ? "bg-white shadow-xs text-blue-600 font-bold" : "text-gray-500"}`}
+                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight === "bold" ? "app-surface shadow-xs text-[rgb(var(--color-primary))] font-bold" : "app-text-secondary"}`}
                               >
                                 Bold
                               </button>
@@ -1077,43 +1104,43 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                           </div>
 
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Text Size (rem)</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Text Size (rem)</label>
                             <input 
                               type="number" step="0.05" min="0.5" max="2"
                               value={anno.textSize || 0.85}
                               onChange={(e) => updateAnnotation(anno.id, "textSize", parseFloat(e.target.value) || 0.85)}
-                              className="w-full h-7 border border-gray-200 rounded-md mt-1 text-center bg-white outline-none"
+                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
                             />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Text Color</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Text Color</label>
                             <input 
                               type="color" value={anno.textColor || "#1e293b"}
                               onChange={(e) => updateAnnotation(anno.id, "textColor", e.target.value)}
-                              className="w-full h-7 border border-gray-200 rounded-md p-0.5 mt-1 cursor-pointer bg-white"
+                              className="app-surface app-border w-full h-7 border rounded-md p-0.5 mt-1 cursor-pointer"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Max Width (rem)</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Max Width (rem)</label>
                             <input 
                               type="number" min="5" max="30"
                               value={anno.labelWidth || 12}
                               onChange={(e) => updateAnnotation(anno.id, "labelWidth", parseInt(e.target.value) || 12)}
-                              className="w-full h-7 border border-gray-200 rounded-md mt-1 text-center bg-white outline-none"
+                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
                             />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Background</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Background</label>
                             <select 
                               value={anno.textBg || "white"} 
                               onChange={(e) => updateAnnotation(anno.id, "textBg", e.target.value)}
-                              className="w-full h-7 bg-white border border-gray-200 rounded-md mt-1 text-[11px] px-1 outline-none focus:border-blue-500"
+                              className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
                             >
                               <option value="transparent">Transparent</option>
                               <option value="#ffffff">Solid White</option>
@@ -1122,11 +1149,11 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                             </select>
                           </div>
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Alignment</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Alignment</label>
                             <select 
                               value={anno.textAlign || "left"} 
                               onChange={(e) => updateAnnotation(anno.id, "textAlign", e.target.value)}
-                              className="w-full h-7 bg-white border border-gray-200 rounded-md mt-1 text-[11px] px-1 outline-none focus:border-blue-500"
+                              className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
                             >
                               <option value="left">Left</option>
                               <option value="center">Center</option>
@@ -1137,25 +1164,25 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       </div>
 
                       {/* Direct Line / Arrow style toggles */}
-                      <div className="border-t border-gray-200/60 pt-3 flex flex-col gap-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Line Interface Properties</span>
+                      <div className="app-border border-t pt-3 flex flex-col gap-2">
+                        <span className="app-text-muted text-[10px] font-bold uppercase tracking-wider block mb-1">Line Interface Properties</span>
                         
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Line Color</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Line Color</label>
                             <input 
                               type="color" value={anno.lineColor || "#64748b"}
                               onChange={(e) => updateAnnotation(anno.id, "lineColor", e.target.value)}
-                              className="w-full h-7 border border-gray-200 rounded-md p-0.5 mt-1 cursor-pointer bg-white"
+                              className="app-surface app-border w-full h-7 border rounded-md p-0.5 mt-1 cursor-pointer"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] font-semibold text-gray-500">Thickness (px)</label>
+                            <label className="app-text-secondary text-[10px] font-semibold">Thickness (px)</label>
                             <input 
                               type="number" step="0.5" min="0.5" max="8"
                               value={anno.lineWidth || 1.5}
                               onChange={(e) => updateAnnotation(anno.id, "lineWidth", parseFloat(e.target.value) || 1.5)}
-                              className="w-full h-7 border border-gray-200 rounded-md mt-1 text-center bg-white outline-none"
+                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
                             />
                           </div>
                         </div>
@@ -1229,21 +1256,21 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       {/* SELECTION MODAL */}
       {showPicker && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-xl h-[480px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border">
-            <div className="flex justify-between items-center px-5 py-4 border-b">
-              <h2 className="text-base font-bold text-gray-800">Select Project Element Block</h2>
-              <button onClick={() => setShowPicker(false)} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+          <div className="app-card w-full max-w-xl h-[480px] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="app-border flex justify-between items-center px-5 py-4 border-b">
+              <h2 className="app-text text-base font-bold">Select Project Element Block</h2>
+              <button onClick={() => setShowPicker(false)} className="app-text-muted hover:text-[rgb(var(--color-text))] font-bold">✕</button>
             </div>
-            <div className="p-3 bg-gray-50 border-b">
+            <div className="app-surface-secondary app-border p-3 border-b">
               <input 
                 type="text" 
                 placeholder="Search matching visualization layouts..." 
                 value={search} 
                 onChange={(e) => setSearch(e.target.value)} 
-                className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs outline-none focus:border-blue-500" 
+                className="app-input w-full rounded-xl p-2.5 text-xs" 
               />
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+            <div className="app-surface-secondary flex-1 overflow-y-auto p-4">
               <div className="grid grid-cols-3 gap-4">
                 {availableProjects
                   .filter(p => p.name?.toLowerCase().includes(search.toLowerCase()))
@@ -1251,18 +1278,18 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                     <div 
                       key={project.id} 
                       onClick={() => handleProjectClick(project.id)} 
-                      className="bg-white border border-gray-200 hover:border-blue-500 rounded-xl p-3 cursor-pointer shadow-2xs transition-all items-center gap-3 group"
+                      className="app-card hover:border-[rgb(var(--color-primary))] rounded-xl p-3 cursor-pointer shadow-2xs transition-all items-center gap-3 group"
                     >
-                     <div className="flex-1 bg-slate-50 border-b flex items-center justify-center"> 
+                     <div className="app-surface-secondary app-border flex-1 border-b flex items-center justify-center"> 
                       {project.image_url ? 
                       ( <img src={project.image_url} 
                       alt={project.name} 
                       className="w-full h-24 " /> ) 
                       : ( 
-                      <div className="text-slate-300 w-full h-24 flex items-center justify-center"> 📊 
+                      <div className="app-text-muted w-full h-24 flex items-center justify-center"> 📊 
                       </div> 
                     )} </div>                   
-                      <div className="font-semibold text-xs  text-gray-700 truncate">
+                      <div className="app-text-secondary font-semibold text-xs truncate">
                         {project.name}
                         </div>
                     </div>

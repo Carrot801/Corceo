@@ -164,77 +164,225 @@ const deleteProject = async (req, res) => {
     client.release();
   }
 };
+
+const getCopyableColumns = async (client, tableName, excludedColumns = []) => {
+  const result = await client.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = $1
+      AND is_identity = 'NO'
+      AND is_generated = 'NEVER'
+    ORDER BY ordinal_position
+    `,
+    [tableName]
+  );
+
+  return result.rows
+    .map((row) => row.column_name)
+    .filter((column) => !excludedColumns.includes(column));
+};
+
+const copyDatabaseRow = async (
+  client,
+  tableName,
+  originalRow,
+  overrides = {},
+  excludedColumns = ["id"]
+) => {
+  const availableColumns = await getCopyableColumns(
+    client,
+    tableName,
+    excludedColumns
+  );
+
+  const finalRow = {
+    ...originalRow,
+    ...overrides,
+  };
+
+  const columns = availableColumns.filter(
+    (column) => finalRow[column] !== undefined
+  );
+
+  if (columns.length === 0) {
+    throw new Error(`No copyable columns found for ${tableName}`);
+  }
+
+  const quotedColumns = columns.map((column) => `"${column}"`).join(", ");
+  const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");
+  const values = columns.map((column) => finalRow[column]);
+
+  const result = await client.query(
+    `
+    INSERT INTO "${tableName}" (${quotedColumns})
+    VALUES (${placeholders})
+    RETURNING *
+    `,
+    values
+  );
+
+  return result.rows[0];
+};
+
 const duplicateProject = async (req, res) => {
   const client = await pool.connect();
 
   try {
     const { project_id } = req.params;
+    const userId = req.user.userId;
+
+    if (!project_id || Number.isNaN(Number(project_id))) {
+      return res.status(400).json({
+        error: "Invalid project ID",
+      });
+    }
 
     await client.query("BEGIN");
 
-    // Create new project
-    const projectResult = await client.query(
+    // 1. Load original project
+    const originalProjectResult = await client.query(
       `
-      INSERT INTO projects (name, folder_id, image_url)
-      SELECT name || ' Copy', folder_id, image_url
+      SELECT *
       FROM projects
       WHERE id = $1
-      RETURNING *
+        AND user_id = $2
       `,
-      [project_id]
+      [project_id, userId]
     );
 
-    if (projectResult.rows.length === 0) {
+    if (originalProjectResult.rows.length === 0) {
       await client.query("ROLLBACK");
+
       return res.status(404).json({
         error: "Project not found",
       });
     }
 
-    const newProject = projectResult.rows[0];
-    const newProjectId = newProject.id;
+    const originalProject = originalProjectResult.rows[0];
 
-    // Copy charts belonging to original project
-    await client.query(
-      `
-      INSERT INTO charts
-      (
-        project_id,
-        dataset_id,
-        chart_type,
-        x_axis,
-        y_axis,
-        settings
-      )
-      SELECT
-        $1,
-        dataset_id,
-        chart_type,
-        x_axis,
-        y_axis,
-        settings
-      FROM charts
-      WHERE project_id = $2
-      `,
-      [newProjectId, project_id]
+    // 2. Copy project
+    const newProject = await copyDatabaseRow(
+      client,
+      "projects",
+      originalProject,
+      {
+        name: `${originalProject.name} Copy`,
+        user_id: userId,
+      },
+      ["id"]
     );
+
+    // old dataset ID -> new dataset ID
+    const datasetIdMap = new Map();
+
+    // 3. Load and copy datasets
+    const originalDatasetsResult = await client.query(
+      `
+      SELECT *
+      FROM datasets
+      WHERE project_id = $1
+        AND user_id = $2
+      ORDER BY id
+      `,
+      [project_id, userId]
+    );
+
+    for (const originalDataset of originalDatasetsResult.rows) {
+      const newDataset = await copyDatabaseRow(
+        client,
+        "datasets",
+        originalDataset,
+        {
+          project_id: newProject.id,
+          user_id: userId,
+        },
+        ["id"]
+      );
+
+      datasetIdMap.set(originalDataset.id, newDataset.id);
+
+      // 4. Copy dataset rows
+      const originalRowsResult = await client.query(
+        `
+        SELECT *
+        FROM rows
+        WHERE dataset_id = $1
+          AND user_id = $2
+        ORDER BY id
+        `,
+        [originalDataset.id, userId]
+      );
+
+      for (const originalRow of originalRowsResult.rows) {
+        await copyDatabaseRow(
+          client,
+          "rows",
+          originalRow,
+          {
+            dataset_id: newDataset.id,
+            user_id: userId,
+          },
+          ["id"]
+        );
+      }
+    }
+
+    // 5. Load and copy charts
+    const originalChartsResult = await client.query(
+      `
+      SELECT *
+      FROM charts
+      WHERE project_id = $1
+        AND user_id = $2
+      ORDER BY id
+      `,
+      [project_id, userId]
+    );
+
+    for (const originalChart of originalChartsResult.rows) {
+      let newDatasetId = null;
+
+      if (originalChart.dataset_id !== null) {
+        newDatasetId = datasetIdMap.get(originalChart.dataset_id);
+
+        if (!newDatasetId) {
+          throw new Error(
+            `Could not find copied dataset for chart ${originalChart.id}`
+          );
+        }
+      }
+
+      await copyDatabaseRow(
+        client,
+        "charts",
+        originalChart,
+        {
+          project_id: newProject.id,
+          dataset_id: newDatasetId,
+          user_id: userId,
+        },
+        ["id"]
+      );
+    }
 
     await client.query("COMMIT");
 
     res.status(201).json(newProject);
-
-  } catch (err) {
+  } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error(err);
+    console.error("Duplicate project error:", error);
 
     res.status(500).json({
-      error: "Failed to duplicate project",
+      error: error.message || "Failed to duplicate project",
     });
   } finally {
     client.release();
   }
 };
+
 const getProjectChart = async (req, res) => {
   try {
     const { project_id } = req.params;

@@ -119,17 +119,17 @@ const toggleField = (field) => {
   ];
 
   return (
-    <div className="w-72 border-l bg-white overflow-y-auto">
+    <div className="app-surface app-border app-text w-72 border-l overflow-y-auto">
 
 
         {/* HEADER SECTION */}
-        <div className="border-b">
+        <div className="app-border border-b">
             
 
         {/* SECTION BUTTON */}
         <button
             onClick={() => toggleSection("header")}
-            className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
         >
             Header
             <span
@@ -147,7 +147,7 @@ const toggleField = (field) => {
 
                 {/* ALIGNMENT */}
                 <div>
-                    <label className="text-xs font-bold text-gray-700">
+                    <label className="app-text-secondary text-xs font-bold">
                     Alignment
                     </label>
 
@@ -160,8 +160,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition 
                             ${
                                 settings.headerAlign === "left"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -175,8 +175,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition
                             ${
                                 settings.headerAlign === "center"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -190,8 +190,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition
                             ${
                                 settings.headerAlign === "right"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -203,7 +203,7 @@ const toggleField = (field) => {
 
                 {/* TITLE */}
                 <div>
-                    <label className="text-xs font-bold text-gray-700">
+                    <label className="app-text-secondary text-xs font-bold">
                     Title
                     </label>
 
@@ -212,13 +212,13 @@ const toggleField = (field) => {
                     onChange={(e) =>
                         updateSetting("title", e.target.value)
                     }
-                    className="w-full mt-1 border p-2 text-sm"
+                    className="app-input w-full mt-1 p-2 text-sm rounded-md"
                     />
                 </div>
 
                 {/* SUBTITLE */}
                 <div>
-                    <label className="text-xs font-bold text-gray-700">
+                    <label className="app-text-secondary text-xs font-bold">
                     Subtitle
                     </label>
 
@@ -227,13 +227,13 @@ const toggleField = (field) => {
                     onChange={(e) =>
                         updateSetting("subtitle", e.target.value)
                     }
-                    className="w-full mt-1 border p-2 text-sm"
+                    className="app-input w-full mt-1 p-2 text-sm rounded-md"
                     />
                 </div>
 
                 {/* DESCRIPTION */}
                 <div>
-                    <label className="text-xs font-bold text-gray-700">
+                    <label className="app-text-secondary text-xs font-bold">
                     Description
                     </label>
 
@@ -242,7 +242,7 @@ const toggleField = (field) => {
                     onChange={(e) =>
                         updateSetting("description", e.target.value)
                     }
-                    className="w-full mt-1 border p-2 text-sm min-h-[90px]"
+                    className="app-input w-full mt-1 p-2 text-sm min-h-[90px] rounded-md"
                     />
                 </div>
 
@@ -251,10 +251,10 @@ const toggleField = (field) => {
         </div>
 
         {/* COLORS SECTION */}
-        <div className="border-b border-t border-gray-400">
+        <div className="app-border border-b border-t">
             <button
             onClick={() => toggleSection("colors")}
-            className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
             >
             Colors
             <span
@@ -275,7 +275,7 @@ const toggleField = (field) => {
                 />
 
                 {/* EXTEND PALETTE CHECKBOX */}
-                <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold cursor-pointer select-none">
                 <input
                     type="checkbox"
                     checked={settings.extendPalette || false}
@@ -291,7 +291,7 @@ const toggleField = (field) => {
                 {/* BUTTONS */}
                 {settings.extendPalette && (
                 <div className="space-y-1.5 transition-all duration-200">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                     Extension Method
                     </label>
                     
@@ -305,8 +305,8 @@ const toggleField = (field) => {
                             className={`
                             py-1.5 text-xs font-mediumrounded-md transition-all duration-150
                             ${isActive 
-                                ? "bg-blue-200 text-blue-500 shadow-sm border border-blue-400 font-bold" 
-                                : "text-gray-500 bg-white hover:text-gray-700 border-gray-300 "
+                                ? "bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))] font-bold" 
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))] "
                             }
                             `}
                         >
@@ -323,10 +323,10 @@ const toggleField = (field) => {
         </div>
 
         {/* CHART TYPE */}
-        <div className="border-b border-gray-400">
+        <div className="app-border border-b">
             <button
             onClick={() => toggleSection("chart")}
-            className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
             >
             Chart Type
             <span
@@ -346,33 +346,33 @@ const toggleField = (field) => {
                 chartConfig={chartConfig}
                 setChartConfig={setChartConfig}
                 />
-                <div className="flex items-center gap-2 py-1 border-b pb-3 border-gray-200">
+                <div className="app-border flex items-center gap-2 py-1 border-b pb-3">
                     <input
                         type="checkbox"
                         id="hideZeros"
                         checked={settings.hideZeros || false}
                         onChange={(e) => updateSetting("hideZeros", e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer accent-[rgb(var(--color-primary))]"
                     />
-                    <label htmlFor="hideZeros" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
+                    <label htmlFor="hideZeros" className="app-text-secondary text-xs font-bold cursor-pointer select-none">
                         Hide rows with 0 value
                     </label>
                     </div>
 
                 {/* Aggregation Pills */}
                 <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                     Aggregation
                 </label>
-                <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200/60">
+                <div className="app-surface-secondary app-border grid grid-cols-3 gap-1 p-1 rounded-xl border">
                     {["none", "sum", "avg", "min", "max", "count"].map((val) => (
                     <button
                         key={val}
                         onClick={() => setChartConfig(prev => ({ ...prev, aggregation: val }))}
                         className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
                         chartConfig.aggregation === val
-                            ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
                         }`}
                     >
                         {val}
@@ -384,18 +384,18 @@ const toggleField = (field) => {
 
                 {/* Sort Pills */}
                 <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                     Sort
                 </label>
-                <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200/60">
+                <div className="app-surface-secondary app-border grid grid-cols-3 gap-1 p-1 rounded-xl border">
                     {["none", "asc", "desc"].map((val) => (
                     <button
                         key={val}
                         onClick={() => setChartConfig(prev => ({ ...prev, sort: val }))}
                         className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
                         chartConfig.sort === val
-                            ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
                         }`}
                     >
                         {val === "none" ? "None" : val === "asc" ? "Asc" : "Desc"}
@@ -407,10 +407,10 @@ const toggleField = (field) => {
             )}
         </div>
         {/* TOOLTIP FIELDS SECTION */}
-<div className="border-t border-gray-400">
+<div className="app-border border-t">
   <button
     onClick={() => toggleSection("tooltip")}
-    className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+    className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
   >
     Tooltip Content
     <span className={`transition-transform ${openSection === "tooltip" ? "rotate-180" : ""}`}>^</span>
@@ -418,9 +418,9 @@ const toggleField = (field) => {
 
   {openSection === "tooltip" && (
     <div className="p-4 space-y-2">
-      <p className="text-[10px] text-gray-500 uppercase font-bold">Show in Hover:</p>
+      <p className="app-text-muted text-[10px] uppercase font-bold">Show in Hover:</p>
       {["name", "value", "percentage"].map((field) => (
-        <label key={field} className="flex items-center gap-2 text-xs text-gray-700 capitalize">
+        <label key={field} className="app-text-secondary flex items-center gap-2 text-xs capitalize">
           <input
             type="checkbox"
             checked={settings.tooltipFields?.includes(field) ?? true}
@@ -440,10 +440,10 @@ const toggleField = (field) => {
   )}
 </div>
 {/* LABEL SETTINGS SECTION */}
-<div className="border-t border-gray-400">
+<div className="app-border border-t">
   <button
     onClick={() => toggleSection("labels")}
-    className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+    className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
   >
     Label Settings
     <span className={`transition-transform ${openSection === "labels" ? "rotate-180" : ""}`}>^</span>
@@ -452,7 +452,7 @@ const toggleField = (field) => {
   {openSection === "labels" && (
     <div className="p-4 space-y-4">
       {/* Show Labels Toggle */}
-      <label className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+      <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold">
         <input
           type="checkbox"
           checked={settings.showLabels ?? true}
@@ -463,9 +463,9 @@ const toggleField = (field) => {
 
       {/* Label Content Selector */}
       <div>
-        <label className="text-[11px] font-bold uppercase text-gray-500">Label Content</label>
+        <label className="app-text-muted text-[11px] font-bold uppercase">Label Content</label>
         <select 
-          className="w-full mt-1 border rounded p-2 text-sm"
+          className="app-input w-full mt-1 rounded p-2 text-sm"
           value={settings.labelType || "percentage"}
           onChange={(e) => updateSetting("labelType", e.target.value)}
         >
@@ -476,7 +476,7 @@ const toggleField = (field) => {
 
       {/* Label Position Selector */}
       <div>
-        <label className="text-[11px] font-bold uppercase text-gray-500">Position</label>
+        <label className="app-text-muted text-[11px] font-bold uppercase">Position</label>
         <div className="flex gap-2 mt-1">
           {["inside", "outside"].map((pos) => (
             <button
@@ -484,8 +484,8 @@ const toggleField = (field) => {
               onClick={() => updateSetting("labelPosition", pos)}
               className={`flex-1 py-1.5 text-xs font-bold rounded ${
                 settings.labelPosition === pos 
-                ? "bg-blue-600 text-white" 
-                : "bg-gray-200 text-gray-700"
+                ? "bg-[rgb(var(--color-primary))] text-white" 
+                : "app-surface-secondary app-text-secondary"
               }`}
             >
               {pos.charAt(0).toUpperCase() + pos.slice(1)}
@@ -495,25 +495,25 @@ const toggleField = (field) => {
       </div>
       {/* Font Size Slider */}
 <div className="mt-4">
-  <label className="text-[11px] font-bold uppercase text-gray-500">Label Size</label>
+  <label className="app-text-muted text-[11px] font-bold uppercase">Label Size</label>
   <input
     type="range"
     min="8"
     max="20"
-    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+    className="w-full h-2 bg-[rgb(var(--color-surface-hover))] rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-primary))]"
     value={settings.labelSize || 12}
     onChange={(e) => updateSetting("labelSize", parseInt(e.target.value))}
   />
-  <span className="text-xs text-gray-600">{settings.labelSize || 12}px</span>
+  <span className="app-text-muted text-xs">{settings.labelSize || 12}px</span>
 </div>
     </div>
   )}
 </div>
         {/* LEGEND SECTION */}
-        <div className="border-t border-gray-400">
+        <div className="app-border border-t">
         <button
             onClick={() => toggleSection("legend")}
-            className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
         >
             Legend
             <span
@@ -528,7 +528,7 @@ const toggleField = (field) => {
         {openSection === "legend" && (
             <div className="px-4 pb-4 pt-3 space-y-4">
 
-            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+            <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold">
   <input
     type="checkbox"
     checked={settings.showLegend}
@@ -543,10 +543,10 @@ const toggleField = (field) => {
   <div
     onDragOver={(e) => e.preventDefault()}
     onDrop={handleDropLegend}
-    className="min-h-[60px] border-2 border-dashed border-gray-300 rounded-lg p-3 bg-gray-50"
+    className="app-surface-secondary app-border min-h-[60px] border-2 border-dashed rounded-lg p-3"
   >
     {(settings.legendFields || []).length === 0 ? (
-      <p className="text-xs text-gray-400">
+      <p className="app-text-muted text-xs">
         Drag fields here for legend
       </p>
     ) : (
@@ -554,13 +554,13 @@ const toggleField = (field) => {
         {settings.legendFields.map((field) => (
           <div
             key={field}
-            className="flex items-center justify-between bg-white border rounded px-2 py-1 text-xs"
+            className="app-surface app-border app-text-secondary flex items-center justify-between border rounded px-2 py-1 text-xs"
           >
             <span>{field}</span>
 
             <button
               onClick={() => removeMainLegendField(field)}
-              className="text-red-400 hover:text-red-600"
+              className="text-[rgb(var(--color-danger))] hover:opacity-80"
             >
               ×
             </button>
@@ -574,7 +574,7 @@ const toggleField = (field) => {
             
 
             <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">
+                <label className="app-text-secondary text-xs font-bold">
                     Alignment
                     </label>
 
@@ -587,8 +587,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition 
                             ${
                                 settings.legendAlign === "start"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -602,8 +602,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition
                             ${
                                 settings.legendAlign === "center"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -617,8 +617,8 @@ const toggleField = (field) => {
                             border rounded-md p-2 transition
                             ${
                                 settings.legendAlign === "end"
-                                ? "bg-blue-100 border-blue-400 text-blue-600"
-                                : "bg-white border-gray-300 text-gray-500"
+                                ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
                             }
                             `}
                         >
@@ -628,13 +628,13 @@ const toggleField = (field) => {
                     </div>
             </div>
             <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+            <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Legend Fields
             </label>
 
             {yKeys.length > 1 && (
             <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Y Axis Legend
                 </label>
 
@@ -644,10 +644,10 @@ const toggleField = (field) => {
                 return (
                 <div
                     key={field}
-                    className="flex items-center justify-between gap-2 border rounded-md px-2 py-1.5 bg-white text-xs"
+                    className="app-surface app-border app-text-secondary flex items-center justify-between gap-2 border rounded-md px-2 py-1.5 text-xs"
                 >
                     <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-gray-400 cursor-grab">☰</span>
+                    <span className="app-text-muted cursor-grab">☰</span>
 
                     <span className="w-4 text-center">
                         {shape === "circle" && "●"}
@@ -657,7 +657,7 @@ const toggleField = (field) => {
                         {shape === "star" && "★"}
                     </span>
 
-                    <span className="truncate font-medium text-gray-700">
+                    <span className="app-text-secondary truncate font-medium">
                         {field}
                     </span>
                     </div>
@@ -665,21 +665,21 @@ const toggleField = (field) => {
                     <div className="flex items-center gap-1">
                     <button
                         onClick={() => moveLegendField(index, -1)}
-                        className="px-1 text-gray-400 hover:text-gray-700"
+                        className="app-text-muted px-1 hover:text-[rgb(var(--color-text))]"
                     >
                         ↑
                     </button>
 
                     <button
                         onClick={() => moveLegendField(index, 1)}
-                        className="px-1 text-gray-400 hover:text-gray-700"
+                        className="app-text-muted px-1 hover:text-[rgb(var(--color-text))]"
                     >
                         ↓
                     </button>
 
                     <button
                         onClick={() => removeLegendField(field)}
-                        className="px-1 text-red-400 hover:text-red-600"
+                        className="px-1 text-[rgb(var(--color-danger))] hover:opacity-80"
                     >
                         ×
                     </button>
@@ -692,7 +692,7 @@ const toggleField = (field) => {
             </div>
             {/* LEGEND TITLE */}
             <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Legend Title
                 </label>
 
@@ -701,18 +701,18 @@ const toggleField = (field) => {
                 onChange={(e) =>
                     updateSetting("legendTitle", e.target.value)
                 }
-                className="w-full mt-1 border p-2 text-sm rounded-md"
+                className="app-input w-full mt-1 p-2 text-sm rounded-md"
                 placeholder="Legend"
                 />
             </div>
 
             {/* POSITION */}
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Position
                 </label>
 
-                <div className="grid grid-cols-4 gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200/60">
+                <div className="app-surface-secondary app-border grid grid-cols-4 gap-1 p-1 rounded-xl border">
                 {["top", "right", "bottom", "left"].map((val) => (
                     <button
                     key={val}
@@ -721,8 +721,8 @@ const toggleField = (field) => {
                     }
                     className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
                         settings.legendPosition === val
-                        ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                        : "app-text-muted hover:text-[rgb(var(--color-text))]"
                     }`}
                     >
                     {val}
@@ -733,11 +733,11 @@ const toggleField = (field) => {
 
             {/* DIRECTION */}
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Direction
                 </label>
 
-                <div className="grid grid-cols-2 gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200/60">
+                <div className="app-surface-secondary app-border grid grid-cols-2 gap-1 p-1 rounded-xl border">
                 {["row", "column"].map((val) => (
                     <button
                     key={val}
@@ -746,8 +746,8 @@ const toggleField = (field) => {
                     }
                     className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
                         settings.legendDirection === val
-                        ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                        : "app-text-muted hover:text-[rgb(var(--color-text))]"
                     }`}
                     >
                     {val}
@@ -760,11 +760,11 @@ const toggleField = (field) => {
 
             {/* SIZE */}
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Size
                 </label>
 
-                <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl border border-gray-200/60">
+                <div className="app-surface-secondary app-border grid grid-cols-3 gap-1 p-1 rounded-xl border">
                 {["small", "medium", "large"].map((val) => (
                     <button
                     key={val}
@@ -773,8 +773,8 @@ const toggleField = (field) => {
                     }
                     className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
                         settings.legendSize === val
-                        ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                        : "app-text-muted hover:text-[rgb(var(--color-text))]"
                     }`}
                     >
                     {val}
@@ -785,7 +785,7 @@ const toggleField = (field) => {
 
             {/* GAP */}
             <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Gap ({settings.legendGap}px)
                 </label>
 
@@ -797,7 +797,7 @@ const toggleField = (field) => {
                 onChange={(e) =>
                     updateSetting("legendGap", Number(e.target.value))
                 }
-                className="w-full mt-2"
+                className="w-full mt-2 accent-[rgb(var(--color-primary))]"
                 />
             </div>
             </div>
@@ -805,10 +805,10 @@ const toggleField = (field) => {
         </div>
         
         {/* LAYOUT */}
-        <div className="border-t border-gray-400">
+        <div className="app-border border-t">
         <button
             onClick={() => toggleSection("valueFormatting")}
-            className="w-full p-4 flex justify-between items-center text-xs font-bold text-gray-800 bg-gray-100"
+            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
         >
             Value Formatting
 
@@ -827,11 +827,11 @@ const toggleField = (field) => {
            <div className="p-4 space-y-4">
   {/* Format Selector */}
   <div>
-    <label className="block text-xs font-medium mb-1">Number Format</label>
+    <label className="app-text-secondary block text-xs font-medium mb-1">Number Format</label>
     <select
       value={settings.numberFormat}
       onChange={(e) => updateSetting("numberFormat", e.target.value)}
-      className="w-full border rounded px-2 py-1"
+      className="app-input w-full rounded px-2 py-1"
     >
       <option value="default">Default</option>
       <option value="percentage">Percentage</option>
@@ -840,7 +840,7 @@ const toggleField = (field) => {
   </div>
 
   {/* Compact Toggle */}
-  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+  <label className="app-text-secondary flex items-center gap-2 text-xs font-medium cursor-pointer">
     <input
       type="checkbox"
       checked={settings.compactNumbers || false}
@@ -851,14 +851,14 @@ const toggleField = (field) => {
 
   {/* Decimal Places */}
   <div>
-    <label className="block text-xs font-medium mb-1">Decimal Places</label>
+    <label className="app-text-secondary block text-xs font-medium mb-1">Decimal Places</label>
     <input
       type="number"
       min="0"
       max="6"
       value={settings.decimalPlaces ?? 2}
       onChange={(e) => updateSetting("decimalPlaces", Number(e.target.value))}
-      className="w-full border rounded px-2 py-1"
+      className="app-input w-full rounded px-2 py-1"
     />
   </div>
 </div>

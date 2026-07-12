@@ -364,25 +364,81 @@ const publishStory = async (req, res) => {
 const duplicateStory = async (req, res) => {
   const userId = req.user.userId;
   const storyId = req.params.id;
+  const client = await pool.connect();
 
   try {
-    const result = await pool.query(
-      `INSERT INTO stories (name, folder_id, user_id, image_url)
-       SELECT name || ' Copy', folder_id, user_id, image_url
-       FROM stories
-       WHERE id = $1 AND user_id = $2
-       RETURNING *`,
+    await client.query("BEGIN");
+
+    const storyRes = await client.query(
+      `
+      INSERT INTO stories (name, folder_id, user_id, image_url)
+      SELECT name || ' Copy', folder_id, user_id, image_url
+      FROM stories
+      WHERE id = $1 AND user_id = $2
+      RETURNING *
+      `,
       [storyId, userId]
     );
 
-    if (result.rows.length === 0) {
+    if (storyRes.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Story not found" });
     }
 
-    res.json(result.rows[0]);
+    const newStory = storyRes.rows[0];
+
+    const slidesRes = await client.query(
+      `
+      SELECT *
+      FROM slides
+      WHERE story_id = $1 AND user_id = $2
+      ORDER BY position
+      `,
+      [storyId, userId]
+    );
+
+    for (const slide of slidesRes.rows) {
+      const newSlideRes = await client.query(
+        `
+        INSERT INTO slides (story_id, position, description, user_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+        `,
+        [newStory.id, slide.position, slide.description, userId]
+      );
+
+      const newSlideId = newSlideRes.rows[0].id;
+
+      await client.query(
+        `
+        INSERT INTO slide_content (slide_id, chart_id, position, user_id)
+        SELECT $1, chart_id, position, user_id
+        FROM slide_content
+        WHERE slide_id = $2 AND user_id = $3
+        `,
+        [newSlideId, slide.id, userId]
+      );
+
+      await client.query(
+        `
+        INSERT INTO slide_annotations (slide_id, annotation, user_id)
+        SELECT $1, annotation, user_id
+        FROM slide_annotations
+        WHERE slide_id = $2 AND user_id = $3
+        `,
+        [newSlideId, slide.id, userId]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json(newStory);
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("Duplicate story error:", err);
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 };
 

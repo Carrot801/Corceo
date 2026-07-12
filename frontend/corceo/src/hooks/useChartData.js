@@ -85,23 +85,80 @@ function aggregateData(rawData, x, yFields, mode) {
     return result;
   });
 }
-function sortData(chartRows, chartConfig, yFields) {
-  const yKeys = Array.isArray(yFields) ? yFields : yFields ? [yFields] : [];
-  const firstKey = yKeys[0];
+function sortData(chartRows, sorting, yFields) {
+  if (!sorting || sorting.direction === "none") {
+    return chartRows;
+  }
 
-  if (chartConfig.sort === "none") return chartRows;
+  const yKeys = Array.isArray(yFields)
+    ? yFields
+    : yFields
+      ? [yFields]
+      : [];
 
-  const sortKey = chartConfig.sortBy || firstKey;
-  if (!sortKey) return chartRows;
+  const field = sorting.field || yKeys[0];
+
+  if (!field) return chartRows;
 
   return [...chartRows].sort((a, b) => {
-    const av = Number(a[sortKey]) || 0;
-    const bv = Number(b[sortKey]) || 0;
+    const aValue = field === "x" ? a.x : a[field];
+    const bValue = field === "x" ? b.x : b[field];
 
-    return chartConfig.sort === "desc" ? bv - av : av - bv;
+    const aNumber = Number(aValue);
+    const bNumber = Number(bValue);
+
+    let comparison;
+
+    if (
+      !Number.isNaN(aNumber) &&
+      !Number.isNaN(bNumber)
+    ) {
+      comparison = aNumber - bNumber;
+    } else {
+      comparison = String(aValue ?? "").localeCompare(
+        String(bValue ?? ""),
+        undefined,
+        {
+          numeric: true,
+          sensitivity: "base",
+        }
+      );
+    }
+
+    return sorting.direction === "desc"
+      ? -comparison
+      : comparison;
   });
 }
+function applyRanking(chartRows, ranking, yFields) {
+  if (!ranking?.enabled) {
+    return chartRows;
+  }
 
+  const yKeys = Array.isArray(yFields)
+    ? yFields
+    : yFields
+      ? [yFields]
+      : [];
+
+  const field = ranking.field || yKeys[0];
+  const count = Math.max(1, Number(ranking.count) || 10);
+
+  if (!field) {
+    return chartRows.slice(0, count);
+  }
+
+  const sorted = [...chartRows].sort((a, b) => {
+    const aValue = Number(a[field]) || 0;
+    const bValue = Number(b[field]) || 0;
+
+    return ranking.direction === "bottom"
+      ? aValue - bValue
+      : bValue - aValue;
+  });
+
+  return sorted.slice(0, count);
+}
 function useChartData({ data, chartConfig, settings }) {
   const processedData = useMemo(() => {
     const yKeys = Array.isArray(chartConfig.y)
@@ -110,7 +167,9 @@ function useChartData({ data, chartConfig, settings }) {
         ? [chartConfig.y]
         : [];
 
-    if (!data || !chartConfig.x || yKeys.length === 0) return [];
+    if (!data || !chartConfig.x || yKeys.length === 0) {
+      return [];
+    }
 
     let result = aggregateData(
       data,
@@ -119,11 +178,17 @@ function useChartData({ data, chartConfig, settings }) {
       chartConfig.aggregation
     );
 
-    result = sortData(result, chartConfig, yKeys);
+    result = sortData(
+      result,
+      chartConfig.sorting,
+      yKeys
+    );
 
-    if (chartConfig.limit) {
-      result = result.slice(0, Number(chartConfig.limit));
-    }
+    result = applyRanking(
+      result,
+      chartConfig.ranking,
+      yKeys
+    );
 
     return result;
   }, [
@@ -131,9 +196,8 @@ function useChartData({ data, chartConfig, settings }) {
     chartConfig.x,
     chartConfig.y,
     chartConfig.aggregation,
-    chartConfig.sort,
-    chartConfig.sortBy,
-    chartConfig.limit,
+    chartConfig.sorting,
+    chartConfig.ranking,
   ]);
 
   const generatedColors = useMemo(() => {
@@ -160,5 +224,4 @@ function useChartData({ data, chartConfig, settings }) {
     generatedColors,
   };
 }
-
 export default useChartData;

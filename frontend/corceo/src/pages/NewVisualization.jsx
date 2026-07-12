@@ -8,6 +8,9 @@ import ChartPreview from "../components/charts/ChartPreview";
 import FieldsPanel from "../components/data/FieldsPanel";
 import useProjectData from "../hooks/useProjectData";
 import useChartData from "../hooks/useChartData";
+import ChartFiltersPanel from "../components/charts/ChartFiltersPanel";
+import Header from "../components/Header";
+
 
 function NewVisualization() {
   const { id } = useParams();
@@ -102,20 +105,37 @@ const removeFieldFromAxis = (axis, field) => {
     decimalPlaces: 2,
   });
   const [chartConfig, setChartConfig] = useState({
-  x: null,
-  y: [],
-  type: "bar",
-  aggregation: "none",
-  xHierarchy: [],
-  dateHierarchySource: null,
-  sort: "none",
-  groupSmallCategories: false,
-  filterField: null,
+    x: null,
+    y: [],
+    type: "bar",
 
-  timeGroupBy: "none",
-  limit: null,
-  sortBy: null,
-});
+    aggregation: "none",
+
+    sorting: {
+      field: null,
+      direction: "none",
+    },
+
+    ranking: {
+      enabled: false,
+      direction: "top",
+      count: 10,
+      field: null,
+    },
+
+    dateGrouping: {
+      field: null,
+      interval: "none",
+    },
+
+    filters: [],
+
+    xHierarchy: [],
+    dateHierarchySource: null,
+    groupSmallCategories: false,
+    timeGroupBy: "none",
+  });
+
     const multiYCharts = ["bar", "line", "area", "composed"];
 
   const isMultiYChart = multiYCharts.includes(chartConfig.type);
@@ -420,15 +440,17 @@ const savedConfig =
 
   }, [savedChart]);
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <> 
+    <Header/>
+    <div className="app-page w-screen h-screen flex flex-col">
 
       {/* HEADER */}
-      <div className="flex border-b bg-white">
+      <div className="app-surface app-border flex border-b">
 
         <button
           onClick={() => setActiveTab("data")}
-          className={`px-4 py-2 ${
-            activeTab === "data" && "bg-slate-100"
+          className={`px-4 py-2 transition-colors ${
+            activeTab === "data" ? "bg-[rgb(var(--color-surface-hover))] text-[rgb(var(--color-primary))]" : "app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]"
           }`}
         >
           Data
@@ -436,8 +458,8 @@ const savedConfig =
 
         <button
           onClick={() => setActiveTab("preview")}
-          className={`px-4 py-2 ${
-            activeTab === "preview" && "bg-slate-100"
+          className={`px-4 py-2 transition-colors ${
+            activeTab === "preview" ? "bg-[rgb(var(--color-surface-hover))] text-[rgb(var(--color-primary))]" : "app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]"
           }`}
         >
           Preview
@@ -446,7 +468,7 @@ const savedConfig =
         {activeTab === "data" ? (
           <button
             onClick={saveDataset}
-            className="ml-auto px-4 py-2 bg-green-600 text-white"
+            className="ml-auto btn-primary px-4 py-2"
           >
             Save Data
           </button>
@@ -455,21 +477,21 @@ const savedConfig =
 
             <button
               onClick={publishChart}
-              className="px-4 py-2 bg-emerald-600 text-white"
+              className="btn-primary px-4 py-2"
             >
               Publish
             </button>
 
             <button
               onClick={exportPNG}
-              className="px-4 py-2 bg-purple-600 text-white"
+              className="btn-secondary px-4 py-2"
             >
               Export PNG
             </button>
 
             <button
               onClick={saveChart}
-              className="px-4 py-2 bg-blue-600 text-white"
+              className="btn-primary px-4 py-2"
             >
               Save Chart
             </button>
@@ -478,7 +500,7 @@ const savedConfig =
         )}
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="app-text flex-1 flex overflow-hidden">
 
       {activeTab === "data" ? (
         <DataTable
@@ -492,7 +514,7 @@ const savedConfig =
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-    <div className="w-64 border-r bg-white">
+    <div className="app-surface app-border w-64 border-r">
       <FieldsPanel
         columns={columns}
         setColumns={setColumns}
@@ -506,23 +528,31 @@ const savedConfig =
         }}
 
       />
+      <div className="max-h-[55%] overflow-y-auto">
+        <ChartFiltersPanel
+          chartConfig={chartConfig}
+          setChartConfig={setChartConfig}
+          columns={columns}
+          types={columnTypes}
+        />
+      </div>
     </div>
 
-    <div className="flex-1 p-4 bg-slate-50 overflow-hidden">
+    <div className="app-page flex-1 p-4 overflow-hidden">
 
       <div className="mb-4 space-y-2 w-full">
         
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("x")}
-          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600 flex justify-between items-center"
+          className="app-surface-secondary app-border app-text-secondary p-3 border-2 border-dashed rounded-lg flex justify-between items-center"
         >
           <span>X Axis: {chartConfig.x || "Drop field here"}</span>
           
           {chartConfig.x && (
             <button 
               onClick={() => removeFieldFromAxis("x")}
-              className="text-red-500 hover:text-red-700 font-bold px-2"
+              className="text-[rgb(var(--color-danger))] hover:opacity-80 font-bold px-2"
             >
               ✕
             </button>
@@ -531,7 +561,7 @@ const savedConfig =
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropAxis("y")}
-          className="p-3 border-2 border-dashed rounded-lg bg-black/5 text-slate-600"
+          className="app-surface-secondary app-border app-text-secondary p-3 border-2 border-dashed rounded-lg"
         >
           <div className="mb-2">
             Y Axis: {chartConfig.y.length ? "" : "Drop fields here"}
@@ -541,12 +571,12 @@ const savedConfig =
             {chartConfig.y.map((field) => (
               <span
                 key={field}
-                className="px-2 py-1 bg-white border rounded flex items-center gap-2"
+                className="app-surface app-border app-text-secondary px-2 py-1 border rounded flex items-center gap-2"
               >
                 {field}
                 <button
                   onClick={() => removeFieldFromAxis("y", field)}
-                  className="text-red-500 font-bold"
+                  className="text-[rgb(var(--color-danger))] font-bold"
                 >
                   ✕
                 </button>
@@ -555,7 +585,7 @@ const savedConfig =
           </div>
         </div>
         <div
-        className="flex-1 border rounded-lg bg-white p-4"
+        className="app-card flex-1 border rounded-lg p-4"
         >
           <div className="w-full h-[530px]">
             <ChartPreview
@@ -618,6 +648,7 @@ const savedConfig =
       )}
     </div>
     </div>
+  </>
   );
 }
 
