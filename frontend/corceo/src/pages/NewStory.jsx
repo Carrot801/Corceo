@@ -28,11 +28,13 @@ function NewStory() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedAnnoId, setSelectedAnnoId] = useState(null);
+  const [selectedChartId, setSelectedChartId] = useState(null);
   // Track real dimensions of canvas to prevent SVG stretching distortion
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
   const canvasRef = useRef(null);
   const dragContext = useRef({ type: null, annoId: null });
+  const chartInteractionRef = useRef(null);
 
   const currentSlide = slides[activeSlideIndex] || { content: [], annotations: [], description: "" };
 
@@ -94,15 +96,23 @@ const exportStoryPDF = async () => {
   return canvas.toDataURL("image/png");
 };
 
-  const addSlide = () =>
-    setSlides([
-    {
-      id: `temp-${Date.now()}`,
+  const addSlide = () => {
+    const newSlide = {
+      id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       content: [],
       description: "",
       annotations: [],
-    },
-  ]);
+    };
+
+    setSlides((prev) => {
+      const updated = [...prev, newSlide];
+      setActiveSlideIndex(updated.length - 1);
+      return updated;
+    });
+
+    setSelectedAnnoId(null);
+    setSelectedChartId(null);
+  };
 
 
     
@@ -137,6 +147,7 @@ const exportStoryPDF = async () => {
 
     setActiveSlideIndex(index + 1);
     setSelectedAnnoId(null);
+    setSelectedChartId(null);
   } catch (err) {
     console.error("Duplicate slide error:", err);
   } finally {
@@ -165,6 +176,7 @@ const deleteSlide = async (index) => {
     });
 
     setSelectedAnnoId(null);
+    setSelectedChartId(null);
     return;
   }
 
@@ -213,26 +225,228 @@ const deleteSlide = async (index) => {
 };
 
 
+  const createChartItem = (chartId, name, index = 0) => ({
+    id: `chart-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    type: "chart",
+    chartId,
+    name,
+    x: Math.min(5 + index * 4, 35),
+    y: Math.min(5 + index * 4, 35),
+    width: 48,
+    height: 45,
+    zIndex: index + 1,
+  });
+
   const addChartToSlide = (chartId, name) => {
-      console.log("Adding chart:", chartId, name);
-    setSlides(prev =>
-      prev.map((slide, i) =>
-        i === activeSlideIndex
+    let newItemId = null;
+
+    setSlides((prev) =>
+      prev.map((slide, index) => {
+        if (index !== activeSlideIndex) return slide;
+
+        const content = slide.content || [];
+        const newItem = createChartItem(chartId, name, content.length);
+        newItemId = newItem.id;
+
+        return {
+          ...slide,
+          content: [...content, newItem],
+        };
+      })
+    );
+
+    setSelectedChartId(newItemId);
+    setSelectedAnnoId(null);
+    setShowPicker(false);
+  };
+
+  const updateChartItem = (itemId, updates) => {
+    setSlides((prev) =>
+      prev.map((slide, index) =>
+        index === activeSlideIndex
           ? {
               ...slide,
-              content: [
-                {
-                  id: Date.now(),
-                  type: "chart",
-                  chartId,
-                  name
-                }
-              ]
+              content: (slide.content || []).map((item) =>
+                item.id === itemId ? { ...item, ...updates } : item
+              ),
             }
           : slide
       )
     );
-    setShowPicker(false);
+  };
+
+  const deleteChartItem = (itemId) => {
+    setSlides((prev) =>
+      prev.map((slide, index) =>
+        index === activeSlideIndex
+          ? {
+              ...slide,
+              content: (slide.content || []).filter(
+                (item) => item.id !== itemId
+              ),
+            }
+          : slide
+      )
+    );
+
+    setSelectedChartId((current) => (current === itemId ? null : current));
+  };
+
+  const duplicateChartItem = (itemId) => {
+    let duplicatedId = null;
+
+    setSlides((prev) =>
+      prev.map((slide, index) => {
+        if (index !== activeSlideIndex) return slide;
+
+        const content = slide.content || [];
+        const sourceItem = content.find((item) => item.id === itemId);
+        if (!sourceItem) return slide;
+
+        duplicatedId = `chart-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}`;
+
+        const duplicatedItem = {
+          ...sourceItem,
+          id: duplicatedId,
+          name: `${sourceItem.name || "Chart"} copy`,
+          x: Math.min((sourceItem.x ?? 5) + 4, 100 - (sourceItem.width ?? 48)),
+          y: Math.min((sourceItem.y ?? 5) + 4, 100 - (sourceItem.height ?? 45)),
+          zIndex:
+            Math.max(0, ...content.map((item) => item.zIndex || 0)) + 1,
+        };
+
+        return {
+          ...slide,
+          content: [...content, duplicatedItem],
+        };
+      })
+    );
+
+    setSelectedChartId(duplicatedId);
+    setSelectedAnnoId(null);
+  };
+
+  const bringChartToFront = (itemId) => {
+    setSlides((prev) =>
+      prev.map((slide, index) => {
+        if (index !== activeSlideIndex) return slide;
+
+        const content = slide.content || [];
+        const highestZIndex = Math.max(
+          0,
+          ...content.map((item) => item.zIndex || 0)
+        );
+
+        return {
+          ...slide,
+          content: content.map((item) =>
+            item.id === itemId
+              ? { ...item, zIndex: highestZIndex + 1 }
+              : item
+          ),
+        };
+      })
+    );
+  };
+
+  const sendChartToBack = (itemId) => {
+    setSlides((prev) =>
+      prev.map((slide, index) => {
+        if (index !== activeSlideIndex) return slide;
+
+        const content = slide.content || [];
+        const lowestZIndex = Math.min(
+          0,
+          ...content.map((item) => item.zIndex || 0)
+        );
+
+        return {
+          ...slide,
+          content: content.map((item) =>
+            item.id === itemId
+              ? { ...item, zIndex: lowestZIndex - 1 }
+              : item
+          ),
+        };
+      })
+    );
+  };
+
+  const startChartInteraction = (event, mode, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!canvasRef.current) return;
+
+    setSelectedChartId(item.id);
+    setSelectedAnnoId(null);
+    bringChartToFront(item.id);
+
+    chartInteractionRef.current = {
+      mode,
+      itemId: item.id,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: item.x ?? 5,
+      startY: item.y ?? 5,
+      startWidth: item.width ?? 48,
+      startHeight: item.height ?? 45,
+    };
+
+    document.addEventListener("mousemove", handleChartInteractionMove);
+    document.addEventListener("mouseup", stopChartInteraction);
+  };
+
+  const handleChartInteractionMove = (event) => {
+    const interaction = chartInteractionRef.current;
+    const canvas = canvasRef.current;
+
+    if (!interaction || !canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const deltaX =
+      ((event.clientX - interaction.startClientX) / rect.width) * 100;
+    const deltaY =
+      ((event.clientY - interaction.startClientY) / rect.height) * 100;
+
+    if (interaction.mode === "move") {
+      const maxX = Math.max(0, 100 - interaction.startWidth);
+      const maxY = Math.max(0, 100 - interaction.startHeight);
+
+      updateChartItem(interaction.itemId, {
+        x: Math.max(0, Math.min(maxX, interaction.startX + deltaX)),
+        y: Math.max(0, Math.min(maxY, interaction.startY + deltaY)),
+      });
+      return;
+    }
+
+    if (interaction.mode === "resize") {
+      const minWidth = 20;
+      const minHeight = 20;
+      const maxWidth = 100 - interaction.startX;
+      const maxHeight = 100 - interaction.startY;
+
+      updateChartItem(interaction.itemId, {
+        width: Math.max(
+          minWidth,
+          Math.min(maxWidth, interaction.startWidth + deltaX)
+        ),
+        height: Math.max(
+          minHeight,
+          Math.min(maxHeight, interaction.startHeight + deltaY)
+        ),
+      });
+    }
+  };
+
+  const stopChartInteraction = () => {
+    chartInteractionRef.current = null;
+    document.removeEventListener("mousemove", handleChartInteractionMove);
+    document.removeEventListener("mouseup", stopChartInteraction);
   };
 
   useEffect(() => {
@@ -301,10 +515,22 @@ const handleProjectClick = async (projectId) => {
           setSlides(data.slides.map(s => ({
             ...s,
             annotations: s.annotations || [],
-            content: s.content || []
+            content: (s.content || []).map((item, index) => ({
+              ...item,
+              id:
+                item.id ||
+                `chart-${Date.now()}-${index}-${Math.random()
+                  .toString(36)
+                  .slice(2)}`,
+              x: item.x ?? Math.min(5 + index * 4, 35),
+              y: item.y ?? Math.min(5 + index * 4, 35),
+              width: item.width ?? 48,
+              height: item.height ?? 45,
+              zIndex: item.zIndex ?? index + 1,
+            }))
           })));
         } else {
-          setSlides([{ id: Date.now(), content: [], description: "", annotations: [] }]);
+          setSlides([{ id: `temp-${Date.now()}`, content: [], description: "", annotations: [] }]);
         }
       })
       .catch(err => console.error("Fetch error:", err));
@@ -542,6 +768,13 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
     document.removeEventListener("mouseup", handleDragEnd);
   };
 
+  useEffect(() => {
+    return () => {
+      document.removeEventListener("mousemove", handleChartInteractionMove);
+      document.removeEventListener("mouseup", stopChartInteraction);
+    };
+  }, []);
+
   // Convert responsive percentages back into strict uniform pixel targets
   // Convert responsive percentages into strict uniform pixel targets anchored to shape borders
   const renderConnectorPath = (anno) => {
@@ -692,7 +925,11 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
           {slides.map((s, i) => (
             <div
               key={s.id}
-              onClick={() => setActiveSlideIndex(i)}
+              onClick={() => {
+                setActiveSlideIndex(i);
+                setSelectedAnnoId(null);
+                setSelectedChartId(null);
+              }}
               className={`relative shrink-0 group my-2 w-[97%] h-36 border rounded cursor-pointer flex items-center justify-center font-semibold app-text-muted ${
                 activeSlideIndex === i
                   ? "ring-2 ring-[rgb(var(--color-highlight))] bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
@@ -751,27 +988,143 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
           <div 
             ref={canvasRef}
             className="app-surface-secondary app-border flex-1 border rounded-xl relative group"
-            onClick={(e) => { if (e.target === e.currentTarget) setSelectedAnnoId(null); }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedAnnoId(null);
+                setSelectedChartId(null);
+              }
+            }}
           >
             {/* Chart Renderer Layer */}
-            <div className="w-full h-full pointer-events-auto">
-              {currentSlide.content.map((item) => {
-                console.log("Rendering StoryChart with id:", item.chartId);
+            <div className="absolute inset-0 z-[5] overflow-hidden rounded-xl">
+              {(currentSlide.content || []).map((item) => {
+                const isSelected = selectedChartId === item.id;
 
                 return (
-                  <div key={item.id} className="w-full h-full relative">
-                    <StoryChart chartId={item.chartId} />
+                  <div
+                    key={item.id}
+                    className={`absolute group rounded-xl transition-shadow ${
+                      isSelected
+                        ? "ring-2 ring-[rgb(var(--color-primary))] shadow-xl"
+                        : "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]"
+                    }`}
+                    style={{
+                      left: `${item.x ?? 5}%`,
+                      top: `${item.y ?? 5}%`,
+                      width: `${item.width ?? 48}%`,
+                      height: `${item.height ?? 45}%`,
+                      zIndex: item.zIndex ?? 1,
+                    }}
+                    onMouseDown={(event) => {
+                      event.stopPropagation();
+                      setSelectedChartId(item.id);
+                      setSelectedAnnoId(null);
+                    }}
+                  >
+                    <div className="app-card relative h-full w-full overflow-hidden rounded-sm">
+                      <div
+                        className={`absolute left-0 right-0 top-0 z-20 flex h-9 items-center justify-between border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/90 px-2 backdrop-blur-sm transition-opacity ${
+                          isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          className="app-text-secondary min-w-0 flex-1 cursor-move truncate text-left text-[11px] font-semibold"
+                          title="Drag chart"
+                          onMouseDown={(event) =>
+                            startChartInteraction(event, "move", item)
+                          }
+                        >
+                          ⋮⋮ {item.name || "Chart"}
+                        </button>
+
+                        <div className="ml-2 flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            title="Send backward"
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              sendChartToBack(item.id);
+                            }}
+                            className="app-icon-button h-6 w-6 rounded text-xs"
+                          >
+                            ↓
+                          </button>
+
+                          <button
+                            type="button"
+                            title="Duplicate chart"
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              duplicateChartItem(item.id);
+                            }}
+                            className="app-icon-button h-6 w-6 rounded text-xs"
+                          >
+                            ⧉
+                          </button>
+
+                          <button
+                            type="button"
+                            title="Delete chart"
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteChartItem(item.id);
+                            }}
+                            className="app-icon-button h-6 w-6 rounded text-xs text-[rgb(var(--color-danger))]"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="h-full w-full">
+                        <StoryChart chartId={item.chartId} />
+                      </div>
+
+                      {isSelected && (
+                        <button
+                          type="button"
+                          aria-label="Resize chart"
+                          title="Drag to resize"
+                          onMouseDown={(event) =>
+                            startChartInteraction(event, "resize", item)
+                          }
+                          className="absolute bottom-0 right-0 z-30 h-4 w-4 translate-x-1/3 translate-y-1/3 cursor-se-resize rounded-full border-2 border-[rgb(var(--color-surface))] bg-[rgb(var(--color-primary))] shadow-md"
+                        />
+                      )}
+                    </div>
                   </div>
                 );
-              })} 
+              })}
 
-              {currentSlide.content.length === 0 && (
-                <button 
-                  onClick={() => setShowPicker(true)} 
-                  className="app-text-muted w-full h-full border-dashed border-2 border-[rgb(var(--color-border-strong))] flex flex-col items-center justify-center hover:bg-[rgb(var(--color-surface-hover))] rounded-lg gap-2 transition-all"
+              {(currentSlide.content || []).length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPicker(true)}
+                  className="app-text-muted flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[rgb(var(--color-border-strong))] transition-all hover:bg-[rgb(var(--color-surface-hover))]"
                 >
                   <span className="text-2xl">📊</span>
-                  <span className="text-xs font-semibold">Connect Component Data Map</span>
+                  <span className="text-xs font-semibold">
+                    Add your first chart
+                  </span>
+                </button>
+              )}
+
+              {(currentSlide.content || []).length > 0 && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowPicker(true);
+                  }}
+                  className="btn-primary absolute bottom-3 right-3 z-[100] rounded-lg px-3 py-2 text-xs shadow-lg"
+                >
+                  + Add chart
                 </button>
               )}
             </div>
@@ -1223,8 +1576,21 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                 overflow: "hidden",
               }}
             >
-              {slide.content.map((item) => (
-                <div key={item.id} style={{ width: "100%", height: "100%" }}>
+              {(slide.content || []).map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    position: "absolute",
+                    left: `${item.x ?? 5}%`,
+                    top: `${item.y ?? 5}%`,
+                    width: `${item.width ?? 48}%`,
+                    height: `${item.height ?? 45}%`,
+                    zIndex: item.zIndex ?? 1,
+                    overflow: "hidden",
+                    borderRadius: "12px",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
                   <StoryChart chartId={item.chartId} />
                 </div>
               ))}

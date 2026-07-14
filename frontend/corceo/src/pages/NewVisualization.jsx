@@ -225,6 +225,7 @@ const handleDropAxis = (axis) => (e) => {
   const {
     chartData,
     generatedColors,
+    visibleYKeys,
   } = useChartData({
     data,
     chartConfig,
@@ -589,13 +590,14 @@ const savedConfig =
         >
           <div className="w-full h-[530px]">
             <ChartPreview
-            chartData={chartData}
-            rawData={data}
-            chartConfig={chartConfig}
-            setChartConfig={setChartConfig}
-            columns={columns}
-            generatedColors={generatedColors}
-            settings={settings}
+              chartData={chartData}
+              rawData={data}
+              chartConfig={chartConfig}
+              setChartConfig={setChartConfig}
+              columns={columns}
+              generatedColors={generatedColors}
+              visibleYKeys={visibleYKeys}
+              settings={settings}
             />
           </div>
           
@@ -632,6 +634,7 @@ const savedConfig =
       chartConfig={chartConfig}
       setChartConfig={setChartConfig}
       columns={columns}
+      visibleYKeys={visibleYKeys}
       generatedColors={generatedColors}
       settings={{ ...settings, exportMode: true }}
     />

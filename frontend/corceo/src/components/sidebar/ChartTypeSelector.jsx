@@ -55,8 +55,8 @@ function ChartTypeSelector({
   return (
     <div className="space-y-2 p-4">
       {chartTypes.map((type) => {
-        const isActive =
-          chartConfig?.type === type.id;
+        const isActive = chartConfig?.type === type.id;
+        const Icon = type.Icon;
 
         return (
           <button
@@ -112,7 +112,7 @@ function ChartTypeSelector({
                   }
                 `}
               >
-                {previews[type.id]}
+                <Icon size={24} strokeWidth={2} />
               </div>
 
               <div className="text-left">

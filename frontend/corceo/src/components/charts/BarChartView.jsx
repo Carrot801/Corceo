@@ -15,13 +15,15 @@ function BarChartView({
   generatedColors = [],
   settings = {},
   chartConfig = {},
+  visibleKeys,
 }) {
-  const yKeys = Array.isArray(chartConfig.y)
+  const yKeys = 
+  visibleKeys ?? 
+  (Array.isArray(chartConfig.y)
     ? chartConfig.y
     : chartConfig.y
       ? [chartConfig.y]
-      : ["y"];
-
+      : []);
   const getDynamicWidth = () => {
     if (settings.compactNumbers) return 60;
     if (settings.numberFormat === "currency") return 90;

@@ -3,14 +3,22 @@ import PalettePicker from "./PalettePicker";
 import ChartTypeSelector from "./ChartTypeSelector";
 import {
   BarChart3,
+  ChartColumn,
   LineChart,
   PieChart,
   Circle,
-  AreaChart as AreaChartIcon, 
+  AreaChart,
+  ScatterChart,
+  Radar,
+  ChartNoAxesColumnIncreasing,
+  Funnel,
+  LayoutGrid,
+  Grid3X3,
   AlignLeft,
   AlignCenter,
   AlignRight,
 } from "lucide-react";
+
 
 function Sidebar({
   settings,
@@ -96,22 +104,24 @@ const toggleField = (field) => {
     setOpenSection((prev) => (prev === section ? null : section));
   };
 
-  const chartTypes = [
+const chartTypes = [
   { id: "bar", label: "Bar", Icon: BarChart3 },
   { id: "line", label: "Line", Icon: LineChart },
   { id: "pie", label: "Pie", Icon: PieChart },
   { id: "donut", label: "Donut", Icon: Circle },
-  { id: "area", label: "Area", Icon: AreaChartIcon },
-
-  { id: "scatter", label: "Scatter", Icon: Circle },
-  { id: "radar", label: "Radar", Icon: Circle },
-  { id: "composed", label: "Composed", Icon: BarChart3 },
-  { id: "funnel", label: "Funnel", Icon: Circle },
-  { id: "treemap", label: "Treemap", Icon: BarChart3 },
-  { id: "waterfall", label: "Waterfall", Icon: BarChart3 },
-  { id: "heatmap", label: "Heatmap", Icon: AreaChartIcon },
-  ];
-
+  { id: "area", label: "Area", Icon: AreaChart },
+  { id: "scatter", label: "Scatter", Icon: ScatterChart },
+  { id: "radar", label: "Radar", Icon: Radar },
+  {
+    id: "composed",
+    label: "Composed",
+    Icon: ChartNoAxesColumnIncreasing,
+  },
+  { id: "funnel", label: "Funnel", Icon: Funnel },
+  { id: "treemap", label: "Treemap", Icon: LayoutGrid },
+  { id: "waterfall", label: "Waterfall", Icon: ChartColumn },
+  { id: "heatmap", label: "Heatmap", Icon: Grid3X3 },
+];
   const extendedModes = [
     { id: "gradient", label: "Gradient" },
     { id: "shuffle", label: "Shuffle" },

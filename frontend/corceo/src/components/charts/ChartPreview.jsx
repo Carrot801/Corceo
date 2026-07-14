@@ -18,6 +18,7 @@ function ChartPreview({
   chartData = [],
   chartConfig,
   rawData = [],
+  visibleYKeys,
   generatedColors = [],
   settings,
 }) {
@@ -38,29 +39,23 @@ function ChartPreview({
         };
   const ActiveChart = chartViews[chartConfig.type] || BarChartView;
 
-  // Clean empty labels and apply conditional zero value dropping
   const processedData = React.useMemo(() => {
-    if (!chartData) return [];
-
-    let cleaned = chartData.map((item, idx) => ({
-      ...item,
-      x: item.x !== null && item.x !== undefined ? String(item.x).trim() : "",
-      y: Number(item.y) || 0,
-      color: generatedColors[idx] || "#3b82f6"
-    }));
-
-    cleaned = cleaned.filter(item => item.x !== "");
-
-    if (settings.hideZeros) {
-      cleaned = cleaned.filter(item => item.y !== 0);
+    if (!Array.isArray(chartData)) {
+      return [];
     }
 
-    const total = cleaned.reduce((acc, item) => acc + item.y, 0);
-    return cleaned.map(item => ({
-      ...item,
-      percentage: total !== 0 ? (item.y / total) * 100 : 0
-    }));
-  }, [chartData, generatedColors, settings.hideZeros]);
+    return chartData
+      .map((item, index) => ({
+        ...item,
+        x:
+          item.x !== null && item.x !== undefined
+            ? String(item.x).trim()
+            : "",
+        color: generatedColors[index] || "#3b82f6",
+      }))
+      .filter((item) => item.x !== "");
+  }, [chartData, generatedColors]);
+
 
   const filteredColors = React.useMemo(() => {
     return processedData.map(item => item.color);
@@ -134,11 +129,12 @@ function ChartPreview({
           */}
           <div className={`w-full ${isExport ? 'h-[530px]' : 'h-full flex flex-col min-h-0'}`}>
 
-           <ActiveChart
+          <ActiveChart
             chartData={processedData}
             generatedColors={filteredColors}
             settings={settings}
             chartConfig={chartConfig}
+            visibleYKeys={visibleYKeys}
           />
           </div>
         </div>

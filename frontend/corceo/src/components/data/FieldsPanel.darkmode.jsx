@@ -158,8 +158,10 @@ const createNumberField = (mode) => {
     if (mode === "GroupedOther") {
       const counts = {};
       data.forEach((row) => {
-        const value = row[selectedCol];
-        if (!value) return;
+        const rawValue = row[selectedCol];
+        if (rawValue === null || rawValue === undefined || rawValue === "") return;
+
+        const value = String(rawValue);
         counts[value] = (counts[value] || 0) + 1;
       });
 
