@@ -2,7 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Header from "./Header";
-   
+import AuthRequiredModal from "../components/AuthRequiredModal";
+
 function BasePage() {
   const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -18,7 +19,7 @@ function BasePage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [search, setSearch] = useState("");
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
-
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchResults, setSearchResults] = useState({
   folders: [],
   projects: [],
@@ -51,11 +52,24 @@ const createProject = async () => {
 
     setProjects((prev) => [...prev, newProject]);
 
-    navigate(`/newVisualization/${newProject.id}`);
+    navigate(`/projects/new/${newProject.id}`);
   } catch (err) {
     console.error("Failed to create project:", err);
   }
 };
+
+const requireAuth = (destination) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    setShowAuthModal(true);
+    return;
+  }
+
+  navigate(destination);
+};
+
+
 const loadTreeItemsForFolder = async (folderId) => {
   const token = localStorage.getItem("token");
 
@@ -451,7 +465,7 @@ const duplicateProject = async (projectId) => {
 
 
     if (data.id) {
-      navigate(`/newStory/${data.id}`);
+      navigate(`/stories/new/${data.id}`);
     } else {
 
     console.log("Server did not return an ID:", data.id);
@@ -846,6 +860,10 @@ const deleteStory = async (storyId) => {
           </div>
         )}
 
+      <AuthRequiredModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   </>
   );

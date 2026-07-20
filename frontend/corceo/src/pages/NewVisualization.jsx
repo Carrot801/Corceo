@@ -11,7 +11,6 @@ import useChartData from "../hooks/useChartData";
 import ChartFiltersPanel from "../components/charts/ChartFiltersPanel";
 import Header from "../components/Header";
 
-
 function NewVisualization() {
   const { id } = useParams();
 
@@ -443,15 +442,26 @@ const savedConfig =
   return (
     <> 
     <Header/>
-    <div className="app-page w-screen h-screen flex flex-col">
+  <div className="app-page w-full h-screen flex flex-col overflow-hidden">
+    {/* Editor toolbar */}
+    <div className="app-surface app-border h-12 shrink-0 flex items-center border-b px-4 gap-4">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="app-text-muted text-sm hover:text-[rgb(var(--color-text))]"
+      >
+        ← Back to projects
+      </button>
 
-      {/* HEADER */}
-      <div className="app-surface app-border flex border-b">
+      <div className="h-6 w-px bg-[rgb(var(--color-border))]" />
 
+      <div className="flex h-full items-center">
         <button
           onClick={() => setActiveTab("data")}
-          className={`px-4 py-2 transition-colors ${
-            activeTab === "data" ? "bg-[rgb(var(--color-surface-hover))] text-[rgb(var(--color-primary))]" : "app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]"
+          className={`h-full px-4 text-sm font-semibold border-b-2 ${
+            activeTab === "data"
+              ? "border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+              : "border-transparent app-text-secondary"
           }`}
         >
           Data
@@ -459,47 +469,50 @@ const savedConfig =
 
         <button
           onClick={() => setActiveTab("preview")}
-          className={`px-4 py-2 transition-colors ${
-            activeTab === "preview" ? "bg-[rgb(var(--color-surface-hover))] text-[rgb(var(--color-primary))]" : "app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]"
+          className={`h-full px-4 text-sm font-semibold border-b-2 ${
+            activeTab === "preview"
+              ? "border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+              : "border-transparent app-text-secondary"
           }`}
         >
           Preview
         </button>
+      </div>
 
+      <div className="ml-auto flex gap-2">
         {activeTab === "data" ? (
           <button
             onClick={saveDataset}
-            className="ml-auto btn-primary px-4 py-2"
+            className="btn-primary px-4 py-2 text-sm rounded-lg"
           >
             Save Data
           </button>
         ) : (
-          <div className="ml-auto flex gap-2">
-
+          <>
             <button
               onClick={publishChart}
-              className="btn-primary px-4 py-2"
+              className="btn-secondary px-4 py-2 text-sm rounded-lg"
             >
               Publish
             </button>
 
             <button
               onClick={exportPNG}
-              className="btn-secondary px-4 py-2"
+              className="btn-secondary px-4 py-2 text-sm rounded-lg"
             >
-              Export PNG
+              Export
             </button>
 
             <button
               onClick={saveChart}
-              className="btn-primary px-4 py-2"
+              className="btn-primary px-4 py-2 text-sm rounded-lg"
             >
-              Save Chart
+              Save
             </button>
-
-          </div>
+          </>
         )}
       </div>
+    </div>
 
       <div className="app-text flex-1 flex overflow-hidden">
 
@@ -650,6 +663,7 @@ const savedConfig =
   </div>
       )}
     </div>
+
     </div>
   </>
   );

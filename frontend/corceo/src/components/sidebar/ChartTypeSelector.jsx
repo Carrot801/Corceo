@@ -5,19 +5,16 @@ function ChartTypeSelector({
 }) {
   const previews = {
     bar: (
-      <div className="flex items-end gap-[3px] h-8">
-        <div className="w-2 h-3 bg-current rounded-sm opacity-60" />
-        <div className="w-2 h-5 bg-current rounded-sm opacity-80" />
-        <div className="w-2 h-7 bg-current rounded-sm" />
-        <div className="w-2 h-4 bg-current rounded-sm opacity-70" />
+      <div className="flex h-8 items-end gap-[3px]">
+        <div className="h-3 w-2 rounded-sm bg-current opacity-60" />
+        <div className="h-5 w-2 rounded-sm bg-current opacity-80" />
+        <div className="h-7 w-2 rounded-sm bg-current" />
+        <div className="h-4 w-2 rounded-sm bg-current opacity-70" />
       </div>
     ),
 
     line: (
-      <svg
-        viewBox="0 0 100 40"
-        className="w-14 h-8"
-      >
+      <svg viewBox="0 0 100 40" className="h-8 w-14">
         <polyline
           fill="none"
           stroke="currentColor"
@@ -30,26 +27,54 @@ function ChartTypeSelector({
     ),
 
     pie: (
-      <div className="relative w-8 h-8 rounded-full overflow-hidden">
+      <div className="relative h-8 w-8 overflow-hidden rounded-full">
         <div className="absolute inset-0 bg-current opacity-90" />
 
         <div
-          className="absolute inset-0 bg-white/40"
+          className="
+            absolute inset-0
+            bg-[rgb(var(--color-surface)/0.4)]
+          "
           style={{
-            clipPath:
-              "polygon(50% 50%, 100% 0, 100% 100%)",
+            clipPath: "polygon(50% 50%, 100% 0, 100% 100%)",
           }}
         />
 
         <div
-          className="absolute inset-0 bg-black/10"
+          className="
+            absolute inset-0
+            bg-[rgb(var(--color-shadow)/0.1)]
+          "
           style={{
-            clipPath:
-              "polygon(50% 50%, 0 0, 0 100%)",
+            clipPath: "polygon(50% 50%, 0 0, 0 100%)",
           }}
         />
       </div>
     ),
+  };
+
+  const handleTypeChange = (typeId) => {
+    setChartConfig((prev) => {
+      const multiYCharts = ["bar", "line", "area", "composed"];
+      const nextIsMultiYChart = multiYCharts.includes(typeId);
+
+      return {
+        ...prev,
+        type: typeId,
+
+        y: nextIsMultiYChart
+          ? Array.isArray(prev.y)
+            ? prev.y
+            : prev.y
+              ? [prev.y]
+              : []
+          : Array.isArray(prev.y)
+            ? prev.y.slice(0, 1)
+            : prev.y
+              ? [prev.y]
+              : [],
+      };
+    });
   };
 
   return (
@@ -60,67 +85,74 @@ function ChartTypeSelector({
 
         return (
           <button
+            type="button"
             key={type.id}
-            onClick={() =>
-  setChartConfig((prev) => {
-    const multiYCharts = ["bar", "line", "area", "composed"];
-    const nextIsMultiYChart = multiYCharts.includes(type.id);
-
-    return {
-      ...prev,
-      type: type.id,
-      y: nextIsMultiYChart
-        ? Array.isArray(prev.y)
-          ? prev.y
-          : prev.y
-            ? [prev.y]
-            : []
-        : Array.isArray(prev.y)
-          ? prev.y.slice(0, 1)
-          : prev.y
-            ? [prev.y]
-            : [],
-    };
-  })
-}
+            onClick={() => handleTypeChange(type.id)}
             className={`
-              w-full
-              flex items-center justify-between
-              px-3 py-2
-              rounded-xl
-              border
+              flex w-full items-center justify-between
+              rounded-xl border px-3 py-2
               transition-all
               ${
                 isActive
-                  ? "border-blue-500 bg-blue-50 text-blue-600 shadow-sm"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                  ? `
+                    border-[rgb(var(--color-primary))]
+                    bg-[rgb(var(--color-primary-soft))]
+                    text-[rgb(var(--color-primary))]
+                  `
+                  : `
+                    border-[rgb(var(--color-border))]
+                    bg-[rgb(var(--color-surface))]
+                    text-[rgb(var(--color-text-secondary))]
+                    hover:border-[rgb(var(--color-border-strong))]
+                    hover:bg-[rgb(var(--color-surface-hover))]
+                    hover:text-[rgb(var(--color-text))]
+                  `
               }
             `}
           >
             {/* LEFT */}
             <div className="flex items-center gap-3">
-              
               <div
                 className={`
-                  w-10 h-10
+                  flex h-10 w-10
+                  items-center justify-center
                   rounded-lg
-                  flex items-center justify-center
+                  transition-colors
                   ${
                     isActive
-                      ? "bg-white"
-                      : "bg-slate-50"
+                      ? `
+                        bg-[rgb(var(--color-surface))]
+                        text-[rgb(var(--color-primary))]
+                      `
+                      : `
+                        bg-[rgb(var(--color-surface-secondary))]
+                        text-[rgb(var(--color-text-secondary))]
+                      `
                   }
                 `}
               >
-                <Icon size={24} strokeWidth={2} />
+                {Icon ? (
+                  <Icon size={24} strokeWidth={2} />
+                ) : (
+                  previews[type.id] ?? null
+                )}
               </div>
 
               <div className="text-left">
-                <div className="text-sm font-semibold">
+                <div
+                  className={`
+                    text-sm font-semibold
+                    ${
+                      isActive
+                        ? "text-[rgb(var(--color-primary))]"
+                        : "text-[rgb(var(--color-text))]"
+                    }
+                  `}
+                >
                   {type.label}
                 </div>
 
-                <div className="text-[11px] opacity-60">
+                <div className="text-[11px] text-[rgb(var(--color-text-muted))]">
                   {type.id} chart
                 </div>
               </div>
@@ -129,11 +161,11 @@ function ChartTypeSelector({
             {/* RIGHT */}
             <div
               className={`
-                w-2 h-2 rounded-full
+                h-2 w-2 rounded-full
                 ${
                   isActive
-                    ? "bg-blue-500"
-                    : "bg-slate-300"
+                    ? "bg-[rgb(var(--color-primary))]"
+                    : "bg-[rgb(var(--color-border-strong))]"
                 }
               `}
             />

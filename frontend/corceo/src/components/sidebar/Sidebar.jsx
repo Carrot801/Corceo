@@ -277,7 +277,7 @@ const chartTypes = [
             </button>
 
             {openSection === "colors" && (
-            <div className="px-4 pb-4 space-y-4 pt-3">
+            <div className=" px-4 pb-4 space-y-4 pt-3">
                 
                 <PalettePicker
                 settings={settings}

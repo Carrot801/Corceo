@@ -29,8 +29,20 @@ const createStory = async (req, res) => {
         for (let j = 0; j < slides[i].content.length; j++) {
           const item = slides[i].content[j];
           await client.query(
-            "INSERT INTO slide_content (slide_id, chart_id, position, user_id) VALUES ($1, $2, $3, $4)",
-            [slideId, item.chartId, j, userId]
+            "INSERT INTO slide_content (slide_id, chart_id, position, layout, user_id) VALUES ($1, $2, $3, $4::jsonb, $5)",
+            [
+              slideId,
+              item.chartId,
+              j,
+              JSON.stringify({
+                x: item.x ?? 0,
+                y: item.y ?? 0,
+                width: item.width ?? 100,
+                height: item.height ?? 100,
+                zIndex: item.zIndex ?? j + 1,
+              }),
+              userId,
+            ]
           );
         }
       }
@@ -102,8 +114,24 @@ const updateStory = async (req, res) => {
         for (let j = 0; j < slides[i].content.length; j++) {
           const item = slides[i].content[j];
           await client.query(
-            "INSERT INTO slide_content (slide_id, chart_id, position, user_id) VALUES ($1, $2, $3, $4)",
-            [slideId, item.chartId, j, userId]
+            `
+            INSERT INTO slide_content
+              (slide_id, chart_id, position, layout, user_id)
+            VALUES ($1, $2, $3, $4::jsonb, $5)
+            `,
+            [
+              slideId,
+              item.chartId,
+              j,
+              JSON.stringify({
+                x: Number(item.x ?? 0),
+                y: Number(item.y ?? 0),
+                width: Number(item.width ?? 100),
+                height: Number(item.height ?? 100),
+                zIndex: Number(item.zIndex ?? j + 1),
+              }),
+              userId,
+            ]
           );
         }
       }
@@ -188,6 +216,7 @@ const getStory = async (req, res) => {
         s.description,
         sc.chart_id,
         sc.position AS content_position,
+        sc.layout,
         p.name AS chart_name
       FROM slides s
       LEFT JOIN slide_content sc ON sc.slide_id = s.id
@@ -223,11 +252,17 @@ const getStory = async (req, res) => {
       }
       if (row.chart_id) {
         slidesMap[row.slide_id].content.push({
-          id: `${row.slide_id}-${row.chart_id}`,
-          type: "chart",
-          chartId: row.chart_id,
-          name: row.chart_name
-        });
+        id: `${row.slide_id}-${row.chart_id}`,
+        type: "chart",
+        chartId: row.chart_id,
+        name: row.chart_name,
+
+        x: row.layout?.x ?? 0,
+        y: row.layout?.y ?? 0,
+        width: row.layout?.width ?? 100,
+        height: row.layout?.height ?? 100,
+        zIndex: row.layout?.zIndex ?? 1,
+      });
       }
     });
 
@@ -274,6 +309,7 @@ const getPublicStory = async (req, res) => {
         s.description,
         sc.chart_id,
         sc.position AS content_position,
+        sc.layout,
         p.name AS chart_name
       FROM slides s
       LEFT JOIN slide_content sc ON sc.slide_id = s.id
@@ -309,11 +345,16 @@ const getPublicStory = async (req, res) => {
 
       if (row.chart_id) {
         slidesMap[row.slide_id].content.push({
-          id: `${row.slide_id}-${row.chart_id}`,
-          type: "chart",
-          chartId: row.chart_id,
-          name: row.chart_name,
-        });
+        id: `${row.slide_id}-${row.chart_id}`,
+        type: "chart",
+        chartId: row.chart_id,
+        name: row.chart_name,
+        x: Number(row.layout?.x ?? 0),
+        y: Number(row.layout?.y ?? 0),
+        width: Number(row.layout?.width ?? 100),
+        height: Number(row.layout?.height ?? 100),
+        zIndex: Number(row.layout?.zIndex ?? row.content_position + 1),
+      });
       }
     });
 
@@ -411,8 +452,8 @@ const duplicateStory = async (req, res) => {
 
       await client.query(
         `
-        INSERT INTO slide_content (slide_id, chart_id, position, user_id)
-        SELECT $1, chart_id, position, user_id
+        INSERT INTO slide_content (slide_id, chart_id, position,layout, user_id)
+        SELECT $1, chart_id, position, layout, user_id
         FROM slide_content
         WHERE slide_id = $2 AND user_id = $3
         `,
@@ -510,7 +551,7 @@ const duplicateSlide = async (req, res) => {
 
     const contentRes = await client.query(
       `
-      SELECT chart_id, position
+      SELECT chart_id, position, layout
       FROM slide_content
       WHERE slide_id = $1
       AND user_id = $2
@@ -522,10 +563,24 @@ const duplicateSlide = async (req, res) => {
     for (const item of contentRes.rows) {
       await client.query(
         `
-        INSERT INTO slide_content (slide_id, chart_id, position, user_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO slide_content (slide_id, chart_id, position, layout, user_id)
+        VALUES ($1, $2, $3, $4::jsonb, $5)
         `,
-        [newSlide.id, item.chart_id, item.position, userId]
+        [
+          newSlide.id,
+          item.chart_id,
+          item.position,
+          JSON.stringify(
+            item.layout || {
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 100,
+              zIndex: item.position + 1,
+            }
+          ),
+          userId,
+        ]
       );
     }
 
@@ -563,7 +618,12 @@ const duplicateSlide = async (req, res) => {
         id: `${newSlide.id}-${item.chart_id}`,
         type: "chart",
         chartId: item.chart_id,
-        name: ""
+        name: "",
+        x: Number(item.layout?.x ),
+        y: Number(item.layout?.y ),
+        width: Number(item.layout?.width),
+        height: Number(item.layout?.height ),
+        zIndex: Number(item.layout?.zIndex ),
       })),
       annotations: copiedAnnotations
     });

@@ -4,6 +4,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Cell,
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
@@ -73,7 +74,15 @@ function BarChartView({
               dataKey={key}
               radius={[6, 6, 0, 0]}
               fill={generatedColors[index] || "#3b82f6"}
-            />
+            >
+            {chartData.map((entry, index) => (
+              <Cell
+                key={`bar-cell-${index}`}
+                fill={entry.color || generatedColors[index % generatedColors.length]}
+              />
+            ))}
+
+            </Bar>
           ))}
         </BarChart>
       </ResponsiveContainer>

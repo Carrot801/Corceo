@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Header() {
   const navigate = useNavigate();
@@ -21,49 +21,49 @@ function Header() {
     }
   }, [darkMode]);
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
   return (
-    <header className="h-14 border-b bg-white dark:bg-slate-900 dark:border-slate-700 px-4 flex items-center">
-      <div className="font-bold text-slate-800 dark:text-white">
+    <header className="h-14 shrink-0 border-b bg-white px-4 flex items-center dark:bg-slate-900 dark:border-slate-700">
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        className="font-bold text-slate-800 dark:text-white"
+      >
         Analytics Builder
-      </div>
+      </button>
 
       <div className="ml-auto flex items-center gap-3">
-
         <button
-          onClick={() => setDarkMode(!darkMode)}
+          type="button"
+          onClick={() => setDarkMode((current) => !current)}
           className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center"
           title="Toggle theme"
         >
           {darkMode ? "☀️" : "🌙"}
         </button>
 
-        {token ? (
+        {token && user ? (
           <>
-            <span className="text-sm text-slate-600 dark:text-slate-300">
-              {user?.full_name || user?.email}
+            <span className="hidden sm:block text-sm text-slate-600 dark:text-slate-300">
+              {user.full_name || user.username || user.email}
             </span>
 
             <button
-              onClick={logout}
-              className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center"
-              title="Logout"
+              type="button"
+              onClick={() => navigate("/account")}
+              className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
+              title="Account settings"
             >
               👤
             </button>
           </>
         ) : (
           <button
+            type="button"
             onClick={() => navigate("/login")}
-            className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center"
-            title="Login"
+            className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
+            title="Log in"
           >
-            👤
+            ❔
           </button>
         )}
       </div>

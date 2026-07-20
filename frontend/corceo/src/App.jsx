@@ -7,6 +7,8 @@ import PublishedChart from "./pages/PublishedChart";
 import NewStory from "./pages/NewStory";
 import PublishedStory from "./pages/PublishedStory";
 import Register from "./pages/Register";
+import AccountSettings from "./pages/AccountSettings";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Login from "./pages/Login";
 
@@ -32,6 +34,30 @@ function App() {
         <Route path="/projects" element={<Projects />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/account" 
+        element={
+            <ProtectedRoute>
+              <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/new/:id"
+          element={
+            <ProtectedRoute>
+              <NewVisualization />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/stories/new/:storyId"
+          element={
+            <ProtectedRoute>
+              <NewStory />
+            </ProtectedRoute>
+          }
+        />        
         <Route path="/publishedStory/:storyId" element={<PublishedStory />} />
         <Route path="/NewVisualization/:id" element={<NewVisualization/>} />
         <Route path="/published/:chartId" element={<PublishedChart/>} />

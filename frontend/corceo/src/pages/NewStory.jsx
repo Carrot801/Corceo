@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import StoryChart from "../components/StoryChart";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
+import Header from "../components/Header";
 function NewStory() {
   const { storyId } = useParams();
   const navigate = useNavigate();
@@ -117,14 +117,48 @@ const exportStoryPDF = async () => {
 
     
    const duplicateSlide = async (index) => {
+  const sourceSlide = slides[index];
+
+  if (!sourceSlide) return;
+
+  /*
+   * Unsaved slides cannot be duplicated through an endpoint that expects
+   * a database slide ID, so duplicate them locally.
+   */
+  if (String(sourceSlide.id).startsWith("temp-")) {
+    const localDuplicate = {
+      ...structuredClone(sourceSlide),
+      id: `temp-${Date.now()}-${crypto.randomUUID()}`,
+      description: sourceSlide.description || "",
+      content: (sourceSlide.content || []).map((item) => ({
+        ...item,
+        id: `chart-${Date.now()}-${crypto.randomUUID()}`,
+      })),
+      annotations: (sourceSlide.annotations || []).map((annotation) => ({
+        ...annotation,
+        id: `anno-${Date.now()}-${crypto.randomUUID()}`,
+      })),
+    };
+
+    setSlides((prev) => {
+      const updated = [...prev];
+      updated.splice(index + 1, 0, localDuplicate);
+      return updated;
+    });
+
+    setActiveSlideIndex(index + 1);
+    setSelectedAnnoId(null);
+    setSelectedChartId(null);
+    return;
+  }
+
   try {
     isSlideActionRef.current = true;
 
     const token = localStorage.getItem("token");
-    const slideId = slides[index].id;
 
     const res = await fetch(
-      `http://localhost:5000/stories/${storyId}/slides/${slideId}/duplicate`,
+      `http://localhost:5000/stories/${storyId}/slides/${sourceSlide.id}/duplicate`,
       {
         method: "POST",
         headers: {
@@ -133,15 +167,56 @@ const exportStoryPDF = async () => {
       }
     );
 
-    const data = await res.json();
+    const responseData = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.error || "Failed to duplicate slide");
+      throw new Error(
+        responseData.error || "Failed to duplicate slide"
+      );
     }
 
-    setSlides(prev => {
+    const duplicatedSlide =
+      responseData.slide || responseData;
+
+    if (!duplicatedSlide?.id) {
+      throw new Error(
+        "Duplicate endpoint did not return a new slide ID"
+      );
+    }
+
+    if (
+      String(duplicatedSlide.id) === String(sourceSlide.id)
+    ) {
+      throw new Error(
+        "Duplicate endpoint returned the original slide ID"
+      );
+    }
+
+    setSlides((prev) => {
+      if (
+        prev.some(
+          (slide) =>
+            String(slide.id) ===
+            String(duplicatedSlide.id)
+        )
+      ) {
+        console.error(
+          "Duplicate slide ID returned:",
+          duplicatedSlide.id
+        );
+
+        return prev;
+      }
+
       const updated = [...prev];
-      updated.splice(index + 1, 0, data);
+
+      updated.splice(index + 1, 0, {
+        ...duplicatedSlide,
+        content: duplicatedSlide.content || [],
+        annotations: duplicatedSlide.annotations || [],
+        description: duplicatedSlide.description || "",
+      });
+
       return updated;
     });
 
@@ -153,30 +228,55 @@ const exportStoryPDF = async () => {
   } finally {
     setTimeout(() => {
       isSlideActionRef.current = false;
-    }, 1500);
+    }, 500);
   }
 };
-
 const deleteSlide = async (index) => {
-  const slideId = slides[index].id;
+  const targetSlide = slides[index];
 
-  // delete unsaved temp slide locally only
-  if (String(slideId).startsWith("temp-")) {
-    setSlides(prev => {
-      const updated = prev.filter((_, i) => i !== index);
+  if (!targetSlide) return;
+
+  const slideId = targetSlide.id;
+
+  const removeSlideLocally = () => {
+    setSlides((prev) => {
+      const updated = prev.filter(
+        (slide) =>
+          String(slide.id) !== String(slideId)
+      );
+
       return updated.length
         ? updated
-        : [{ id: `temp-${Date.now()}`, content: [], description: "", annotations: [] }];
+        : [
+            {
+              id: `temp-${Date.now()}-${crypto.randomUUID()}`,
+              content: [],
+              description: "",
+              annotations: [],
+            },
+          ];
     });
 
-    setActiveSlideIndex(current => {
-      if (current === index) return Math.max(0, index - 1);
-      if (current > index) return current - 1;
+    setActiveSlideIndex((current) => {
+      const nextLength = Math.max(slides.length - 1, 1);
+
+      if (current > index) {
+        return current - 1;
+      }
+
+      if (current === index) {
+        return Math.min(index, nextLength - 1);
+      }
+
       return current;
     });
 
     setSelectedAnnoId(null);
     setSelectedChartId(null);
+  };
+
+  if (String(slideId).startsWith("temp-")) {
+    removeSlideLocally();
     return;
   }
 
@@ -195,26 +295,21 @@ const deleteSlide = async (index) => {
       }
     );
 
-    const data = await res.json();
+    let data = {};
 
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to delete slide");
+    try {
+      data = await res.json();
+    } catch {
+      // DELETE endpoints may return an empty response.
     }
 
-    setSlides(prev => {
-      const updated = prev.filter((_, i) => i !== index);
-      return updated.length
-        ? updated
-        : [{ id: `temp-${Date.now()}`, content: [], description: "", annotations: [] }];
-    });
+    if (!res.ok) {
+      throw new Error(
+        data.error || "Failed to delete slide"
+      );
+    }
 
-    setActiveSlideIndex(current => {
-      if (current === index) return Math.max(0, index - 1);
-      if (current > index) return current - 1;
-      return current;
-    });
-
-    setSelectedAnnoId(null);
+    removeSlideLocally();
   } catch (err) {
     console.error("Delete slide error:", err);
   } finally {
@@ -224,18 +319,76 @@ const deleteSlide = async (index) => {
   }
 };
 
-
   const createChartItem = (chartId, name, index = 0) => ({
     id: `chart-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     type: "chart",
     chartId,
     name,
-    x: Math.min(5 + index * 4, 35),
-    y: Math.min(5 + index * 4, 35),
-    width: 48,
-    height: 45,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
     zIndex: index + 1,
   });
+
+  const arrangeCharts = (items = []) => {
+    const count = items.length;
+    const gap = 1.5;
+
+    if (count === 0) return [];
+
+    if (count === 1) {
+      return items.map((item, index) => ({
+        ...item, x: 0, y: 0, width: 100, height: 100, zIndex: index + 1,
+      }));
+    }
+
+    if (count === 2) {
+      const width = (100 - gap) / 2;
+      return items.map((item, index) => ({
+        ...item,
+        x: index * (width + gap),
+        y: 0,
+        width,
+        height: 100,
+        zIndex: index + 1,
+      }));
+    }
+
+    if (count === 3) {
+      const leftWidth = 58;
+      const rightWidth = 100 - leftWidth - gap;
+      const rightHeight = (100 - gap) / 2;
+
+      return items.map((item, index) =>
+        index === 0
+          ? { ...item, x: 0, y: 0, width: leftWidth, height: 100, zIndex: 1 }
+          : {
+              ...item,
+              x: leftWidth + gap,
+              y: (index - 1) * (rightHeight + gap),
+              width: rightWidth,
+              height: rightHeight,
+              zIndex: index + 1,
+            }
+      );
+    }
+
+    const columns =
+      count === 4 ? 2 : count <= 6 ? 3 : Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / columns);
+    const width = (100 - gap * (columns - 1)) / columns;
+    const height = (100 - gap * (rows - 1)) / rows;
+
+    return items.map((item, index) => ({
+      ...item,
+      x: (index % columns) * (width + gap),
+      y: Math.floor(index / columns) * (height + gap),
+      width,
+      height,
+      zIndex: index + 1,
+    }));
+  };
 
   const addChartToSlide = (chartId, name) => {
     let newItemId = null;
@@ -248,10 +401,7 @@ const deleteSlide = async (index) => {
         const newItem = createChartItem(chartId, name, content.length);
         newItemId = newItem.id;
 
-        return {
-          ...slide,
-          content: [...content, newItem],
-        };
+        return { ...slide, content: arrangeCharts([...content, newItem]) };
       })
     );
 
@@ -277,16 +427,13 @@ const deleteSlide = async (index) => {
 
   const deleteChartItem = (itemId) => {
     setSlides((prev) =>
-      prev.map((slide, index) =>
-        index === activeSlideIndex
-          ? {
-              ...slide,
-              content: (slide.content || []).filter(
-                (item) => item.id !== itemId
-              ),
-            }
-          : slide
-      )
+      prev.map((slide, index) => {
+        if (index !== activeSlideIndex) return slide;
+        const remaining = (slide.content || []).filter(
+          (item) => item.id !== itemId
+        );
+        return { ...slide, content: arrangeCharts(remaining) };
+      })
     );
 
     setSelectedChartId((current) => (current === itemId ? null : current));
@@ -307,20 +454,13 @@ const deleteSlide = async (index) => {
           .toString(36)
           .slice(2)}`;
 
-        const duplicatedItem = {
+        const duplicate = {
           ...sourceItem,
           id: duplicatedId,
           name: `${sourceItem.name || "Chart"} copy`,
-          x: Math.min((sourceItem.x ?? 5) + 4, 100 - (sourceItem.width ?? 48)),
-          y: Math.min((sourceItem.y ?? 5) + 4, 100 - (sourceItem.height ?? 45)),
-          zIndex:
-            Math.max(0, ...content.map((item) => item.zIndex || 0)) + 1,
         };
 
-        return {
-          ...slide,
-          content: [...content, duplicatedItem],
-        };
+        return { ...slide, content: arrangeCharts([...content, duplicate]) };
       })
     );
 
@@ -332,19 +472,13 @@ const deleteSlide = async (index) => {
     setSlides((prev) =>
       prev.map((slide, index) => {
         if (index !== activeSlideIndex) return slide;
-
         const content = slide.content || [];
-        const highestZIndex = Math.max(
-          0,
-          ...content.map((item) => item.zIndex || 0)
-        );
+        const highest = Math.max(0, ...content.map((item) => item.zIndex || 0));
 
         return {
           ...slide,
           content: content.map((item) =>
-            item.id === itemId
-              ? { ...item, zIndex: highestZIndex + 1 }
-              : item
+            item.id === itemId ? { ...item, zIndex: highest + 1 } : item
           ),
         };
       })
@@ -355,19 +489,13 @@ const deleteSlide = async (index) => {
     setSlides((prev) =>
       prev.map((slide, index) => {
         if (index !== activeSlideIndex) return slide;
-
         const content = slide.content || [];
-        const lowestZIndex = Math.min(
-          0,
-          ...content.map((item) => item.zIndex || 0)
-        );
+        const lowest = Math.min(0, ...content.map((item) => item.zIndex || 0));
 
         return {
           ...slide,
           content: content.map((item) =>
-            item.id === itemId
-              ? { ...item, zIndex: lowestZIndex - 1 }
-              : item
+            item.id === itemId ? { ...item, zIndex: lowest - 1 } : item
           ),
         };
       })
@@ -377,7 +505,6 @@ const deleteSlide = async (index) => {
   const startChartInteraction = (event, mode, item) => {
     event.preventDefault();
     event.stopPropagation();
-
     if (!canvasRef.current) return;
 
     setSelectedChartId(item.id);
@@ -389,10 +516,10 @@ const deleteSlide = async (index) => {
       itemId: item.id,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      startX: item.x ?? 5,
-      startY: item.y ?? 5,
-      startWidth: item.width ?? 48,
-      startHeight: item.height ?? 45,
+      startX: item.x ?? 0,
+      startY: item.y ?? 0,
+      startWidth: item.width ?? 100,
+      startHeight: item.height ?? 100,
     };
 
     document.addEventListener("mousemove", handleChartInteractionMove);
@@ -402,7 +529,6 @@ const deleteSlide = async (index) => {
   const handleChartInteractionMove = (event) => {
     const interaction = chartInteractionRef.current;
     const canvas = canvasRef.current;
-
     if (!interaction || !canvas) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -414,33 +540,65 @@ const deleteSlide = async (index) => {
       ((event.clientY - interaction.startClientY) / rect.height) * 100;
 
     if (interaction.mode === "move") {
-      const maxX = Math.max(0, 100 - interaction.startWidth);
-      const maxY = Math.max(0, 100 - interaction.startHeight);
-
       updateChartItem(interaction.itemId, {
-        x: Math.max(0, Math.min(maxX, interaction.startX + deltaX)),
-        y: Math.max(0, Math.min(maxY, interaction.startY + deltaY)),
+        x: Math.max(
+          0,
+          Math.min(100 - interaction.startWidth, interaction.startX + deltaX)
+        ),
+        y: Math.max(
+          0,
+          Math.min(100 - interaction.startHeight, interaction.startY + deltaY)
+        ),
       });
       return;
     }
 
-    if (interaction.mode === "resize") {
-      const minWidth = 20;
-      const minHeight = 20;
-      const maxWidth = 100 - interaction.startX;
-      const maxHeight = 100 - interaction.startY;
+    const minWidth = 18;
+    const minHeight = 18;
+    let x = interaction.startX;
+    let y = interaction.startY;
+    let width = interaction.startWidth;
+    let height = interaction.startHeight;
 
-      updateChartItem(interaction.itemId, {
-        width: Math.max(
-          minWidth,
-          Math.min(maxWidth, interaction.startWidth + deltaX)
-        ),
-        height: Math.max(
-          minHeight,
-          Math.min(maxHeight, interaction.startHeight + deltaY)
-        ),
-      });
+    if (interaction.mode.includes("right")) {
+      width = Math.max(
+        minWidth,
+        Math.min(100 - interaction.startX, interaction.startWidth + deltaX)
+      );
     }
+
+    if (interaction.mode.includes("bottom")) {
+      height = Math.max(
+        minHeight,
+        Math.min(100 - interaction.startY, interaction.startHeight + deltaY)
+      );
+    }
+
+    if (interaction.mode.includes("left")) {
+      const nextX = Math.max(
+        0,
+        Math.min(
+          interaction.startX + interaction.startWidth - minWidth,
+          interaction.startX + deltaX
+        )
+      );
+      x = nextX;
+      width = interaction.startWidth + interaction.startX - nextX;
+    }
+
+    if (interaction.mode.includes("top")) {
+      const nextY = Math.max(
+        0,
+        Math.min(
+          interaction.startY + interaction.startHeight - minHeight,
+          interaction.startY + deltaY
+        )
+      );
+      y = nextY;
+      height = interaction.startHeight + interaction.startY - nextY;
+    }
+
+    updateChartItem(interaction.itemId, { x, y, width, height });
   };
 
   const stopChartInteraction = () => {
@@ -517,16 +675,20 @@ const handleProjectClick = async (projectId) => {
             annotations: s.annotations || [],
             content: (s.content || []).map((item, index) => ({
               ...item,
-              id:
-                item.id ||
-                `chart-${Date.now()}-${index}-${Math.random()
-                  .toString(36)
-                  .slice(2)}`,
-              x: item.x ?? Math.min(5 + index * 4, 35),
-              y: item.y ?? Math.min(5 + index * 4, 35),
-              width: item.width ?? 48,
-              height: item.height ?? 45,
-              zIndex: item.zIndex ?? index + 1,
+              // Keep the persisted layout exactly as it was saved.
+              // A stable fallback is used only for old records that never had layout data.
+              id: item.id || `chart-${s.id || "slide"}-${item.chartId || index}`,
+              x: Number.isFinite(Number(item.x)) ? Number(item.x) : 0,
+              y: Number.isFinite(Number(item.y)) ? Number(item.y) : 0,
+              width: Number.isFinite(Number(item.width))
+                ? Number(item.width)
+                : 100,
+              height: Number.isFinite(Number(item.height))
+                ? Number(item.height)
+                : 100,
+              zIndex: Number.isFinite(Number(item.zIndex))
+                ? Number(item.zIndex)
+                : index + 1,
             }))
           })));
         } else {
@@ -549,13 +711,26 @@ const handleProjectClick = async (projectId) => {
 
   return () => clearTimeout(autosaveTimerRef.current);
 }, [storyName, slides]);
-const cleanSlides = slides.map(slide => {
+const cleanSlides = slides.map((slide) => {
   const isTemp = String(slide.id).startsWith("temp-");
 
   return {
     ...slide,
     id: isTemp ? undefined : slide.id,
-    content: slide.content || [],
+
+    // Explicitly persist every chart layout property.
+    content: (slide.content || []).map((item, index) => ({
+      id: item.id,
+      type: item.type || "chart",
+      chartId: item.chartId,
+      name: item.name || "Chart",
+      x: Number(item.x ?? 0),
+      y: Number(item.y ?? 0),
+      width: Number(item.width ?? 100),
+      height: Number(item.height ?? 100),
+      zIndex: Number(item.zIndex ?? index + 1),
+    })),
+
     annotations: slide.annotations || [],
   };
 });
@@ -720,7 +895,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       },
       body: JSON.stringify({
         name: storyName,
-        slides,
+        slides: cleanSlides,
       }),
     });
 
@@ -884,6 +1059,8 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
   
 
   return (
+    <>
+    <Header/>
     <div className="app-page flex h-screen font-sans select-none">
       
       {/* LEFT SIDEBAR: Slide Deck */}
@@ -1087,15 +1264,49 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                       </div>
 
                       {isSelected && (
-                        <button
-                          type="button"
-                          aria-label="Resize chart"
-                          title="Drag to resize"
-                          onMouseDown={(event) =>
-                            startChartInteraction(event, "resize", item)
-                          }
-                          className="absolute bottom-0 right-0 z-30 h-4 w-4 translate-x-1/3 translate-y-1/3 cursor-se-resize rounded-full border-2 border-[rgb(var(--color-surface))] bg-[rgb(var(--color-primary))] shadow-md"
-                        />
+                        <>
+                          <div
+                            onMouseDown={(event) =>
+                              startChartInteraction(event, "top", item)
+                            }
+                            className="absolute left-3 right-3 top-0 z-30 h-2 -translate-y-1/2 cursor-n-resize"
+                          />
+                          <div
+                            onMouseDown={(event) =>
+                              startChartInteraction(event, "bottom", item)
+                            }
+                            className="absolute bottom-0 left-3 right-3 z-30 h-2 translate-y-1/2 cursor-s-resize"
+                          />
+                          <div
+                            onMouseDown={(event) =>
+                              startChartInteraction(event, "left", item)
+                            }
+                            className="absolute bottom-3 left-0 top-3 z-30 w-2 -translate-x-1/2 cursor-w-resize"
+                          />
+                          <div
+                            onMouseDown={(event) =>
+                              startChartInteraction(event, "right", item)
+                            }
+                            className="absolute bottom-3 right-0 top-3 z-30 w-2 translate-x-1/2 cursor-e-resize"
+                          />
+
+                          {[
+                            ["top-left", "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"],
+                            ["top-right", "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"],
+                            ["bottom-left", "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"],
+                            ["bottom-right", "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"],
+                          ].map(([mode, position]) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              aria-label={`Resize chart from ${mode}`}
+                              onMouseDown={(event) =>
+                                startChartInteraction(event, mode, item)
+                              }
+                              className={`absolute z-40 h-3 w-3 rounded-sm border border-[rgb(var(--color-surface))] bg-[rgb(var(--color-primary))] shadow ${position}`}
+                            />
+                          ))}
+                        </>
                       )}
                     </div>
                   </div>
@@ -1667,6 +1878,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       )}
 
     </div>
+    </>
   );
 }
 

@@ -15,6 +15,8 @@ const chartsRoutes = require("./routes/charts");
 const searchRoutes = require("./routes/search");
 const storiesRoutes = require("./routes/stories");
 const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/user")
+
 
 app.use("/search", searchRoutes);
 app.use("/projects", projectsRoutes);
@@ -24,7 +26,7 @@ app.use("/auth", authRoutes);
 app.use("/data", dataRoutes);
 app.use("/charts", chartsRoutes);
 app.use("/stories", storiesRoutes);
-
+app.use("/users",userRoutes);
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });

@@ -8,74 +8,105 @@ function PalettePicker({
 }) {
   const [open, setOpen] = useState(false);
 
-  const active = palettes?.[settings.palette] ?? palettes.Standard;
+  const fallbackPalette =
+    palettes?.Standard ?? Object.values(palettes ?? {})[0];
+
+  const active = palettes?.[settings.palette] ?? fallbackPalette;
 
   return (
     <div className="relative">
-
-      {/* SELECTED */}
+      {/* SELECTED PALETTE */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
         className="
-          w-full p-3 rounded-xl border
-          flex items-center justify-between
-          bg-white hover:shadow-sm transition
+          app-card app-text
+          flex w-full items-center justify-between
+          rounded-xl p-3
+          transition
+          hover:bg-[rgb(var(--color-surface-hover))]
+          hover:shadow-sm
         "
       >
         <span className="text-sm font-semibold">
           {settings.palette}
         </span>
 
-        {/* preview strip */}
-        <div className="flex h-3 w-24 rounded overflow-hidden">
-          {(active?.preview || []).map((c, i) => (
-            <div key={i} className="flex-1" style={{ background: c }} />
+        <div className="flex h-3 w-24 overflow-hidden rounded">
+          {(active?.preview ?? []).map((color, index) => (
+            <div
+              key={`${color}-${index}`}
+              className="flex-1"
+              style={{ backgroundColor: color }}
+            />
           ))}
         </div>
       </button>
 
       {/* DROPDOWN */}
       {open && (
-        <div className="
-          absolute z-50 mt-2 w-full
-          bg-white border rounded-xl shadow-lg
-          p-2 max-h-64 overflow-auto
-        ">
-          {Object.entries(palettes).map(([name, p]) => {
+        <div
+          className="
+            app-menu
+            absolute z-50 mt-2
+            max-h-64 w-full overflow-auto
+            rounded-xl p-2
+          "
+        >
+          {Object.entries(palettes ?? {}).map(([name, palette]) => {
             const isActive = settings.palette === name;
 
             return (
               <button
+                type="button"
                 key={name}
                 onClick={() => {
                   updateSetting("palette", name);
                   setOpen(false);
                 }}
                 className={`
-                  w-full p-2 rounded-lg mb-1 border
-                  flex flex-col gap-2 text-left
-                  transition
-                  ${isActive
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-transparent hover:bg-slate-50"
+                  mb-1 flex w-full flex-col gap-2
+                  rounded-lg border p-2
+                  text-left transition-colors
+                  ${
+                    isActive
+                      ? `
+                        border-[rgb(var(--color-primary))]
+                        bg-[rgb(var(--color-primary-soft))]
+                        text-[rgb(var(--color-primary))]
+                      `
+                      : `
+                        border-transparent
+                        text-[rgb(var(--color-text-secondary))]
+                        hover:bg-[rgb(var(--color-surface-hover))]
+                        hover:text-[rgb(var(--color-text))]
+                      `
                   }
                 `}
               >
-                {/* name */}
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase">
                     {name}
                   </span>
 
                   {isActive && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div
+                      className="
+                        h-2 w-2 rounded-full
+                        bg-[rgb(var(--color-primary))]
+                      "
+                    />
                   )}
                 </div>
 
-                {/* preview */}
-                <div className="flex h-2 rounded overflow-hidden">
-                  {(p?.preview || []).map((c, i) => (
-                    <div key={i} className="flex-1" style={{ background: c }} />
+                <div className="flex h-2 overflow-hidden rounded">
+                  {(palette?.preview ?? []).map((color, index) => (
+                    <div
+                      key={`${color}-${index}`}
+                      className="flex-1"
+                      style={{ backgroundColor: color }}
+                    />
                   ))}
                 </div>
               </button>
