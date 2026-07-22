@@ -61,6 +61,8 @@ function StoryChart({ chartId }) {
   useEffect(() => {
     loadChart();
   }, [chartId]);
+
+  
 const parsedSettings =
   typeof chart?.settings === "string"
     ? JSON.parse(chart.settings)
@@ -78,9 +80,23 @@ const parsedY = chart?.y_axis
   : [];
 
 const chartConfig = {
+  ...savedConfig,
+
+  
   x: savedConfig.x || chart?.x_axis || null,
-  y: savedConfig.y || (Array.isArray(parsedY) ? parsedY : [parsedY]),
-  type: savedConfig.type || chart?.chart_type || "bar",
+
+  y:
+    savedConfig.y ||
+    (Array.isArray(parsedY)
+      ? parsedY
+      : parsedY
+        ? [parsedY]
+        : []),
+
+  type:
+    savedConfig.type ||
+    chart?.chart_type ||
+    "bar",
 
   aggregation:
     savedConfig.aggregation ||
@@ -92,18 +108,26 @@ const chartConfig = {
     parsedSettings.sort ||
     "none",
 
+  appearance: {
+    ...(savedConfig.appearance || {}),
+  },
+
   limit: savedConfig.limit || null,
   sortBy: savedConfig.sortBy || null,
   timeGroupBy: savedConfig.timeGroupBy || "none",
-  groupSmallCategories: savedConfig.groupSmallCategories || false,
+  groupSmallCategories:
+    savedConfig.groupSmallCategories || false,
   filterField: savedConfig.filterField || null,
   xHierarchy: savedConfig.xHierarchy || [],
-  dateHierarchySource: savedConfig.dateHierarchySource || null,
+  dateHierarchySource:
+    savedConfig.dateHierarchySource || null,
 };
+
 
   const {
     chartData,
-    generatedColors
+    generatedColors,
+    visibleYKeys,
   } = useChartData({
     data: rows,
     chartConfig,
@@ -128,12 +152,13 @@ const chartConfig = {
         chartData={chartData}
         chartConfig={chartConfig}
         generatedColors={generatedColors}
+        visibleYKeys={visibleYKeys}
         rawData={rows}
         settings={{
           ...parsedSettings,
-          showLegend: false, // Force hidden
-          title: "",         // Force hidden
-          subtitle: "",      // Force hidden
+          showLegend: false,
+          title: "",
+          subtitle: "",
           description: "",
         }}
       />

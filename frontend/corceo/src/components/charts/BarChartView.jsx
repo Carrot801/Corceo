@@ -7,6 +7,7 @@ import {
   Cell,
   ResponsiveContainer,
   CartesianGrid,
+  Label,
 } from "recharts";
 
 import { formatValue } from "../../utils/formatters";
@@ -18,16 +19,25 @@ function BarChartView({
   chartConfig = {},
   visibleKeys,
 }) {
-  const yKeys = 
-  visibleKeys ?? 
-  (Array.isArray(chartConfig.y)
-    ? chartConfig.y
-    : chartConfig.y
-      ? [chartConfig.y]
-      : []);
+  const yKeys =
+    visibleKeys ??
+    (Array.isArray(chartConfig.y)
+      ? chartConfig.y
+      : chartConfig.y
+        ? [chartConfig.y]
+        : []);
+
+  /*
+   * These values come from ChartAppearanceSettings.
+   */
+  const appearance = chartConfig.appearance || {};
+  const xAxisSettings = appearance.xAxis || {};
+  const yAxisSettings = appearance.yAxis || {};
+
   const getDynamicWidth = () => {
     if (settings.compactNumbers) return 60;
     if (settings.numberFormat === "currency") return 90;
+
     return 80;
   };
 
@@ -36,30 +46,209 @@ function BarChartView({
       sum +
       yKeys.reduce(
         (innerSum, key) => innerSum + (Number(row[key]) || 0),
-        0
+        0,
       )
     );
   }, 0);
 
+  const showXGrid = xAxisSettings.showGrid ?? false;
+
+  /*
+   * Preserve your old global grid setting as the default for Y grid.
+   * Once the user changes the axis setting, that value takes priority.
+   */
+  const showYGrid =
+    yAxisSettings.showGrid ?? settings.showGrid ?? true;
+
+  const showGrid = showXGrid || showYGrid;
+
+const labelLayout =
+  xAxisSettings.labelLayout ?? "auto";
+
+const resolvedLabelLayout =
+  labelLayout === "auto"
+    ? chartData.length > 12
+      ? "angled"
+      : "horizontal"
+    : labelLayout;
+
+const xAxisAngle =
+  resolvedLabelLayout === "angled"
+    ? -35
+    : resolvedLabelLayout === "vertical"
+      ? -90
+      : 0;
+      
+  const showXAxisLabels =
+    xAxisSettings.showLabels ?? true;
+
+  const showYAxisLabels =
+    yAxisSettings.showLabels ?? true;
+
+  const showXAxisTitle =
+    (xAxisSettings.showTitle ?? true) &&
+    Boolean(xAxisSettings.title?.trim());
+
+  const showYAxisTitle =
+    (yAxisSettings.showTitle ?? true) &&
+    Boolean(yAxisSettings.title?.trim());
+
+  const xTitleOffset =
+    xAxisSettings.titleOffset ?? 16;
+
+  const yTitleOffset =
+    yAxisSettings.titleOffset ?? 16;
+
+
+  const xAxisTickSize = xAxisSettings.tickSize ?? 12;
+  const yAxisAngle = yAxisSettings.angle ?? 0;
+  const yAxisTickSize = yAxisSettings.tickSize ?? 12;
+
+  const yMin =
+    typeof yAxisSettings.min === "number"
+      ? yAxisSettings.min
+      : "auto";
+
+  const yMax =
+    typeof yAxisSettings.max === "number"
+      ? yAxisSettings.max
+      : "auto";
+
+const xAxisHeight = !showXAxisLabels
+  ? showXAxisTitle
+    ? 34 + xTitleOffset
+    : 10
+  : resolvedLabelLayout === "vertical"
+    ? 95 + xTitleOffset
+    : resolvedLabelLayout === "angled"
+      ? 62 + xTitleOffset
+      : 28 + xTitleOffset;
+
+      
+  const bottomMargin =
+    Math.abs(xAxisAngle) > 60
+      ? 90
+      : Math.abs(xAxisAngle) > 30
+        ? 65
+        : Math.abs(xAxisAngle) > 0
+          ? 45
+          : 25;
+
+  const barRadius = appearance.barRadius ?? 6;
+
   return (
-    <div className="w-full h-full min-h-0">
+    <div className="h-full min-h-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 50, left: 40, bottom: 25 }}
+          barGap={appearance.barGap ?? 8}
+          barCategoryGap={`${appearance.barCategoryGap ?? 10}%`}
+          margin={{
+            top: 20,
+            right: 50,
+            left: yAxisSettings.title ? 65 : 40,
+            bottom: xAxisSettings.title
+              ? bottomMargin + 25
+              : bottomMargin,
+          }}
         >
-          {settings.showGrid && (
-            <CartesianGrid strokeDasharray="3 3" />
+          {showGrid && (
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={showYGrid}
+              vertical={showXGrid}
+              opacity={appearance.gridOpacity ?? 0.35}
+            />
           )}
 
-          <XAxis dataKey="x" />
+          {xAxisSettings.visible !== false && (
+            <XAxis
+              dataKey="x"
+              height={xAxisHeight}
+              angle={xAxisAngle}
+              interval={
+                xAxisSettings.showEveryLabel
+                  ? 0
+                  : "preserveStartEnd"
+              }
+              minTickGap={xAxisSettings.minTickGap ?? 16}
+              axisLine={xAxisSettings.showLine ?? true}
+              tickLine={xAxisSettings.showTicks ?? false}
+              tickMargin={xAxisSettings.tickMargin ?? 8}
+              tick={
+                showXAxisLabels
+                  ? {
+                      fontSize: xAxisSettings.tickSize ?? 11,
+                      textAnchor:
+                        xAxisAngle === 0 ? "middle" : "end",
+                    }
+                  : false
+              }
+              tickFormatter={(value) => {
+                const text = String(value ?? "");
+                const maxLength =
+                  xAxisSettings.maxLabelLength ?? 18;
 
-          <YAxis
-            tickFormatter={(value) =>
-              formatValue(value, settings, total)
-            }
-            width={getDynamicWidth()}
-          />
+                return text.length > maxLength
+                  ? `${text.slice(0, maxLength - 1)}…`
+                  : text;
+              }}
+            >
+              {showXAxisTitle && (
+                <Label
+                  value={xAxisSettings.title}
+                  position="insideBottom"
+                  offset={-xTitleOffset}
+                  style={{
+                    fontSize: xAxisSettings.titleSize ?? 12,
+                    fontWeight:
+                      xAxisSettings.titleWeight ?? 600,
+                    textAnchor: "middle",
+                  }}
+                />
+              )}
+            </XAxis>
+          )}
+
+          {yAxisSettings.visible !== false && (
+            <YAxis
+              domain={[yMin, yMax]}
+              width={
+                yAxisSettings.width ??
+                (showYAxisTitle
+                  ? getDynamicWidth() + Math.min(yTitleOffset, 24)
+                  : getDynamicWidth())
+              }
+              axisLine={yAxisSettings.showLine ?? false}
+              tickLine={yAxisSettings.showTicks ?? false}
+              tickMargin={yAxisSettings.tickMargin ?? 8}
+              tick={
+                showYAxisLabels
+                  ? {
+                      fontSize: yAxisSettings.tickSize ?? 11,
+                    }
+                  : false
+              }
+              tickFormatter={(value) =>
+                formatValue(value, settings, total)
+              }
+            >
+              {showYAxisTitle && (
+                <Label
+                  value={yAxisSettings.title}
+                  angle={-90}
+                  position="insideLeft"
+                  offset={-yTitleOffset}
+                  style={{
+                    fontSize: yAxisSettings.titleSize ?? 12,
+                    fontWeight:
+                      yAxisSettings.titleWeight ?? 600,
+                    textAnchor: "middle",
+                  }}
+                />
+              )}
+            </YAxis>
+          )}
 
           <Tooltip
             formatter={(value, name) => [
@@ -68,20 +257,33 @@ function BarChartView({
             ]}
           />
 
-          {yKeys.map((key, index) => (
+          {yKeys.map((key, seriesIndex) => (
             <Bar
               key={key}
               dataKey={key}
-              radius={[6, 6, 0, 0]}
-              fill={generatedColors[index] || "#3b82f6"}
+              barSize={appearance.barSize ?? undefined}
+              maxBarSize={appearance.maxBarSize ?? 100}
+              opacity={appearance.opacity ?? 1}
+              radius={[
+                barRadius,
+                barRadius,
+                appearance.roundBottom ? barRadius : 0,
+                appearance.roundBottom ? barRadius : 0,
+              ]}
+              fill={generatedColors[seriesIndex] || "#3b82f6"}
             >
-            {chartData.map((entry, index) => (
-              <Cell
-                key={`bar-cell-${index}`}
-                fill={entry.color || generatedColors[index % generatedColors.length]}
-              />
-            ))}
-
+              {chartData.map((entry, rowIndex) => (
+                <Cell
+                  key={`${key}-bar-cell-${rowIndex}`}
+                  fill={
+                    entry.color ||
+                    generatedColors[
+                      seriesIndex % generatedColors.length
+                    ] ||
+                    "#3b82f6"
+                  }
+                />
+              ))}
             </Bar>
           ))}
         </BarChart>

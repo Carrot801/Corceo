@@ -115,6 +115,35 @@ const removeFieldFromAxis = (axis, field) => {
       direction: "none",
     },
 
+    appearance: {
+      barCategoryGap: 24,
+      barGap: 4,
+      barRadius: 5,
+      maxBarSize: 72,
+
+      xAxis: {
+        visible: true,
+        labelLayout: "auto",
+        tickSize: 11,
+        maxLabelLength: 18,
+        minTickGap: 16,
+        showEveryLabel: false,
+        showLine: true,
+        showTicks: false,
+        showGrid: false,
+      },
+
+      yAxis: {
+        visible: true,
+        tickSize: 11,
+        showLine: false,
+        showTicks: false,
+        showGrid: true,
+        min: "auto",
+        max: "auto",
+      },
+    },
+
     ranking: {
       enabled: false,
       direction: "top",
@@ -134,6 +163,24 @@ const removeFieldFromAxis = (axis, field) => {
     groupSmallCategories: false,
     timeGroupBy: "none",
   });
+
+const handleMarkClick = (item) => {
+  if (!chartConfig.x || !item?.x) return;
+
+  setChartConfig((prev) => ({
+    ...prev,
+    filters: [
+      ...prev.filters.filter(
+        (filter) => filter.field !== chartConfig.x
+      ),
+      {
+        field: chartConfig.x,
+        operator: "equals",
+        value: item.x,
+      },
+    ],
+  }));
+};
 
     const multiYCharts = ["bar", "line", "area", "composed"];
 
@@ -269,6 +316,7 @@ await saveDataset();
       sort: chartConfig.sort,
     },
     chart_config: chartConfig,
+    image_data: base64Image,
   });
 };
 
@@ -422,6 +470,7 @@ const savedConfig =
 
     dateHierarchySource: inferredDateSource,
 
+    appearance: savedConfig.appearance || {},
     timeGroupBy: inferredDateSource
       ? "hierarchy"
       : savedConfig.timeGroupBy || "none",

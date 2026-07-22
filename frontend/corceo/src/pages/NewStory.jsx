@@ -115,122 +115,120 @@ const exportStoryPDF = async () => {
   };
 
 
-    
-   const duplicateSlide = async (index) => {
+    const duplicateSlide = async (index) => {
   const sourceSlide = slides[index];
 
-  if (!sourceSlide) return;
-
-  /*
-   * Unsaved slides cannot be duplicated through an endpoint that expects
-   * a database slide ID, so duplicate them locally.
-   */
-  if (String(sourceSlide.id).startsWith("temp-")) {
-    const localDuplicate = {
-      ...structuredClone(sourceSlide),
-      id: `temp-${Date.now()}-${crypto.randomUUID()}`,
-      description: sourceSlide.description || "",
-      content: (sourceSlide.content || []).map((item) => ({
-        ...item,
-        id: `chart-${Date.now()}-${crypto.randomUUID()}`,
-      })),
-      annotations: (sourceSlide.annotations || []).map((annotation) => ({
-        ...annotation,
-        id: `anno-${Date.now()}-${crypto.randomUUID()}`,
-      })),
-    };
-
-    setSlides((prev) => {
-      const updated = [...prev];
-      updated.splice(index + 1, 0, localDuplicate);
-      return updated;
-    });
-
-    setActiveSlideIndex(index + 1);
-    setSelectedAnnoId(null);
-    setSelectedChartId(null);
+  if (!sourceSlide) {
+    console.error(
+      "Cannot duplicate: slide does not exist",
+      index,
+    );
     return;
   }
 
   try {
-    isSlideActionRef.current = true;
+    /*
+     * First save the story.
+     *
+     * This guarantees that every slide has a current
+     * database ID before duplication begins.
+     */
+    const actualStoryId = await saveStory();
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch(
-      `http://localhost:5000/stories/${storyId}/slides/${sourceSlide.id}/duplicate`,
+    if (!token) {
+      throw new Error(
+        "No authentication token found",
+      );
+    }
+
+    /*
+     * saveStory reloads the story and React state updates
+     * asynchronously. Therefore, obtain the canonical slide
+     * again directly from the server.
+     */
+    const storyResponse = await fetch(
+      `http://localhost:5000/stories/${actualStoryId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const storyData = await storyResponse.json();
+
+    if (!storyResponse.ok) {
+      throw new Error(
+        storyData.error ||
+          "Failed to load saved slides",
+      );
+    }
+
+    const canonicalSlides =
+      normalizeStorySlides(storyData);
+
+    const canonicalSourceSlide =
+      canonicalSlides[index];
+
+    if (!canonicalSourceSlide?.id) {
+      throw new Error(
+        "The saved slide has no database ID",
+      );
+    }
+
+    isSlideActionRef.current = true;
+
+    const response = await fetch(
+      `http://localhost:5000/stories/${actualStoryId}/slides/${canonicalSourceSlide.id}/duplicate`,
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
-    const responseData = await res.json();
+    const result = await response.json();
 
-    if (!res.ok) {
+    if (!response.ok) {
       throw new Error(
-        responseData.error || "Failed to duplicate slide"
+        result.error ||
+          "Failed to duplicate slide",
       );
     }
 
-    const duplicatedSlide =
-      responseData.slide || responseData;
+    /*
+     * Reload the entire story after duplication.
+     * This keeps positions and all database IDs canonical.
+     */
+    const updatedStory = await reloadSavedStory(
+      actualStoryId,
+      token,
+    );
 
-    if (!duplicatedSlide?.id) {
-      throw new Error(
-        "Duplicate endpoint did not return a new slide ID"
-      );
-    }
+    const duplicatedIndex = Math.min(
+      index + 1,
+      (updatedStory.slides || []).length - 1,
+    );
 
-    if (
-      String(duplicatedSlide.id) === String(sourceSlide.id)
-    ) {
-      throw new Error(
-        "Duplicate endpoint returned the original slide ID"
-      );
-    }
-
-    setSlides((prev) => {
-      if (
-        prev.some(
-          (slide) =>
-            String(slide.id) ===
-            String(duplicatedSlide.id)
-        )
-      ) {
-        console.error(
-          "Duplicate slide ID returned:",
-          duplicatedSlide.id
-        );
-
-        return prev;
-      }
-
-      const updated = [...prev];
-
-      updated.splice(index + 1, 0, {
-        ...duplicatedSlide,
-        content: duplicatedSlide.content || [],
-        annotations: duplicatedSlide.annotations || [],
-        description: duplicatedSlide.description || "",
-      });
-
-      return updated;
-    });
-
-    setActiveSlideIndex(index + 1);
+    setActiveSlideIndex(duplicatedIndex);
     setSelectedAnnoId(null);
     setSelectedChartId(null);
-  } catch (err) {
-    console.error("Duplicate slide error:", err);
+  } catch (error) {
+    console.error(
+      "Duplicate slide error:",
+      error,
+    );
   } finally {
     setTimeout(() => {
       isSlideActionRef.current = false;
-    }, 500);
+    }, 300);
   }
 };
+
+
 const deleteSlide = async (index) => {
   const targetSlide = slides[index];
 
@@ -666,33 +664,24 @@ const handleProjectClick = async (projectId) => {
         if (!res.ok) throw new Error("Network response was not ok");
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         hasLoadedStoryRef.current = true;
-        setStoryName(data.name);
+
+        setStoryName(
+          data.name || "Untitled Story",
+        );
+
         if (data.slides?.length) {
-          setSlides(data.slides.map(s => ({
-            ...s,
-            annotations: s.annotations || [],
-            content: (s.content || []).map((item, index) => ({
-              ...item,
-              // Keep the persisted layout exactly as it was saved.
-              // A stable fallback is used only for old records that never had layout data.
-              id: item.id || `chart-${s.id || "slide"}-${item.chartId || index}`,
-              x: Number.isFinite(Number(item.x)) ? Number(item.x) : 0,
-              y: Number.isFinite(Number(item.y)) ? Number(item.y) : 0,
-              width: Number.isFinite(Number(item.width))
-                ? Number(item.width)
-                : 100,
-              height: Number.isFinite(Number(item.height))
-                ? Number(item.height)
-                : 100,
-              zIndex: Number.isFinite(Number(item.zIndex))
-                ? Number(item.zIndex)
-                : index + 1,
-            }))
-          })));
+          setSlides(normalizeStorySlides(data));
         } else {
-          setSlides([{ id: `temp-${Date.now()}`, content: [], description: "", annotations: [] }]);
+          setSlides([
+            {
+              id: `temp-${crypto.randomUUID()}`,
+              content: [],
+              description: "",
+              annotations: [],
+            },
+          ]);
         }
       })
       .catch(err => console.error("Fetch error:", err));
@@ -734,37 +723,164 @@ const cleanSlides = slides.map((slide) => {
     annotations: slide.annotations || [],
   };
 });
-  const saveStory = async () => {
-    const isNew = storyId === "new" || !storyId;
-    const url = isNew ? "http://localhost:5000/stories" : `http://localhost:5000/stories/${storyId}`;
+
+const normalizeStorySlides = (storyData) => {
+  return (storyData.slides || []).map((slide) => ({
+    ...slide,
+
+    id: slide.id,
+
+    description: slide.description || "",
+
+    annotations: slide.annotations || [],
+
+    content: (slide.content || []).map((item, index) => ({
+      ...item,
+
+      /*
+       * Keep a stable UI ID for chart interactions.
+       * The backend currently returns chart items using a generated ID.
+       */
+      id:
+        item.id ||
+        `chart-instance-${slide.id}-${item.chartId}-${index}`,
+
+      chartId:
+        item.chartId ??
+        item.chart_id,
+
+      name: item.name || "Chart",
+      type: item.type || "chart",
+
+      x: Number(item.x ?? 0),
+      y: Number(item.y ?? 0),
+      width: Number(item.width ?? 100),
+      height: Number(item.height ?? 100),
+      zIndex: Number(
+        item.zIndex ??
+        item.z_index ??
+        index + 1,
+      ),
+    })),
+  }));
+};
+
+const reloadSavedStory = async (
+  savedStoryId,
+  token,
+) => {
+  const response = await fetch(
+    `http://localhost:5000/stories/${savedStoryId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const storyData = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      storyData.error ||
+        "Failed to reload the saved story",
+    );
+  }
+
+  setStoryName(storyData.name || "Untitled Story");
+  setSlides(normalizeStorySlides(storyData));
+
+  return storyData;
+};
+
+const saveStory = async () => {
+  const isNew =
+    storyId === "new" ||
+    !storyId ||
+    storyId === "undefined";
+
+  const url = isNew
+    ? "http://localhost:5000/stories"
+    : `http://localhost:5000/stories/${storyId}`;
+
+  try {
+    /*
+     * Prevent autosave from running again while canonical
+     * slide IDs are being loaded into React state.
+     */
+    isSlideActionRef.current = true;
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
 
     const image_url = await makeStoryPreview();
-    try {
-      const token = localStorage.getItem("token");
 
-      const res = await fetch(url, {
-        method: isNew ? "POST" : "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ 
+    const response = await fetch(url, {
+      method: isNew ? "POST" : "PUT",
+
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+
+      body: JSON.stringify({
         name: storyName,
         slides: cleanSlides,
-        image_url: image_url,
+        image_url,
       }),
-      });
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save");
-      
-      if (isNew && data.id) {
-        navigate(`/stories/${data.id}`, { replace: true });
-      }
-    } catch (err) {
-      console.error("Save error:", err);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "Failed to save story",
+      );
     }
-  };
+
+    const actualStoryId = isNew
+      ? result.id
+      : storyId;
+
+    if (!actualStoryId) {
+      throw new Error(
+        "The backend did not return a story ID",
+      );
+    }
+
+    /*
+     * Important:
+     * updateStory deletes and recreates all slides,
+     * so immediately reload their new database IDs.
+     */
+    await reloadSavedStory(actualStoryId, token);
+
+    hasLoadedStoryRef.current = true;
+
+    if (isNew) {
+      navigate(`/stories/${actualStoryId}`, {
+        replace: true,
+      });
+    }
+
+    return actualStoryId;
+  } catch (error) {
+    console.error("Save error:", error);
+    throw error;
+  } finally {
+    /*
+     * Keep autosave paused until the React state update
+     * produced by reloadSavedStory has finished.
+     */
+    setTimeout(() => {
+      isSlideActionRef.current = false;
+    }, 300);
+  }
+};
+
 
   const addAnnotation = () => {
     const newId = `anno-${Date.now()}`;
@@ -874,42 +990,28 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       })
     } : s));
   };
-  const publishStory = async () => {
+
+
+
+  
+const publishStory = async () => {
   try {
     const token = localStorage.getItem("token");
 
-    // Save current story first
-    const saveUrl =
-      storyId === "new" || !storyId
-        ? "http://localhost:5000/stories"
-        : `http://localhost:5000/stories/${storyId}`;
-
-    const saveRes = await fetch(saveUrl, {
-      method:
-        storyId === "new" || !storyId
-          ? "POST"
-          : "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: storyName,
-        slides: cleanSlides,
-      }),
-    });
-
-    const saved = await saveRes.json();
-
-    if (!saveRes.ok) {
-      alert("Failed to save story");
-      return;
+    if (!token) {
+      throw new Error(
+        "No authentication token found",
+      );
     }
 
-    const actualStoryId =
-      saved.id || storyId;
+    const actualStoryId = await saveStory();
 
-    // Publish story
+    if (!actualStoryId) {
+      throw new Error(
+        "The story could not be saved before publishing",
+      );
+    }
+
     const publishRes = await fetch(
       `http://localhost:5000/stories/${actualStoryId}/publish`,
       {
@@ -917,23 +1019,27 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     const published =
       await publishRes.json();
 
     if (!publishRes.ok) {
-      alert("Failed to publish story");
-      return;
+      throw new Error(
+        published.error ||
+          "Failed to publish story",
+      );
     }
 
     navigate(
-      `/publishedStory/${actualStoryId}`
+      `/publishedStory/${actualStoryId}`,
     );
-
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(
+      "Publish story error:",
+      error,
+    );
   }
 };
 
@@ -1061,42 +1167,65 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
   return (
     <>
     <Header/>
-    <div className="app-page flex h-screen font-sans select-none">
-      
-      {/* LEFT SIDEBAR: Slide Deck */}
-      <div className="app-surface app-border w-72 border-r flex flex-col p-4 gap-4 shrink-0">
-        <div className="flex justify-between items-center gap-2">
-          <input 
-            type="text" 
-            value={storyName}
-            onChange={(e) => setStoryName(e.target.value)}
-            className="app-text bg-transparent text-xl font-bold border-b border-transparent hover:border-[rgb(var(--color-border-strong))] focus:border-[rgb(var(--color-highlight))] focus:outline-none p-1 w-2/3"
-          />
-          
+    <div className="app-page flex h-screen flex-col font-sans select-none">
+      <div className="app-surface app-border h-12 shrink-0 flex items-center border-b px-4 gap-4">
+
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="app-text-muted text-sm hover:text-[rgb(var(--color-text))]"
+      >
+        ← Back to projects
+      </button>
+
+      <div className="h-6 w-px bg-[rgb(var(--color-border))]" />
+
+      <input
+        value={storyName}
+        onChange={(e) => setStoryName(e.target.value)}
+        className="
+          bg-transparent
+          app-text
+          text-lg
+          font-semibold
+          outline-none
+          border-none
+          w-72
+        "
+      />
+
+      <div className="ml-auto flex gap-2">
+
+        <button
+          onClick={exportStoryPDF}
+          className="btn-secondary px-4 py-2 text-sm rounded-lg"
+        >
+          Export
+        </button>
+
+        {/* Later */}
           <button
-            onClick={exportStoryPDF}
-            className="btn-secondary px-4 py-2 text-sm shadow-sm"
-          >
-            Export
-          </button>
-          {/* <button
             onClick={publishStory}
-            className="btn-secondary px-4 py-2 text-sm shadow-sm"
+            className="btn-secondary px-4 py-2 text-sm rounded-lg"
           >
             Publish
-          </button> */}
-          <button 
-            onClick={saveStory}
-            className="btn-primary px-4 py-2 text-sm shadow-sm"
-          >
-            Save
-          </button>
-        </div>
+          </button> 
 
-        <button onClick={() => navigate(-1)} className="app-text-muted hover:text-[rgb(var(--color-text))] text-sm text-left transition-colors">&larr; Back to projects</button>
-        <hr className="app-border" />
+        <button
+          onClick={saveStory}
+          className="btn-primary px-4 py-2 text-sm rounded-lg"
+        >
+          Save
+        </button>
 
+      </div>
+    </div>
 
+    <div className="flex min-h-0 flex-1 overflow-hidden">
+
+      {/* LEFT SIDEBAR: Slide Deck */}
+      <div className="app-surface app-border w-72 border-r flex flex-col p-4 gap-4 shrink-0">
+        
         <div className="flex flex-col w-full justify-between items-center gap-2 overflow-y-scroll">
 
           {slides.map((s, i) => (
@@ -1806,26 +1935,202 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
                 </div>
               ))}
 
-              {slide.annotations?.map((anno) => (
-                <div
-                  key={anno.id}
+              {/* Annotation connector lines */}
+                <svg
                   style={{
                     position: "absolute",
-                    left: `${anno.textX}%`,
-                    top: `${anno.textY}%`,
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    zIndex: 20,
+                  }}
+                  viewBox="0 0 1184 560"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    {(slide.annotations || []).map((anno) => (
+                      <marker
+                        key={`marker-${anno.id}`}
+                        id={`export-arrow-${slide.id}-${anno.id}`}
+                        viewBox="0 0 10 10"
+                        refX="7"
+                        refY="5"
+                        markerWidth="7"
+                        markerHeight="7"
+                        orient="auto"
+                      >
+                        <path
+                          d="M 0 2 L 8 5 L 0 8 z"
+                          fill={anno.lineColor || "#64748b"}
+                        />
+                      </marker>
+                    ))}
+                  </defs>
+
+                  {(slide.annotations || []).map((anno) => {
+                    if (anno.connectorType === "none") {
+                      return null;
+                    }
+
+                    const x1 = ((anno.textX ?? 55) / 100) * 1184;
+                    const y1 = ((anno.textY ?? 55) / 100) * 560;
+                    const x2 = ((anno.x ?? 50) / 100) * 1184;
+                    const y2 = ((anno.y ?? 40) / 100) * 560;
+
+                    const markerEnd =
+                      `url(#export-arrow-${slide.id}-${anno.id})`;
+
+                    if (anno.connectorType === "curved") {
+                      const dx = x2 - x1;
+                      const dy = y2 - y1;
+                      const distance = Math.hypot(dx, dy) || 1;
+
+                      const cx =
+                        (x1 + x2) / 2 -
+                        (dy / distance) * distance * 0.2;
+
+                      const cy =
+                        (y1 + y2) / 2 +
+                        (dx / distance) * distance * 0.2;
+
+                      return (
+                        <path
+                          key={`connector-${anno.id}`}
+                          d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`}
+                          fill="none"
+                          stroke={anno.lineColor || "#64748b"}
+                          strokeWidth={anno.lineWidth || 1.5}
+                          markerEnd={markerEnd}
+                        />
+                      );
+                    }
+
+                    if (anno.connectorType === "angled") {
+                      return (
+                        <path
+                          key={`connector-${anno.id}`}
+                          d={`M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`}
+                          fill="none"
+                          stroke={anno.lineColor || "#64748b"}
+                          strokeWidth={anno.lineWidth || 1.5}
+                          markerEnd={markerEnd}
+                        />
+                      );
+                    }
+
+                    return (
+                      <line
+                        key={`connector-${anno.id}`}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={anno.lineColor || "#64748b"}
+                        strokeWidth={anno.lineWidth || 1.5}
+                        markerEnd={markerEnd}
+                      />
+                    );
+                  })}
+                </svg>
+
+            {/* Annotation markers and labels */}
+            {(slide.annotations || []).map((anno) => (
+              <React.Fragment key={anno.id}>
+                {anno.markerType !== "none" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${anno.x ?? 50}%`,
+                      top: `${anno.y ?? 40}%`,
+                      zIndex: 30,
+
+                      width:
+                        anno.markerType === "dot"
+                          ? `${(anno.radius || 6) * 2.5}px`
+                          : `${anno.width || 15}%`,
+
+                      height:
+                        anno.markerType === "dot"
+                          ? `${(anno.radius || 6) * 2.5}px`
+                          : anno.markerType === "circle"
+                            ? "auto"
+                            : `${anno.height || 15}%`,
+
+                      aspectRatio:
+                        anno.markerType === "circle"
+                          ? "1 / 1"
+                          : "auto",
+
+                      transform:
+                        anno.markerType === "dot"
+                          ? "translate(-50%, -50%)"
+                          : "none",
+
+                      borderRadius:
+                        anno.markerType === "circle" ||
+                        anno.markerType === "dot"
+                          ? "9999px"
+                          : "8px",
+
+                      backgroundColor:
+                        anno.markerType === "dot"
+                          ? anno.fillColor || "#3b82f6"
+                          : `${anno.fillColor || "#3b82f6"}10`,
+
+                      border:
+                        anno.markerType === "dot"
+                          ? "2px solid white"
+                          : `2px dashed ${
+                              anno.fillColor || "#3b82f6"
+                            }`,
+
+                      boxSizing: "border-box",
+                    }}
+                  />
+                )}
+
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${anno.textX ?? 55}%`,
+                    top: `${anno.textY ?? 55}%`,
                     transform: "translate(-50%, -50%)",
-                    background: anno.textBg || "white",
+                    zIndex: 40,
+
                     color: anno.textColor || "#1e293b",
                     fontSize: `${anno.textSize || 0.85}rem`,
                     fontWeight: anno.fontWeight || "normal",
-                    padding: "6px 10px",
-                    borderRadius: "8px",
+                    textAlign: anno.textAlign || "left",
                     maxWidth: `${anno.labelWidth || 12}rem`,
+                    borderRadius: "8px",
+
+                    backgroundColor:
+                      anno.textBg === "transparent"
+                        ? "transparent"
+                        : anno.textBg === "outline"
+                          ? "transparent"
+                          : anno.textBg || "#ffffff",
+
+                    border:
+                      anno.textBg === "outline"
+                        ? `1px solid ${
+                            anno.textColor || "#1e293b"
+                          }40`
+                        : "none",
+
+                    padding:
+                      anno.textBg === "transparent"
+                        ? "2px"
+                        : "6px 10px",
+
+                    boxSizing: "border-box",
                   }}
                 >
-                  {anno.text}
+                  {anno.text || "Annotation"}
                 </div>
-              ))}
+              </React.Fragment>
+            ))}
             </div>
           </div>
         ))}
@@ -1878,6 +2183,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
       )}
 
     </div>
+  </div>
     </>
   );
 }

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import PalettePicker from "./PalettePicker";
 import ChartTypeSelector from "./ChartTypeSelector";
+import ChartAppearanceSettings from "./ChartAppearanceSettings";
+
+
 import {
   BarChart3,
   ChartColumn,
@@ -416,6 +419,35 @@ const chartTypes = [
             </div>
             )}
         </div>
+    {/* Chart Appearance */}
+    <div className="app-border border-b">
+      <button
+        type="button"
+        onClick={() => toggleSection("appearance")}
+        className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
+      >
+        Chart Appearance
+
+        <span
+          className={`transition-transform ${
+            openSection === "appearance" ? "rotate-180" : ""
+          }`}
+        >
+          ^
+        </span>
+      </button>
+
+      {openSection === "appearance" && (
+        <div className="px-4 pb-4 pt-3">
+          <ChartAppearanceSettings
+            chartConfig={chartConfig}
+            setChartConfig={setChartConfig}
+          />
+        </div>
+      )}
+    </div>
+
+
         {/* TOOLTIP FIELDS SECTION */}
 <div className="app-border border-t">
   <button

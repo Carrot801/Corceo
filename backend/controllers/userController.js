@@ -1,13 +1,23 @@
 const bcrypt = require("bcrypt");
 const pool = require("../db");
-
 const getCurrentUser = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: "Authentication required",
+      });
+    }
 
     const result = await pool.query(
       `
-      SELECT id, full_name,username email, created_at
+      SELECT
+        id,
+        full_name,
+        username,
+        email,
+        created_at
       FROM users
       WHERE id = $1
       `,

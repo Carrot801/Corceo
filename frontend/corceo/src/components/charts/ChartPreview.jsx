@@ -21,6 +21,7 @@ function ChartPreview({
   visibleYKeys,
   generatedColors = [],
   settings,
+  onMarkClick,
 }) {
   
   const chartViews = {
@@ -135,6 +136,7 @@ function ChartPreview({
             settings={settings}
             chartConfig={chartConfig}
             visibleYKeys={visibleYKeys}
+            onMarkClick={onMarkClick}
           />
           </div>
         </div>

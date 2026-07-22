@@ -1,104 +1,234 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+
 import ChartPreview from "../components/charts/ChartPreview";
-import useChartData from "../hooks/useChartData"; // 1. Import your data-processing hook
+import useChartData from "../hooks/useChartData";
+
+function safeParse(value, fallback = {}) {
+  if (!value) return fallback;
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    console.error("Failed to parse saved chart value:", error);
+    return fallback;
+  }
+}
 
 function PublishedChart() {
   const { chartId } = useParams();
 
-  
   const [chart, setChart] = useState(null);
   const [rows, setRows] = useState([]);
-  const parsedSettings = chart?.settings
-    ? typeof chart.settings === "string"
-      ? JSON.parse(chart.settings)
-      : chart.settings
-    : {};
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-    const parsedY = chart?.y_axis
-      ? typeof chart.y_axis === "string"
-        ? JSON.parse(chart.y_axis)
-        : chart.y_axis
-      : [];
+  const parsedSettings = useMemo(() => {
+    return safeParse(chart?.settings, {});
+  }, [chart]);
 
-    const chartConfig = {
-      x: chart?.x_axis || null,
-      y: Array.isArray(parsedY) ? parsedY : [parsedY],
-      type: chart?.chart_type || "bar",
-      aggregation: parsedSettings.aggregation || "none",
-      sort: parsedSettings.sort || "none",
+  const savedChartConfig = useMemo(() => {
+    return safeParse(chart?.chart_config, {});
+  }, [chart]);
+
+  const parsedY = useMemo(() => {
+    const savedY =
+      savedChartConfig.y ??
+      safeParse(chart?.y_axis, []);
+
+    if (Array.isArray(savedY)) {
+      return savedY;
+    }
+
+    return savedY ? [savedY] : [];
+  }, [chart, savedChartConfig]);
+
+  const chartConfig = useMemo(() => {
+    return {
+      /*
+       * Start with the complete saved config.
+       * This restores appearance.xAxis, appearance.yAxis,
+       * bar settings, pie radius settings, and everything else.
+       */
+      ...savedChartConfig,
+
+      /*
+       * Use fallback database columns when older charts
+       * do not contain x, y, or type in chart_config.
+       */
+      x:
+        savedChartConfig.x ??
+        chart?.x_axis ??
+        null,
+
+      y: parsedY,
+
+      type:
+        savedChartConfig.type ??
+        chart?.chart_type ??
+        "bar",
+
+      aggregation:
+        savedChartConfig.aggregation ??
+        parsedSettings.aggregation ??
+        "none",
+
+      sort:
+        savedChartConfig.sort ??
+        parsedSettings.sort ??
+        "none",
+
+      /*
+       * Make sure appearance always exists.
+       */
+      appearance: {
+        ...(savedChartConfig.appearance || {}),
+      },
     };
+  }, [
+    chart,
+    parsedY,
+    parsedSettings,
+    savedChartConfig,
+  ]);
 
   useEffect(() => {
-    loadChart();
-  }, []);
     const loadChart = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
 
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            console.error("No token found in localStorage");
-            return;
-          }
-        const chartRes = await fetch(
-            `http://localhost:5000/charts/${chartId}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("No authentication token found.");
+        }
+
+        const chartResponse = await fetch(
+          `http://localhost:5000/charts/${chartId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
         );
-        const chartData = await chartRes.json();
-        setChart(chartData);
 
-        const rowsRes = await fetch(
-            `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+        if (!chartResponse.ok) {
+          throw new Error(
+            `Failed to load chart: ${chartResponse.status}`,
+          );
+        }
+
+        const chartResult = await chartResponse.json();
+
+        setChart(chartResult);
+
+        const rowsResponse = await fetch(
+          `http://localhost:5000/data/rows?dataset_id=${chartResult.dataset_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
         );
-        
-        const datasetRows = await rowsRes.json();
 
-    const rowsArray =
-    Array.isArray(datasetRows)
-        ? datasetRows
-        : Array.isArray(datasetRows?.rows)
-        ? datasetRows.rows
-        : [];
+        if (!rowsResponse.ok) {
+          throw new Error(
+            `Failed to load chart data: ${rowsResponse.status}`,
+          );
+        }
 
-    const cleanRows = rowsArray.map(r => r?.data ?? r);
+        const datasetRows = await rowsResponse.json();
 
-    setRows(cleanRows);
+        const rowsArray = Array.isArray(datasetRows)
+          ? datasetRows
+          : Array.isArray(datasetRows?.rows)
+            ? datasetRows.rows
+            : [];
 
-    } catch (err) {
-      console.error("Failed to load published chart resources:", err);
-    }
-  };
+        const cleanRows = rowsArray.map((row) => {
+          return row?.data ?? row;
+        });
 
+        setRows(cleanRows);
+      } catch (error) {
+        console.error(
+          "Failed to load published chart resources:",
+          error,
+        );
 
-  const { chartData, generatedColors } = useChartData({
+        setLoadError(
+          error.message || "Failed to load published chart.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChart();
+  }, [chartId]);
+
+  const {
+    chartData,
+    generatedColors,
+    visibleYKeys,
+  } = useChartData({
     data: rows,
     chartConfig,
     settings: parsedSettings,
   });
+
+  if (loading) {
+    return (
+      <div className="app-page flex min-h-screen items-center justify-center">
+        <p className="app-text-muted font-medium">
+          Loading interactive chart...
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="app-page flex min-h-screen items-center justify-center p-6">
+        <div className="app-card max-w-md rounded-xl p-6 text-center">
+          <p className="text-[rgb(var(--color-danger))]">
+            {loadError}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!chart) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 font-medium">
-        Loading interactive chart...
+      <div className="app-page flex min-h-screen items-center justify-center">
+        <p className="app-text-muted">
+          Chart not found.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen h-[800px] bg-white p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-5xl h-full min-h-screen border border-slate-100 rounded-xl shadow-sm p-6 bg-white">
+    <div className="app-page min-h-screen p-8">
+      <div
+        className="
+          app-card
+          mx-auto h-[720px] w-full max-w-6xl
+          rounded-xl p-6
+        "
+      >
         <ChartPreview
-          chartData={chartData} 
+          chartData={chartData}
+          rawData={rows}
           chartConfig={chartConfig}
-          generatedColors={generatedColors} 
+          generatedColors={generatedColors}
+          visibleYKeys={visibleYKeys}
           settings={parsedSettings}
         />
       </div>

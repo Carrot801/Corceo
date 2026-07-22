@@ -484,19 +484,99 @@ const duplicateStory = async (req, res) => {
 };
 
 const deleteStory = async (req, res) => {
-  const userId = req.user.userId;
-  const storyId = req.params.id;
+  const client = await pool.connect();
 
   try {
-    await pool.query(
-      `DELETE FROM stories WHERE id = $1 AND user_id = $2`,
+    const userId = req.user.userId;
+    const storyId = req.params.id;
+
+    if (!storyId || Number.isNaN(Number(storyId))) {
+      return res.status(400).json({
+        error: "Invalid story ID",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const storyCheck = await client.query(
+      `
+      SELECT id
+      FROM stories
+      WHERE id = $1
+        AND user_id = $2
+      `,
       [storyId, userId]
     );
 
-    res.json({ message: "Story deleted" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete story" });
+    if (storyCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        error: "Story not found",
+      });
+    }
+
+    await client.query(
+      `
+      DELETE FROM slide_annotations
+      WHERE slide_id IN (
+        SELECT id
+        FROM slides
+        WHERE story_id = $1
+          AND user_id = $2
+      )
+      `,
+      [storyId, userId]
+    );
+
+    await client.query(
+      `
+      DELETE FROM slide_content
+      WHERE slide_id IN (
+        SELECT id
+        FROM slides
+        WHERE story_id = $1
+          AND user_id = $2
+      )
+      `,
+      [storyId, userId]
+    );
+
+    await client.query(
+      `
+      DELETE FROM slides
+      WHERE story_id = $1
+        AND user_id = $2
+      `,
+      [storyId, userId]
+    );
+
+    const deletedStory = await client.query(
+      `
+      DELETE FROM stories
+      WHERE id = $1
+        AND user_id = $2
+      RETURNING id
+      `,
+      [storyId, userId]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      success: true,
+      deletedStoryId: deletedStory.rows[0].id,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Delete story error:", error);
+
+    return res.status(500).json({
+      error: error.message || "Failed to delete story",
+    });
+  } finally {
+    client.release();
   }
 };
 
@@ -611,21 +691,37 @@ const duplicateSlide = async (req, res) => {
 
     await client.query("COMMIT");
 
-    res.json({
-      id: newSlide.id,
-      description: newSlide.description,
-      content: contentRes.rows.map(item => ({
-        id: `${newSlide.id}-${item.chart_id}`,
-        type: "chart",
-        chartId: item.chart_id,
-        name: "",
-        x: Number(item.layout?.x ),
-        y: Number(item.layout?.y ),
-        width: Number(item.layout?.width),
-        height: Number(item.layout?.height ),
-        zIndex: Number(item.layout?.zIndex ),
-      })),
-      annotations: copiedAnnotations
+    return res.status(201).json({
+      slide: {
+        id: newSlide.id,
+        position: newSlide.position,
+        description:
+          newSlide.description || "",
+
+        content: contentRes.rows.map(
+          (item, index) => ({
+            id: `${newSlide.id}-${item.chart_id}-${index}`,
+            type: "chart",
+            chartId: item.chart_id,
+            name: "",
+
+            x: Number(item.layout?.x ?? 0),
+            y: Number(item.layout?.y ?? 0),
+            width: Number(
+              item.layout?.width ?? 100,
+            ),
+            height: Number(
+              item.layout?.height ?? 100,
+            ),
+            zIndex: Number(
+              item.layout?.zIndex ??
+              index + 1,
+            ),
+          }),
+        ),
+
+        annotations: copiedAnnotations,
+      },
     });
   } catch (err) {
     await client.query("ROLLBACK");

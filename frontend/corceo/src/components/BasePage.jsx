@@ -785,12 +785,12 @@ const deleteStory = async (storyId) => {
                 }
                 className="h-full flex flex-col cursor-pointer"
               >
-                <div className="app-surface flex-1 border-b flex items-center justify-center">
+                <div className="flex-1 app-card  border-b flex items-center justify-center">
                   {project.image_url ? (
                     <img
                       src={project.image_url}
                       alt={project.name}
-                      className="w-full h-full"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="text-slate-300">
