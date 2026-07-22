@@ -214,14 +214,24 @@ const getStory = async (req, res) => {
         s.id AS slide_id,
         s.position AS slide_position,
         s.description,
+
+        sc.id AS slide_content_id,
         sc.chart_id,
         sc.position AS content_position,
         sc.layout,
-        p.name AS chart_name
+
+        p.name AS chart_name,
+        p.image_url AS chart_image_url
+
       FROM slides s
-      LEFT JOIN slide_content sc ON sc.slide_id = s.id
-      LEFT JOIN charts c ON c.id = sc.chart_id
-      LEFT JOIN projects p ON p.id = c.project_id
+      LEFT JOIN slide_content sc
+        ON sc.slide_id = s.id
+
+      LEFT JOIN charts c
+        ON c.id = sc.chart_id
+
+      LEFT JOIN projects p
+        ON p.id = c.project_id
       WHERE s.story_id = $1
       ORDER BY s.position, sc.position
       `,
@@ -250,20 +260,29 @@ const getStory = async (req, res) => {
           annotations: [] // Placeholder array ready to receive shapes
         };
       }
-      if (row.chart_id) {
-        slidesMap[row.slide_id].content.push({
-        id: `${row.slide_id}-${row.chart_id}`,
-        type: "chart",
-        chartId: row.chart_id,
-        name: row.chart_name,
+        if (row.chart_id) {
+          slidesMap[row.slide_id].content.push({
+            id:
+              row.slide_content_id ??
+              `${row.slide_id}-${row.chart_id}`,
 
-        x: row.layout?.x ?? 0,
-        y: row.layout?.y ?? 0,
-        width: row.layout?.width ?? 100,
-        height: row.layout?.height ?? 100,
-        zIndex: row.layout?.zIndex ?? 1,
-      });
-      }
+            type: "chart",
+            chartId: row.chart_id,
+            name: row.chart_name || "Chart",
+
+            imageUrl:
+              row.chart_image_url || null,
+
+            x: Number(row.layout?.x ?? 0),
+            y: Number(row.layout?.y ?? 0),
+            width: Number(row.layout?.width ?? 100),
+            height: Number(row.layout?.height ?? 100),
+            zIndex: Number(
+              row.layout?.zIndex ??
+              row.content_position + 1,
+            ),
+          });
+        }
     });
 
     // Merge the isolated annotations directly into their respective parent slides

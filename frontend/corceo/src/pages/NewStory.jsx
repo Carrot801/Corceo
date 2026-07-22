@@ -4,6 +4,312 @@ import StoryChart from "../components/StoryChart";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "../components/Header";
+
+function SlideThumbnail({
+  slide,
+  slideNumber,
+}) {
+  return (
+    <div
+      className="
+        relative
+        h-full
+        w-full
+        overflow-hidden
+        bg-white
+      "
+    >
+      {/* Slide title */}
+      {slide.description && (
+        <div
+          className="
+            absolute
+            left-[4%]
+            right-[4%]
+            top-[4%]
+            z-40
+            truncate
+            text-[7px]
+            font-bold
+            text-slate-800
+          "
+        >
+          {slide.description}
+        </div>
+      )}
+
+      {/* Chart image layout */}
+      <div
+        className="
+          absolute
+          bottom-[4%]
+          left-[4%]
+          right-[4%]
+          top-[18%]
+          overflow-hidden
+          rounded-sm
+          bg-slate-50
+        "
+      >
+        {(slide.content || []).map(
+          (item, index) => (
+            <div
+              key={item.id || `${item.chartId}-${index}`}
+              className="
+                absolute
+                overflow-hidden
+                bg-white
+              "
+              style={{
+                left: `${item.x ?? 0}%`,
+                top: `${item.y ?? 0}%`,
+                width: `${item.width ?? 100}%`,
+                height: `${item.height ?? 100}%`,
+                zIndex: item.zIndex ?? index + 1,
+              }}
+            >
+              {item.imageUrl ? (
+                <img
+                  src={item.imageUrl}
+                  alt=""
+                  className="
+                    h-full
+                    w-full
+                    object-contain
+                  "
+                  draggable={false}
+                />
+              ) : (
+                <div
+                  className="
+                    flex
+                    h-full
+                    w-full
+                    items-center
+                    justify-center
+                    bg-slate-100
+                    text-[8px]
+                    text-slate-400
+                  "
+                >
+                  Chart
+                </div>
+              )}
+            </div>
+          ),
+        )}
+
+        {/* Basic annotation connectors */}
+        <svg
+          className="
+            pointer-events-none
+            absolute
+            inset-0
+            z-20
+            h-full
+            w-full
+          "
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {(slide.annotations || []).map(
+            (annotation) => {
+              if (
+                annotation.connectorType === "none"
+              ) {
+                return null;
+              }
+
+              const x1 =
+                annotation.textX ?? 55;
+              const y1 =
+                annotation.textY ?? 55;
+              const x2 =
+                annotation.x ?? 50;
+              const y2 =
+                annotation.y ?? 40;
+
+              return (
+                <line
+                  key={`line-${annotation.id}`}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke={
+                    annotation.lineColor ||
+                    "#64748b"
+                  }
+                  strokeWidth="0.5"
+                />
+              );
+            },
+          )}
+        </svg>
+
+        {/* Annotation markers and labels */}
+        {(slide.annotations || []).map(
+          (annotation) => (
+            <React.Fragment
+              key={annotation.id}
+            >
+              {annotation.markerType ===
+                "dot" && (
+                <div
+                  className="
+                    absolute
+                    z-30
+                    rounded-full
+                    border
+                    border-white
+                  "
+                  style={{
+                    left: `${
+                      annotation.x ?? 50
+                    }%`,
+                    top: `${
+                      annotation.y ?? 40
+                    }%`,
+
+                    width: "5px",
+                    height: "5px",
+
+                    transform:
+                      "translate(-50%, -50%)",
+
+                    backgroundColor:
+                      annotation.fillColor ||
+                      "#3b82f6",
+                  }}
+                />
+              )}
+
+              {annotation.markerType ===
+                "circle" && (
+                <div
+                  className="
+                    absolute
+                    z-30
+                    rounded-full
+                    border
+                  "
+                  style={{
+                    left: `${
+                      annotation.x ?? 50
+                    }%`,
+                    top: `${
+                      annotation.y ?? 40
+                    }%`,
+
+                    width: `${
+                      annotation.width ?? 15
+                    }%`,
+
+                    aspectRatio: "1 / 1",
+
+                    borderColor:
+                      annotation.fillColor ||
+                      "#3b82f6",
+                  }}
+                />
+              )}
+
+              {annotation.markerType ===
+                "square" && (
+                <div
+                  className="
+                    absolute
+                    z-30
+                    rounded-sm
+                    border
+                  "
+                  style={{
+                    left: `${
+                      annotation.x ?? 50
+                    }%`,
+                    top: `${
+                      annotation.y ?? 40
+                    }%`,
+
+                    width: `${
+                      annotation.width ?? 15
+                    }%`,
+
+                    height: `${
+                      annotation.height ?? 15
+                    }%`,
+
+                    borderColor:
+                      annotation.fillColor ||
+                      "#3b82f6",
+                  }}
+                />
+              )}
+
+              <div
+                className="
+                  absolute
+                  z-40
+                  max-w-[45%]
+                  truncate
+                  rounded-sm
+                  px-1
+                  py-0.5
+                  text-[5px]
+                  leading-tight
+                "
+                style={{
+                  left: `${
+                    annotation.textX ?? 55
+                  }%`,
+
+                  top: `${
+                    annotation.textY ?? 55
+                  }%`,
+
+                  transform:
+                    "translate(-50%, -50%)",
+
+                  color:
+                    annotation.textColor ||
+                    "#1e293b",
+
+                  backgroundColor:
+                    annotation.textBg ===
+                    "transparent"
+                      ? "transparent"
+                      : annotation.textBg ||
+                        "#ffffff",
+                }}
+              >
+                {annotation.text ||
+                  "Annotation"}
+              </div>
+            </React.Fragment>
+          ),
+        )}
+      </div>
+
+      {(slide.content || []).length === 0 && (
+        <div
+          className="
+            absolute
+            inset-0
+            flex
+            items-center
+            justify-center
+            text-[9px]
+            text-slate-400
+          "
+        >
+          Slide {slideNumber}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function NewStory() {
   const { storyId } = useParams();
   const navigate = useNavigate();
@@ -13,7 +319,8 @@ function NewStory() {
   useEffect(() => {
     console.log("URL Param storyId is:", storyId);
   }, [storyId]);
-
+  const [isExporting, setIsExporting] =
+    useState(false);
   const [storyName, setStoryName] = useState("Untitled Story");
   const [availableProjects, setAvailableProjects] = useState([]);
   const [search, setSearch] = useState("");
@@ -29,7 +336,7 @@ function NewStory() {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedAnnoId, setSelectedAnnoId] = useState(null);
   const [selectedChartId, setSelectedChartId] = useState(null);
-  // Track real dimensions of canvas to prevent SVG stretching distortion
+
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
   const canvasRef = useRef(null);
@@ -40,32 +347,122 @@ function NewStory() {
 
   const hasLoadedStoryRef = useRef(false);
   const autosaveTimerRef = useRef(null);
-
-
 const exportStoryPDF = async () => {
-  const slideElements = document.querySelectorAll(".export-slide");
+  try {
+    setIsExporting(true);
 
-  if (!slideElements.length) return;
+    let slideElements = [];
 
-  const pdf = new jsPDF("landscape", "pt", [1280, 720]);
+    for (
+      let attempt = 0;
+      attempt < 30;
+      attempt++
+    ) {
+      slideElements = Array.from(
+        document.querySelectorAll(
+          ".export-slide",
+        ),
+      );
 
-  for (let i = 0; i < slideElements.length; i++) {
-    const canvas = await html2canvas(slideElements[i], {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-    });
+      if (
+        slideElements.length ===
+        slides.length
+      ) {
+        break;
+      }
 
-    const imgData = canvas.toDataURL("image/png");
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
+    }
 
-    if (i > 0) pdf.addPage([1280, 720], "landscape");
+    if (!slideElements.length) {
+      throw new Error(
+        "Export slides were not rendered",
+      );
+    }
 
-    pdf.addImage(imgData, "PNG", 0, 0, 1280, 720);
+    const images =
+      slideElements.flatMap((slide) =>
+        Array.from(
+          slide.querySelectorAll("img"),
+        ),
+      );
+
+    await Promise.all(
+      images.map(
+        (image) =>
+          new Promise((resolve) => {
+            if (image.complete) {
+              resolve();
+              return;
+            }
+
+            image.onload = resolve;
+            image.onerror = resolve;
+          }),
+      ),
+    );
+
+    const pdf = new jsPDF(
+      "landscape",
+      "pt",
+      [1280, 720],
+    );
+
+    for (
+      let index = 0;
+      index < slideElements.length;
+      index++
+    ) {
+      const canvas =
+        await html2canvas(
+          slideElements[index],
+          {
+            scale: 1.5,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor:
+              "#ffffff",
+            logging: false,
+          },
+        );
+
+      const imageData =
+        canvas.toDataURL(
+          "image/jpeg",
+          0.9,
+        );
+
+      if (index > 0) {
+        pdf.addPage(
+          [1280, 720],
+          "landscape",
+        );
+      }
+
+      pdf.addImage(
+        imageData,
+        "JPEG",
+        0,
+        0,
+        1280,
+        720,
+      );
+    }
+
+    pdf.save(
+      `${storyName || "story"}.pdf`,
+    );
+  } catch (error) {
+    console.error(
+      "PDF export failed:",
+      error,
+    );
+  } finally {
+    setIsExporting(false);
   }
-
-  pdf.save(`${storyName || "story"}.pdf`);
 };
-
   // Observe canvas wrapper resizes to recalculate rendering points on the fly
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -82,19 +479,99 @@ const exportStoryPDF = async () => {
   }, [activeSlideIndex, currentSlide.content]);
 
 
-  const makeStoryPreview = async () => {
-  const firstSlide = document.querySelector(".export-slide");
+ const waitForExportSlide = async (
+  attempts = 20,
+) => {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const exportSlide =
+      document.querySelector(
+        ".export-slide",
+      );
 
-  if (!firstSlide) return null;
+    if (exportSlide) {
+      return exportSlide;
+    }
 
-  const canvas = await html2canvas(firstSlide, {
-    scale: 1,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-  });
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+  }
 
-  return canvas.toDataURL("image/png");
+  return null;
 };
+
+const makeStoryPreview = async () => {
+  try {
+    /*
+     * Temporarily mount the hidden export slide.
+     */
+    setIsExporting(true);
+
+    /*
+     * Wait for React to render the export slide.
+     */
+    const firstSlide =
+      await waitForExportSlide();
+
+    if (!firstSlide) {
+      throw new Error(
+        "First export slide was not rendered",
+      );
+    }
+
+    /*
+     * Wait for images inside the slide.
+     */
+    const images = Array.from(
+      firstSlide.querySelectorAll("img"),
+    );
+
+    await Promise.all(
+      images.map((image) => {
+        if (image.complete) {
+          return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+          image.onload = resolve;
+          image.onerror = resolve;
+        });
+      }),
+    );
+
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+
+    const canvas = await html2canvas(
+      firstSlide,
+      {
+        scale: 0.7,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+      },
+    );
+
+    return canvas.toDataURL(
+      "image/jpeg",
+      0.8,
+    );
+  } catch (error) {
+    console.error(
+      "Story preview generation failed:",
+      error,
+    );
+
+    return null;
+  } finally {
+    setIsExporting(false);
+  }
+};
+
 
   const addSlide = () => {
     const newSlide = {
@@ -317,17 +794,25 @@ const deleteSlide = async (index) => {
   }
 };
 
-  const createChartItem = (chartId, name, index = 0) => ({
-    id: `chart-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    type: "chart",
-    chartId,
-    name,
-    x: 0,
-    y: 0,
-    width: 100,
-    height: 100,
-    zIndex: index + 1,
-  });
+const createChartItem = (
+  chartId,
+  name,
+  imageUrl,
+  index = 0,
+) => ({
+  id: `chart-${crypto.randomUUID()}`,
+  type: "chart",
+  chartId,
+  name,
+  imageUrl: imageUrl || null,
+
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  zIndex: index + 1,
+});
+
 
   const arrangeCharts = (items = []) => {
     const count = items.length;
@@ -388,7 +873,11 @@ const deleteSlide = async (index) => {
     }));
   };
 
-  const addChartToSlide = (chartId, name) => {
+const addChartToSlide = (
+  chartId,
+  name,
+  imageUrl,
+) => {
     let newItemId = null;
 
     setSlides((prev) =>
@@ -396,8 +885,12 @@ const deleteSlide = async (index) => {
         if (index !== activeSlideIndex) return slide;
 
         const content = slide.content || [];
-        const newItem = createChartItem(chartId, name, content.length);
-        newItemId = newItem.id;
+const newItem = createChartItem(
+  chartId,
+  name,
+  imageUrl,
+  content.length,
+);        newItemId = newItem.id;
 
         return { ...slide, content: arrangeCharts([...content, newItem]) };
       })
@@ -643,8 +1136,17 @@ const handleProjectClick = async (projectId) => {
       return;
     }
 
-    addChartToSlide(chart.id, chart.name || chart.settings?.title || "Untitled chart");
-    setShowPicker(false);
+addChartToSlide(
+  chart.id,
+  chart.name ||
+    chart.settings?.title ||
+    "Untitled chart",
+  chart.image_data ||
+    chart.image_url ||
+    null,
+);
+
+setShowPicker(false);
   } catch (err) {
     console.error("Failed to load charts", err);
   }
@@ -707,12 +1209,14 @@ const cleanSlides = slides.map((slide) => {
     ...slide,
     id: isTemp ? undefined : slide.id,
 
-    // Explicitly persist every chart layout property.
     content: (slide.content || []).map((item, index) => ({
       id: item.id,
       type: item.type || "chart",
       chartId: item.chartId,
       name: item.name || "Chart",
+
+      imageUrl: item.imageUrl || null,
+
       x: Number(item.x ?? 0),
       y: Number(item.y ?? 0),
       width: Number(item.width ?? 100),
@@ -745,12 +1249,20 @@ const normalizeStorySlides = (storyData) => {
         item.id ||
         `chart-instance-${slide.id}-${item.chartId}-${index}`,
 
-      chartId:
-        item.chartId ??
-        item.chart_id,
+        chartId:
+          item.chartId ??
+          item.chart_id,
 
-      name: item.name || "Chart",
-      type: item.type || "chart",
+imageUrl:
+  item.imageUrl ??
+  item.image_data ??
+  item.chart_image_data ??
+  item.image_url ??
+  item.chart_image_url ??
+  null,
+
+        name: item.name || "Chart",
+        type: item.type || "chart",
 
       x: Number(item.x ?? 0),
       y: Number(item.y ?? 0),
@@ -816,9 +1328,21 @@ const saveStory = async () => {
       throw new Error("No authentication token found");
     }
 
-    const image_url = await makeStoryPreview();
+const image_url =
+  await makeStoryPreview();
 
-    const response = await fetch(url, {
+console.log(
+  "Story preview before save:",
+  {
+    exists: Boolean(image_url),
+    length: image_url?.length || 0,
+    start:
+      image_url?.slice(0, 30) ||
+      null,
+  },
+);
+
+const response = await fetch(url, {
       method: isNew ? "POST" : "PUT",
 
       headers: {
@@ -993,7 +1517,7 @@ const handleDragStart = (e, type, annoId, currentAnno = null) => {
 
 
 
-  
+
 const publishStory = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -1224,52 +1748,195 @@ const publishStory = async () => {
     <div className="flex min-h-0 flex-1 overflow-hidden">
 
       {/* LEFT SIDEBAR: Slide Deck */}
-      <div className="app-surface app-border w-72 border-r flex flex-col p-4 gap-4 shrink-0">
-        
-        <div className="flex flex-col w-full justify-between items-center gap-2 overflow-y-scroll">
+      <div
+        className="
+          app-surface
+          app-border
+          flex
+          w-72
+          shrink-0
+          flex-col
+          gap-4
+          border-r
+          p-4
+        "
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="app-text text-sm font-semibold">
+            Slides
+          </h2>
 
-          {slides.map((s, i) => (
-            <div
-              key={s.id}
-              onClick={() => {
-                setActiveSlideIndex(i);
-                setSelectedAnnoId(null);
-                setSelectedChartId(null);
-              }}
-              className={`relative shrink-0 group my-2 w-[97%] h-36 border rounded cursor-pointer flex items-center justify-center font-semibold app-text-muted ${
-                activeSlideIndex === i
-                  ? "ring-2 ring-[rgb(var(--color-highlight))] bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                  : "app-surface-secondary app-text-muted hover:border-[rgb(var(--color-border-strong))]"
-              }`}
-            >
-              <span>Slide {i + 1}</span>
+          <span className="app-text-muted text-xs">
+            {slides.length}
+          </span>
+        </div>        
+        <div
+          className="
+            flex
+            min-h-0
+            w-full
+            flex-1
+            flex-col
+            gap-3
+            overflow-y-auto
+            pr-1
+          "
+        >
+          {slides.map((slide, index) => {
 
+            const isActive =
+              activeSlideIndex === index;
+
+            return (
               <div
-                className={`absolute top-2 right-2 flex gap-1 transition-opacity ${
-                  activeSlideIndex === i
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                }`}
-                onClick={(e) => e.stopPropagation()}
+                key={slide.id}
+                className="group flex w-full shrink-0 gap-2"
               >
-                <button
-                  onClick={() => duplicateSlide(i)}
-                  title="Duplicate slide"
-                  className="app-surface app-border app-text-secondary w-7 h-7 rounded border shadow-sm hover:text-[rgb(var(--color-primary))] hover:border-[rgb(var(--color-primary))]"
-                >
-                  ⧉
-                </button>
+                {/* Slide number */}
+                <div className="app-text-muted flex w-5 shrink-0 items-start justify-center pt-3 text-[11px] font-semibold">
+                  {index + 1}
+                </div>
 
-                <button
-                  onClick={() => deleteSlide(i)}
-                  title="Delete slide"
-                  className="app-surface app-border app-text-secondary w-7 h-7 rounded border shadow-sm hover:text-[rgb(var(--color-danger))] hover:border-[rgb(var(--color-danger))]"
+                {/* Slide thumbnail */}
+                <div
+                  onClick={() => {
+                    setActiveSlideIndex(index);
+                    setSelectedAnnoId(null);
+                    setSelectedChartId(null);
+                  }}
+                  className={`
+                    relative
+                    aspect-video
+                    min-w-0
+                    flex-1
+                    cursor-pointer
+                    overflow-hidden
+                    rounded-lg
+                    border
+                    bg-white
+                    shadow-sm
+                    transition-all
+                    ${
+                      isActive
+                        ? `
+                          border-[rgb(var(--color-primary))]
+                          ring-2
+                          ring-[rgb(var(--color-highlight))]
+                        `
+                        : `
+                          border-[rgb(var(--color-border))]
+                          hover:border-[rgb(var(--color-border-strong))]
+                          hover:shadow-md
+                        `
+                    }
+                  `}
                 >
-                  🗑
-                </button>
+                  <SlideThumbnail
+                    slide={slide}
+                    slideNumber={index + 1}
+                  />
+                  {/* Active slide overlay */}
+                  {isActive && (
+                    <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--color-primary))]/[0.03]" />
+                  )}
+
+                  {/* Slide actions */}
+                  <div
+                    className={`
+                      absolute
+                      right-1.5
+                      top-1.5
+                      z-20
+                      flex
+                      gap-1
+                      transition-opacity
+                      ${
+                        isActive
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100"
+                      }
+                    `}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => duplicateSlide(index)}
+                      title="Duplicate slide"
+                      className="
+                        flex
+                        h-7
+                        w-7
+                        items-center
+                        justify-center
+                        rounded-md
+                        border
+                        border-slate-200
+                        bg-white/95
+                        text-xs
+                        text-slate-700
+                        shadow-sm
+                        backdrop-blur-sm
+                        hover:border-blue-400
+                        hover:text-blue-600
+                      "
+                    >
+                      ⧉
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteSlide(index)}
+                      title="Delete slide"
+                      className="
+                        flex
+                        h-7
+                        w-7
+                        items-center
+                        justify-center
+                        rounded-md
+                        border
+                        border-slate-200
+                        bg-white/95
+                        text-xs
+                        text-slate-700
+                        shadow-sm
+                        backdrop-blur-sm
+                        hover:border-red-400
+                        hover:text-red-600
+                      "
+                    >
+                      🗑
+                    </button>
+                  </div>
+
+                  {/* Slide title */}
+                  <div
+                    className="
+                      absolute
+                      bottom-0
+                      left-0
+                      right-0
+                      z-10
+                      truncate
+                      bg-gradient-to-t
+                      from-black/65
+                      to-transparent
+                      px-2
+                      pb-1.5
+                      pt-5
+                      text-[10px]
+                      font-medium
+                      text-white
+                    "
+                  >
+                    {slide.description || `Slide ${index + 1}`}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <button onClick={addSlide} className="w-full py-2.5 rounded-lg text-sm font-semibold bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-surface-hover))] transition-colors">+ Add Slide</button>
@@ -1889,203 +2556,305 @@ const publishStory = async () => {
           )}
         </div>
       </div>
-      <div className="fixed left-[-9999px] top-0">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className="export-slide bg-white"
+
+{/* Hidden slides used only for story preview and PDF export */}
+{isExporting && (
+  <div
+    style={{
+      position: "fixed",
+      left: "-10000px",
+      top: 0,
+      width: "1280px",
+      pointerEvents: "none",
+    }}
+  >
+    {slides.map((slide, slideIndex) => (
+      <div
+        key={`export-${slide.id}`}
+        className="export-slide"
+        style={{
+          width: "1280px",
+          height: "720px",
+          padding: "48px",
+          boxSizing: "border-box",
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "#ffffff",
+          color: "#0f172a",
+        }}
+      >
+        <h1
+          style={{
+            height: "48px",
+            margin: 0,
+            marginBottom: "24px",
+            overflow: "hidden",
+            fontSize: "34px",
+            fontWeight: 700,
+            lineHeight: "48px",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {slide.description ||
+            `Slide ${slideIndex + 1}`}
+        </h1>
+
+        <div
+          style={{
+            position: "relative",
+            width: "1184px",
+            height: "552px",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+            borderRadius: "18px",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          {(slide.content || []).map(
+            (item, itemIndex) => (
+              <div
+                key={
+                  item.id ||
+                  `${slide.id}-${item.chartId}-${itemIndex}`
+                }
+                style={{
+                  position: "absolute",
+                  left: `${item.x ?? 0}%`,
+                  top: `${item.y ?? 0}%`,
+                  width: `${item.width ?? 100}%`,
+                  height: `${item.height ?? 100}%`,
+                  zIndex:
+                    item.zIndex ??
+                    itemIndex + 1,
+                  overflow: "hidden",
+                  backgroundColor: "#ffffff",
+                }}
+              >
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name || "Chart"}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      backgroundColor: "#ffffff",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      height: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#64748b",
+                      backgroundColor: "#f1f5f9",
+                      fontSize: "20px",
+                    }}
+                  >
+                    Chart preview unavailable
+                  </div>
+                )}
+              </div>
+            ),
+          )}
+
+          {/* Annotation lines */}
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
             style={{
-              width: "1280px",
-              height: "720px",
-              padding: "48px",
-              boxSizing: "border-box",
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 20,
+              pointerEvents: "none",
             }}
           >
-            <h1 style={{ fontSize: "34px", fontWeight: "700", marginBottom: "24px" }}>
-              {slide.description || `Slide ${index + 1}`}
-            </h1>
+            {(slide.annotations || []).map(
+              (annotation) => {
+                if (
+                  !annotation.connectorType ||
+                  annotation.connectorType ===
+                    "none"
+                ) {
+                  return null;
+                }
 
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "560px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "18px",
-                background: "#f8fafc",
-                overflow: "hidden",
-              }}
-            >
-              {(slide.content || []).map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    position: "absolute",
-                    left: `${item.x ?? 5}%`,
-                    top: `${item.y ?? 5}%`,
-                    width: `${item.width ?? 48}%`,
-                    height: `${item.height ?? 45}%`,
-                    zIndex: item.zIndex ?? 1,
-                    overflow: "hidden",
-                    borderRadius: "12px",
-                    backgroundColor: "#ffffff",
-                  }}
-                >
-                  <StoryChart chartId={item.chartId} />
-                </div>
-              ))}
+                const x1 =
+                  annotation.textX ?? 55;
+                const y1 =
+                  annotation.textY ?? 55;
+                const x2 =
+                  annotation.x ?? 50;
+                const y2 =
+                  annotation.y ?? 40;
 
-              {/* Annotation connector lines */}
-                <svg
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                    zIndex: 20,
-                  }}
-                  viewBox="0 0 1184 560"
-                  preserveAspectRatio="none"
-                >
-                  <defs>
-                    {(slide.annotations || []).map((anno) => (
-                      <marker
-                        key={`marker-${anno.id}`}
-                        id={`export-arrow-${slide.id}-${anno.id}`}
-                        viewBox="0 0 10 10"
-                        refX="7"
-                        refY="5"
-                        markerWidth="7"
-                        markerHeight="7"
-                        orient="auto"
-                      >
-                        <path
-                          d="M 0 2 L 8 5 L 0 8 z"
-                          fill={anno.lineColor || "#64748b"}
-                        />
-                      </marker>
-                    ))}
-                  </defs>
+                if (
+                  annotation.connectorType ===
+                  "curved"
+                ) {
+                  const middleX =
+                    (x1 + x2) / 2;
 
-                  {(slide.annotations || []).map((anno) => {
-                    if (anno.connectorType === "none") {
-                      return null;
+                  const middleY =
+                    (y1 + y2) / 2 - 8;
+
+                  return (
+                    <path
+                      key={`export-line-${annotation.id}`}
+                      d={`M ${x1} ${y1} Q ${middleX} ${middleY} ${x2} ${y2}`}
+                      fill="none"
+                      stroke={
+                        annotation.lineColor ||
+                        "#64748b"
+                      }
+                      strokeWidth={
+                        Number(
+                          annotation.lineWidth,
+                        ) || 1.5
+                      }
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  );
+                }
+
+                if (
+                  annotation.connectorType ===
+                  "angled"
+                ) {
+                  return (
+                    <path
+                      key={`export-line-${annotation.id}`}
+                      d={`M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`}
+                      fill="none"
+                      stroke={
+                        annotation.lineColor ||
+                        "#64748b"
+                      }
+                      strokeWidth={
+                        Number(
+                          annotation.lineWidth,
+                        ) || 1.5
+                      }
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  );
+                }
+
+                return (
+                  <line
+                    key={`export-line-${annotation.id}`}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke={
+                      annotation.lineColor ||
+                      "#64748b"
                     }
-
-                    const x1 = ((anno.textX ?? 55) / 100) * 1184;
-                    const y1 = ((anno.textY ?? 55) / 100) * 560;
-                    const x2 = ((anno.x ?? 50) / 100) * 1184;
-                    const y2 = ((anno.y ?? 40) / 100) * 560;
-
-                    const markerEnd =
-                      `url(#export-arrow-${slide.id}-${anno.id})`;
-
-                    if (anno.connectorType === "curved") {
-                      const dx = x2 - x1;
-                      const dy = y2 - y1;
-                      const distance = Math.hypot(dx, dy) || 1;
-
-                      const cx =
-                        (x1 + x2) / 2 -
-                        (dy / distance) * distance * 0.2;
-
-                      const cy =
-                        (y1 + y2) / 2 +
-                        (dx / distance) * distance * 0.2;
-
-                      return (
-                        <path
-                          key={`connector-${anno.id}`}
-                          d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`}
-                          fill="none"
-                          stroke={anno.lineColor || "#64748b"}
-                          strokeWidth={anno.lineWidth || 1.5}
-                          markerEnd={markerEnd}
-                        />
-                      );
+                    strokeWidth={
+                      Number(
+                        annotation.lineWidth,
+                      ) || 1.5
                     }
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              },
+            )}
+          </svg>
 
-                    if (anno.connectorType === "angled") {
-                      return (
-                        <path
-                          key={`connector-${anno.id}`}
-                          d={`M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`}
-                          fill="none"
-                          stroke={anno.lineColor || "#64748b"}
-                          strokeWidth={anno.lineWidth || 1.5}
-                          markerEnd={markerEnd}
-                        />
-                      );
-                    }
-
-                    return (
-                      <line
-                        key={`connector-${anno.id}`}
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        stroke={anno.lineColor || "#64748b"}
-                        strokeWidth={anno.lineWidth || 1.5}
-                        markerEnd={markerEnd}
-                      />
-                    );
-                  })}
-                </svg>
-
-            {/* Annotation markers and labels */}
-            {(slide.annotations || []).map((anno) => (
-              <React.Fragment key={anno.id}>
-                {anno.markerType !== "none" && (
+          {/* Annotation markers and labels */}
+          {(slide.annotations || []).map(
+            (annotation) => (
+              <React.Fragment
+                key={`export-annotation-${annotation.id}`}
+              >
+                {annotation.markerType ===
+                  "dot" && (
                   <div
                     style={{
                       position: "absolute",
-                      left: `${anno.x ?? 50}%`,
-                      top: `${anno.y ?? 40}%`,
-                      zIndex: 30,
-
-                      width:
-                        anno.markerType === "dot"
-                          ? `${(anno.radius || 6) * 2.5}px`
-                          : `${anno.width || 15}%`,
-
-                      height:
-                        anno.markerType === "dot"
-                          ? `${(anno.radius || 6) * 2.5}px`
-                          : anno.markerType === "circle"
-                            ? "auto"
-                            : `${anno.height || 15}%`,
-
-                      aspectRatio:
-                        anno.markerType === "circle"
-                          ? "1 / 1"
-                          : "auto",
-
+                      left: `${
+                        annotation.x ?? 50
+                      }%`,
+                      top: `${
+                        annotation.y ?? 40
+                      }%`,
+                      width: `${
+                        (annotation.radius ||
+                          6) * 2
+                      }px`,
+                      height: `${
+                        (annotation.radius ||
+                          6) * 2
+                      }px`,
                       transform:
-                        anno.markerType === "dot"
-                          ? "translate(-50%, -50%)"
-                          : "none",
-
-                      borderRadius:
-                        anno.markerType === "circle" ||
-                        anno.markerType === "dot"
-                          ? "9999px"
-                          : "8px",
-
+                        "translate(-50%, -50%)",
+                      borderRadius: "9999px",
                       backgroundColor:
-                        anno.markerType === "dot"
-                          ? anno.fillColor || "#3b82f6"
-                          : `${anno.fillColor || "#3b82f6"}10`,
+                        annotation.fillColor ||
+                        "#3b82f6",
+                      zIndex: 30,
+                    }}
+                  />
+                )}
 
-                      border:
-                        anno.markerType === "dot"
-                          ? "2px solid white"
-                          : `2px dashed ${
-                              anno.fillColor || "#3b82f6"
-                            }`,
-
+                {annotation.markerType ===
+                  "circle" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${
+                        annotation.x ?? 50
+                      }%`,
+                      top: `${
+                        annotation.y ?? 40
+                      }%`,
+                      width: `${
+                        annotation.width ?? 15
+                      }%`,
+                      aspectRatio: "1 / 1",
+                      border: `3px solid ${
+                        annotation.fillColor ||
+                        "#3b82f6"
+                      }`,
+                      borderRadius: "9999px",
                       boxSizing: "border-box",
+                      zIndex: 30,
+                    }}
+                  />
+                )}
+
+                {annotation.markerType ===
+                  "square" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${
+                        annotation.x ?? 50
+                      }%`,
+                      top: `${
+                        annotation.y ?? 40
+                      }%`,
+                      width: `${
+                        annotation.width ?? 15
+                      }%`,
+                      height: `${
+                        annotation.height ?? 15
+                      }%`,
+                      border: `3px solid ${
+                        annotation.fillColor ||
+                        "#3b82f6"
+                      }`,
+                      boxSizing: "border-box",
+                      zIndex: 30,
                     }}
                   />
                 )}
@@ -2093,48 +2862,53 @@ const publishStory = async () => {
                 <div
                   style={{
                     position: "absolute",
-                    left: `${anno.textX ?? 55}%`,
-                    top: `${anno.textY ?? 55}%`,
-                    transform: "translate(-50%, -50%)",
-                    zIndex: 40,
-
-                    color: anno.textColor || "#1e293b",
-                    fontSize: `${anno.textSize || 0.85}rem`,
-                    fontWeight: anno.fontWeight || "normal",
-                    textAlign: anno.textAlign || "left",
-                    maxWidth: `${anno.labelWidth || 12}rem`,
-                    borderRadius: "8px",
-
+                    left: `${
+                      annotation.textX ?? 55
+                    }%`,
+                    top: `${
+                      annotation.textY ?? 55
+                    }%`,
+                    transform:
+                      "translate(-50%, -50%)",
+                    maxWidth: `${
+                      annotation.labelWidth ||
+                      12
+                    }rem`,
+                    padding: "6px 9px",
+                    borderRadius: "6px",
+                    color:
+                      annotation.textColor ||
+                      "#1e293b",
                     backgroundColor:
-                      anno.textBg === "transparent"
+                      annotation.textBg ===
+                      "transparent"
                         ? "transparent"
-                        : anno.textBg === "outline"
-                          ? "transparent"
-                          : anno.textBg || "#ffffff",
-
-                    border:
-                      anno.textBg === "outline"
-                        ? `1px solid ${
-                            anno.textColor || "#1e293b"
-                          }40`
-                        : "none",
-
-                    padding:
-                      anno.textBg === "transparent"
-                        ? "2px"
-                        : "6px 10px",
-
-                    boxSizing: "border-box",
+                        : annotation.textBg ||
+                          "#ffffff",
+                    fontSize: `${
+                      annotation.textSize ||
+                      0.85
+                    }rem`,
+                    fontWeight:
+                      annotation.fontWeight ||
+                      "normal",
+                    textAlign:
+                      annotation.textAlign ||
+                      "left",
+                    zIndex: 40,
                   }}
                 >
-                  {anno.text || "Annotation"}
+                  {annotation.text ||
+                    "Annotation"}
                 </div>
               </React.Fragment>
-            ))}
-            </div>
-          </div>
-        ))}
+            ),
+          )}
+        </div>
       </div>
+    ))}
+  </div>
+)}
       {/* SELECTION MODAL */}
       {showPicker && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
