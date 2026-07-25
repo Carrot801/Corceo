@@ -4,6 +4,7 @@ import StoryChart from "../components/StoryChart";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "../components/Header";
+import useHistoryState from "../hooks/useHistoryState";
 
 function SlideThumbnail({
   slide,
@@ -316,22 +317,123 @@ function NewStory() {
 
   const isSlideActionRef = useRef(false);
 
+  const createInitialStoryState = () => ({
+  storyName: "Untitled Story",
+
+  slides: [
+    {
+      id: `temp-${crypto.randomUUID()}`,
+      content: [],
+      description: "",
+      annotations: [],
+    },
+  ],
+});
   useEffect(() => {
     console.log("URL Param storyId is:", storyId);
   }, [storyId]);
   const [isExporting, setIsExporting] =
     useState(false);
-  const [storyName, setStoryName] = useState("Untitled Story");
   const [availableProjects, setAvailableProjects] = useState([]);
   const [search, setSearch] = useState("");
-  const [slides, setSlides] = useState([
+
+    const {
+    state: storyHistoryState,
+    setState: setStoryHistoryState,
+    undo: undoStory,
+    redo: redoStory,
+    reset: resetStoryHistory,
+    commit: commitStoryHistory,
+    canUndo: canUndoStory,
+    canRedo: canRedoStory,
+  } = useHistoryState(
+    createInitialStoryState,
     {
-      id: `temp-${Date.now()}`,
-      content: [],
-      description: "",
-      annotations: [],
+      maxHistory: 50,
     },
-  ]);
+  );
+  const setStoryName = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setStoryHistoryState(
+    (current) => ({
+      ...current,
+
+      storyName:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.storyName,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+const setSlides = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setStoryHistoryState(
+    (current) => ({
+      ...current,
+
+      slides:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.slides,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+
+const setSlidesDuringDrag = (
+  nextValueOrUpdater,
+) => {
+  setStoryHistoryState(
+    (currentStory) => {
+      const updatedSlides =
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              currentStory.slides,
+            )
+          : nextValueOrUpdater;
+
+      const updatedStory = {
+        ...currentStory,
+        slides: updatedSlides,
+      };
+
+      // Latest state for other code.
+      storyStateRef.current =
+        updatedStory;
+
+      // Exact latest state for this drag.
+      if (dragContext.current) {
+        dragContext.current.latestStoryState =
+          updatedStory;
+      }
+
+      return updatedStory;
+    },
+    {
+      record: false,
+    },
+  );
+};
+
+const {
+  storyName,
+  slides,
+} = storyHistoryState;
+
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedAnnoId, setSelectedAnnoId] = useState(null);
@@ -347,6 +449,18 @@ function NewStory() {
 
   const hasLoadedStoryRef = useRef(false);
   const autosaveTimerRef = useRef(null);
+
+
+  const storyStateRef =
+  useRef(storyHistoryState);
+
+  const storyNameBeforeEditRef =
+  useRef(storyName);
+
+useEffect(() => {
+  storyStateRef.current =
+    storyHistoryState;
+}, [storyHistoryState]);
 const exportStoryPDF = async () => {
   try {
     setIsExporting(true);
@@ -900,21 +1014,36 @@ const newItem = createChartItem(
     setSelectedAnnoId(null);
     setShowPicker(false);
   };
+const updateChartItem = (
+  itemId,
+  updates,
+  options,
+) => {
+  setSlides(
+    (previous) =>
+      previous.map(
+        (slide, index) =>
+          index ===
+          activeSlideIndex
+            ? {
+                ...slide,
 
-  const updateChartItem = (itemId, updates) => {
-    setSlides((prev) =>
-      prev.map((slide, index) =>
-        index === activeSlideIndex
-          ? {
-              ...slide,
-              content: (slide.content || []).map((item) =>
-                item.id === itemId ? { ...item, ...updates } : item
-              ),
-            }
-          : slide
-      )
-    );
-  };
+                content: (
+                  slide.content || []
+                ).map((item) =>
+                  item.id === itemId
+                    ? {
+                        ...item,
+                        ...updates,
+                      }
+                    : item,
+                ),
+              }
+            : slide,
+      ),
+    options,
+  );
+};
 
   const deleteChartItem = (itemId) => {
     setSlides((prev) =>
@@ -958,23 +1087,53 @@ const newItem = createChartItem(
     setSelectedChartId(duplicatedId);
     setSelectedAnnoId(null);
   };
+const bringChartToFront = (
+  itemId,
+  options,
+) => {
+  setSlides(
+    (previous) =>
+      previous.map(
+        (slide, index) => {
+          if (
+            index !==
+            activeSlideIndex
+          ) {
+            return slide;
+          }
 
-  const bringChartToFront = (itemId) => {
-    setSlides((prev) =>
-      prev.map((slide, index) => {
-        if (index !== activeSlideIndex) return slide;
-        const content = slide.content || [];
-        const highest = Math.max(0, ...content.map((item) => item.zIndex || 0));
+          const content =
+            slide.content || [];
 
-        return {
-          ...slide,
-          content: content.map((item) =>
-            item.id === itemId ? { ...item, zIndex: highest + 1 } : item
-          ),
-        };
-      })
-    );
-  };
+          const highest =
+            Math.max(
+              0,
+              ...content.map(
+                (item) =>
+                  item.zIndex || 0,
+              ),
+            );
+
+          return {
+            ...slide,
+
+            content:
+              content.map(
+                (item) =>
+                  item.id === itemId
+                    ? {
+                        ...item,
+                        zIndex:
+                          highest + 1,
+                      }
+                    : item,
+              ),
+          };
+        },
+      ),
+    options,
+  );
+};
 
   const sendChartToBack = (itemId) => {
     setSlides((prev) =>
@@ -992,111 +1151,271 @@ const newItem = createChartItem(
       })
     );
   };
+const startChartInteraction = (
+  event,
+  mode,
+  item,
+) => {
+  event.preventDefault();
+  event.stopPropagation();
 
-  const startChartInteraction = (event, mode, item) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!canvasRef.current) return;
+  if (!canvasRef.current) {
+    return;
+  }
 
-    setSelectedChartId(item.id);
-    setSelectedAnnoId(null);
-    bringChartToFront(item.id);
+  const startingStoryState =
+    structuredClone(
+      storyStateRef.current,
+    );
 
-    chartInteractionRef.current = {
-      mode,
-      itemId: item.id,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startX: item.x ?? 0,
-      startY: item.y ?? 0,
-      startWidth: item.width ?? 100,
-      startHeight: item.height ?? 100,
-    };
+  setSelectedChartId(item.id);
+  setSelectedAnnoId(null);
 
-    document.addEventListener("mousemove", handleChartInteractionMove);
-    document.addEventListener("mouseup", stopChartInteraction);
+  bringChartToFront(
+    item.id,
+    {
+      record: false,
+    },
+  );
+
+  chartInteractionRef.current = {
+    mode,
+    itemId: item.id,
+
+    startClientX:
+      event.clientX,
+
+    startClientY:
+      event.clientY,
+
+    startX:
+      item.x ?? 0,
+
+    startY:
+      item.y ?? 0,
+
+    startWidth:
+      item.width ?? 100,
+
+    startHeight:
+      item.height ?? 100,
+
+    startingStoryState,
   };
 
-  const handleChartInteractionMove = (event) => {
-    const interaction = chartInteractionRef.current;
-    const canvas = canvasRef.current;
-    if (!interaction || !canvas) return;
+  document.addEventListener(
+    "mousemove",
+    handleChartInteractionMove,
+  );
 
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
+  document.addEventListener(
+    "mouseup",
+    stopChartInteraction,
+  );
+};
+const handleChartInteractionMove = (event) => {
+  const interaction =
+    chartInteractionRef.current;
 
-    const deltaX =
-      ((event.clientX - interaction.startClientX) / rect.width) * 100;
-    const deltaY =
-      ((event.clientY - interaction.startClientY) / rect.height) * 100;
+  const canvas =
+    canvasRef.current;
 
-    if (interaction.mode === "move") {
-      updateChartItem(interaction.itemId, {
+  if (!interaction || !canvas) {
+    return;
+  }
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+  if (!rect.width || !rect.height) {
+    return;
+  }
+
+  const deltaX =
+    ((event.clientX -
+      interaction.startClientX) /
+      rect.width) *
+    100;
+
+  const deltaY =
+    ((event.clientY -
+      interaction.startClientY) /
+      rect.height) *
+    100;
+
+  if (
+    interaction.mode === "move"
+  ) {
+    updateChartItem(
+      interaction.itemId,
+      {
         x: Math.max(
           0,
-          Math.min(100 - interaction.startWidth, interaction.startX + deltaX)
+          Math.min(
+            100 -
+              interaction.startWidth,
+
+            interaction.startX +
+              deltaX,
+          ),
         ),
+
         y: Math.max(
           0,
-          Math.min(100 - interaction.startHeight, interaction.startY + deltaY)
+          Math.min(
+            100 -
+              interaction.startHeight,
+
+            interaction.startY +
+              deltaY,
+          ),
         ),
-      });
-      return;
-    }
+      },
+      {
+        record: false,
+      },
+    );
 
-    const minWidth = 18;
-    const minHeight = 18;
-    let x = interaction.startX;
-    let y = interaction.startY;
-    let width = interaction.startWidth;
-    let height = interaction.startHeight;
+    return;
+  }
 
-    if (interaction.mode.includes("right")) {
-      width = Math.max(
-        minWidth,
-        Math.min(100 - interaction.startX, interaction.startWidth + deltaX)
-      );
-    }
+  const minWidth = 18;
+  const minHeight = 18;
 
-    if (interaction.mode.includes("bottom")) {
-      height = Math.max(
-        minHeight,
-        Math.min(100 - interaction.startY, interaction.startHeight + deltaY)
-      );
-    }
+  let x = interaction.startX;
+  let y = interaction.startY;
+  let width =
+    interaction.startWidth;
+  let height =
+    interaction.startHeight;
 
-    if (interaction.mode.includes("left")) {
-      const nextX = Math.max(
-        0,
-        Math.min(
-          interaction.startX + interaction.startWidth - minWidth,
-          interaction.startX + deltaX
-        )
-      );
-      x = nextX;
-      width = interaction.startWidth + interaction.startX - nextX;
-    }
+  if (
+    interaction.mode.includes(
+      "right",
+    )
+  ) {
+    width = Math.max(
+      minWidth,
+      Math.min(
+        100 -
+          interaction.startX,
 
-    if (interaction.mode.includes("top")) {
-      const nextY = Math.max(
-        0,
-        Math.min(
-          interaction.startY + interaction.startHeight - minHeight,
-          interaction.startY + deltaY
-        )
-      );
-      y = nextY;
-      height = interaction.startHeight + interaction.startY - nextY;
-    }
+        interaction.startWidth +
+          deltaX,
+      ),
+    );
+  }
 
-    updateChartItem(interaction.itemId, { x, y, width, height });
-  };
+  if (
+    interaction.mode.includes(
+      "bottom",
+    )
+  ) {
+    height = Math.max(
+      minHeight,
+      Math.min(
+        100 -
+          interaction.startY,
 
-  const stopChartInteraction = () => {
-    chartInteractionRef.current = null;
-    document.removeEventListener("mousemove", handleChartInteractionMove);
-    document.removeEventListener("mouseup", stopChartInteraction);
-  };
+        interaction.startHeight +
+          deltaY,
+      ),
+    );
+  }
+
+  if (
+    interaction.mode.includes(
+      "left",
+    )
+  ) {
+    const nextX = Math.max(
+      0,
+      Math.min(
+        interaction.startX +
+          interaction.startWidth -
+          minWidth,
+
+        interaction.startX +
+          deltaX,
+      ),
+    );
+
+    x = nextX;
+
+    width =
+      interaction.startWidth +
+      interaction.startX -
+      nextX;
+  }
+
+  if (
+    interaction.mode.includes(
+      "top",
+    )
+  ) {
+    const nextY = Math.max(
+      0,
+      Math.min(
+        interaction.startY +
+          interaction.startHeight -
+          minHeight,
+
+        interaction.startY +
+          deltaY,
+      ),
+    );
+
+    y = nextY;
+
+    height =
+      interaction.startHeight +
+      interaction.startY -
+      nextY;
+  }
+
+  updateChartItem(
+    interaction.itemId,
+    {
+      x,
+      y,
+      width,
+      height,
+    },
+    {
+      record: false,
+    },
+  );
+};
+
+const stopChartInteraction = () => {
+  const interaction =
+    chartInteractionRef.current;
+
+  if (
+    interaction
+      ?.startingStoryState
+  ) {
+    commitStoryHistory(
+      interaction
+        .startingStoryState,
+
+      storyStateRef.current,
+    );
+  }
+
+  chartInteractionRef.current =
+    null;
+
+  document.removeEventListener(
+    "mousemove",
+    handleChartInteractionMove,
+  );
+
+  document.removeEventListener(
+    "mouseup",
+    stopChartInteraction,
+  );
+};
 
   useEffect(() => {
     const fetchCharts = async () => {
@@ -1169,25 +1488,20 @@ setShowPicker(false);
       .then((data) => {
         hasLoadedStoryRef.current = true;
 
-        setStoryName(
-          data.name || "Untitled Story",
-        );
+        resetStoryHistory({
+          storyName:
+            data.name ||
+            "Untitled Story",
 
-        if (data.slides?.length) {
-          setSlides(normalizeStorySlides(data));
-        } else {
-          setSlides([
-            {
-              id: `temp-${crypto.randomUUID()}`,
-              content: [],
-              description: "",
-              annotations: [],
-            },
-          ]);
-        }
+          slides:
+            data.slides?.length
+              ? normalizeStorySlides(data)
+              : createInitialStoryState()
+                  .slides,
+        });
       })
       .catch(err => console.error("Fetch error:", err));
-  }, [storyId]);
+  }, [storyId,resetStoryHistory]);
 
   useEffect(() => {
   if (!hasLoadedStoryRef.current) return;
@@ -1299,8 +1613,23 @@ const reloadSavedStory = async (
     );
   }
 
-  setStoryName(storyData.name || "Untitled Story");
-  setSlides(normalizeStorySlides(storyData));
+setStoryHistoryState(
+  (current) => ({
+    ...current,
+
+    storyName:
+      storyData.name ||
+      current.storyName,
+
+    slides:
+      normalizeStorySlides(
+        storyData,
+      ),
+  }),
+  {
+    record: false,
+  },
+);
 
   return storyData;
 };
@@ -1451,72 +1780,222 @@ const response = await fetch(url, {
     if (selectedAnnoId === id) setSelectedAnnoId(null);
   };
 
-const handleDragStart = (e, type, annoId, currentAnno = null) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setSelectedAnnoId(annoId);
-    
-    // Store initial dimensions and anchor clicks for the resize tracking calculation
-    dragContext.current = { 
-      type, 
-      annoId,
-      startX: e.clientX,
-      startY: e.clientY,
-      startWidth: currentAnno ? (currentAnno.width || 15) : 15,
-      startHeight: currentAnno ? (currentAnno.height || 15) : 15
-    };
-    
-    document.addEventListener("mousemove", handleDragMove);
-    document.addEventListener("mouseup", handleDragEnd);
-  };
+  const handleDragMove = (event) => {
+  if (
+    !canvasRef.current ||
+    !dragContext.current?.annoId
+  ) {
+    return;
+  }
 
-  const handleDragMove = (e) => {
-    if (!canvasRef.current || !dragContext.current.annoId) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const ctx = dragContext.current;
-    
-    let pctX = ((e.clientX - rect.left) / rect.width) * 100;
-    let pctY = ((e.clientY - rect.top) / rect.height) * 100;
-    
-    pctX = Math.max(0, Math.min(100, pctX));
-    pctY = Math.max(0, Math.min(100, pctY));
+  const rect =
+    canvasRef.current.getBoundingClientRect();
 
-    setSlides(prev => prev.map((s, idx) => idx === activeSlideIndex ? {
-      ...s, 
-      annotations: (s.annotations || []).map(a => {
-        if (a.id !== ctx.annoId) return a;
-        
-        if (ctx.type === "target") {
-          return { ...a, x: pctX, y: pctY };
-        } else if (ctx.type === "label") {
-          return { ...a, textX: pctX, textY: pctY };
-        } else if (ctx.type === "resize") {
-          // Convert current mouse movement offset directly to canvas space percentages
-          const deltaPctX = ((e.clientX - ctx.startX) / rect.width) * 100;
-          const deltaPctY = ((e.clientY - ctx.startY) / rect.height) * 100;
-          
-          if (a.markerType === "circle") {
-            const uniformDelta = (deltaPctX + deltaPctY) / 2; // Combines X and Y drag for a smooth diagonal scale
-            const newSize = Math.max(3, ctx.startWidth + uniformDelta);
-            return {
-              ...a,
-              width: newSize,
-              height: newSize
-            };
-          }
-          return {
-            ...a,
-            width: Math.max(3, ctx.startWidth + deltaPctX),
-            height: Math.max(3, ctx.startHeight + deltaPctY)
-          };
+  const context =
+    dragContext.current;
+    
+  context.hasMoved = true;
+  let percentageX =
+    ((event.clientX - rect.left) /
+      rect.width) *
+    100;
+
+  let percentageY =
+    ((event.clientY - rect.top) /
+      rect.height) *
+    100;
+
+  percentageX = Math.max(
+    0,
+    Math.min(100, percentageX),
+  );
+
+  percentageY = Math.max(
+    0,
+    Math.min(100, percentageY),
+  );
+
+  setSlidesDuringDrag(
+  (previousSlides) =>
+    previousSlides.map(
+      (slide, index) => {
+        if (
+          index !== activeSlideIndex
+        ) {
+          return slide;
         }
-        return a;
-      })
-    } : s));
+
+        return {
+          ...slide,
+
+          annotations: (
+            slide.annotations || []
+          ).map((annotation) => {
+            if (
+              annotation.id !==
+              context.annoId
+            ) {
+              return annotation;
+            }
+
+            if (
+              context.type ===
+              "target"
+            ) {
+              return {
+                ...annotation,
+                x: percentageX,
+                y: percentageY,
+              };
+            }
+
+            if (
+              context.type ===
+              "label"
+            ) {
+              return {
+                ...annotation,
+                textX: percentageX,
+                textY: percentageY,
+              };
+            }
+
+            if (
+              context.type ===
+              "resize"
+            ) {
+              const deltaPercentageX =
+                ((event.clientX -
+                  context.startX) /
+                  rect.width) *
+                100;
+
+              const deltaPercentageY =
+                ((event.clientY -
+                  context.startY) /
+                  rect.height) *
+                100;
+
+              if (
+                annotation.markerType ===
+                "circle"
+              ) {
+                const uniformDelta =
+                  (deltaPercentageX +
+                    deltaPercentageY) /
+                  2;
+
+                const newSize =
+                  Math.max(
+                    3,
+                    context.startWidth +
+                      uniformDelta,
+                  );
+
+                return {
+                  ...annotation,
+                  width: newSize,
+                  height: newSize,
+                };
+              }
+
+              return {
+                ...annotation,
+
+                width: Math.max(
+                  3,
+                  context.startWidth +
+                    deltaPercentageX,
+                ),
+
+                height: Math.max(
+                  3,
+                  context.startHeight +
+                    deltaPercentageY,
+                ),
+              };
+            }
+
+            return annotation;
+          }),
+        };
+      },
+    ),
+  );
+};
+
+useEffect(() => {
+  return () => {
+    document.removeEventListener(
+      "mousemove",
+      handleChartInteractionMove,
+    );
+
+    document.removeEventListener(
+      "mouseup",
+      stopChartInteraction,
+    );
+
+    document.removeEventListener(
+      "mousemove",
+      handleDragMove,
+    );
+
+    document.removeEventListener(
+      "mouseup",
+      handleDragEnd,
+    );
+  };
+}, []);
+
+const handleDragStart = (
+  event,
+  type,
+  annoId,
+  currentAnno = null,
+) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  setSelectedAnnoId(annoId);
+  setSelectedChartId(null);
+
+  dragContext.current = {
+    type,
+    annoId,
+
+    startX: event.clientX,
+    startY: event.clientY,
+
+    startWidth:
+      currentAnno?.width ?? 15,
+
+    startHeight:
+      currentAnno?.height ?? 15,
+
+    startingStoryState:
+      structuredClone(
+        storyStateRef.current,
+      ),
+
+    latestStoryState:
+      structuredClone(
+        storyStateRef.current,
+      ),
+
+    hasMoved: false,
   };
 
+  document.addEventListener(
+    "mousemove",
+    handleDragMove,
+  );
 
-
+  document.addEventListener(
+    "mouseup",
+    handleDragEnd,
+  );
+};
 
 const publishStory = async () => {
   try {
@@ -1567,18 +2046,112 @@ const publishStory = async () => {
   }
 };
 
-  const handleDragEnd = () => {
-    dragContext.current = { type: null, annoId: null };
-    document.removeEventListener("mousemove", handleDragMove);
-    document.removeEventListener("mouseup", handleDragEnd);
+const handleDragEnd = () => {
+  const context =
+    dragContext.current;
+
+  document.removeEventListener(
+    "mousemove",
+    handleDragMove,
+  );
+
+  document.removeEventListener(
+    "mouseup",
+    handleDragEnd,
+  );
+
+  if (
+    context?.hasMoved &&
+    context?.startingStoryState &&
+    context?.latestStoryState
+  ) {
+    /*
+     * The annotation is already visually located
+     * at latestStoryState because mousemove updated it.
+     *
+     * Do not set the state again here.
+     * Only register the complete drag in history.
+     */
+    commitStoryHistory(
+      context.startingStoryState,
+      context.latestStoryState,
+    );
+
+    storyStateRef.current =
+      context.latestStoryState;
+  }
+
+  dragContext.current = {
+    type: null,
+    annoId: null,
+    startingStoryState: null,
+    latestStoryState: null,
+    hasMoved: false,
   };
+};
 
   useEffect(() => {
-    return () => {
-      document.removeEventListener("mousemove", handleChartInteractionMove);
-      document.removeEventListener("mouseup", stopChartInteraction);
-    };
-  }, []);
+  const handleHistoryShortcut = (
+    event,
+  ) => {
+    const target = event.target;
+
+    const isTyping =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target?.isContentEditable;
+
+    /*
+     * Keep native text-field Undo working
+     * while the user types.
+     */
+    if (isTyping) {
+      return;
+    }
+
+    const modifier =
+      event.ctrlKey ||
+      event.metaKey;
+
+    if (!modifier) {
+      return;
+    }
+
+    const key =
+      event.key.toLowerCase();
+
+    if (
+      key === "z" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      undoStory();
+      return;
+    }
+
+    if (
+      (key === "z" &&
+        event.shiftKey) ||
+      key === "y"
+    ) {
+      event.preventDefault();
+      redoStory();
+    }
+  };
+
+  window.addEventListener(
+    "keydown",
+    handleHistoryShortcut,
+  );
+
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleHistoryShortcut,
+    );
+  };
+}, [undoStory, redoStory]);
 
   // Convert responsive percentages back into strict uniform pixel targets
   // Convert responsive percentages into strict uniform pixel targets anchored to shape borders
@@ -1706,20 +2279,88 @@ const publishStory = async () => {
 
       <input
         value={storyName}
-        onChange={(e) => setStoryName(e.target.value)}
-        className="
-          bg-transparent
-          app-text
-          text-lg
-          font-semibold
-          outline-none
-          border-none
-          w-72
-        "
-      />
+        onFocus={() => {
+          storyNameBeforeEditRef.current =
+            storyName;
+        }}
+        onChange={(event) => {
+          setStoryName(
+            event.target.value,
+            {
+              record: false,
+            },
+          );
+        }}
+        onBlur={() => {
+  const previousName =
+    storyNameBeforeEditRef.current;
+
+  if (
+    previousName === storyName
+  ) {
+    return;
+  }
+
+  commitStoryHistory(
+    {
+      ...storyHistoryState,
+      storyName:
+        previousName,
+    },
+    {
+      ...storyHistoryState,
+      storyName,
+    },
+  );
+}}
+className="
+  bg-transparent
+  app-text
+  w-72
+  border-none
+  text-lg
+  font-semibold
+  outline-none
+"
+/>
 
       <div className="ml-auto flex gap-2">
 
+      <button
+        type="button"
+        onClick={undoStory}
+        disabled={!canUndoStory}
+        title="Undo (Ctrl+Z)"
+        className="
+          btn-secondary
+          rounded-lg
+          px-3
+          py-2
+          text-sm
+          disabled:cursor-not-allowed
+          disabled:opacity-40
+        "
+      >
+        ↶ Undo
+      </button>
+
+      <button
+        type="button"
+        onClick={redoStory}
+        disabled={!canRedoStory}
+        title="Redo (Ctrl+Shift+Z)"
+        className="
+          btn-secondary
+          rounded-lg
+          px-3
+          py-2
+          text-sm
+          disabled:cursor-not-allowed
+          disabled:opacity-40
+        "
+      >
+        ↷ Redo
+      </button>
         <button
           onClick={exportStoryPDF}
           className="btn-secondary px-4 py-2 text-sm rounded-lg"

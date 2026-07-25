@@ -21,7 +21,9 @@ function ChartPreview({
   visibleYKeys,
   generatedColors = [],
   settings,
-  onMarkClick,
+  onChartItemClick,
+  selectedChartValues = [],
+
 }) {
   
   const chartViews = {
@@ -113,7 +115,7 @@ function ChartPreview({
 
         {/* LEFT LEGEND */}
         {settings.showLegend && settings.legendPosition === 'left' && (
-          <div className={`w-64 shrink-0 p-4 ${isExport ? "h-auto overflow-visible" : "overflow-y-auto"}`}>
+          <div className={`w-32 shrink-0 p-4 ${isExport ? "h-auto overflow-visible" : "overflow-y-auto"}`}>
             <Legend 
             chartData={processedData} 
             rawData={rawData} 
@@ -136,7 +138,8 @@ function ChartPreview({
             settings={settings}
             chartConfig={chartConfig}
             visibleYKeys={visibleYKeys}
-            onMarkClick={onMarkClick}
+            onChartItemClick={onChartItemClick}
+            selectedChartValues={selectedChartValues}
           />
           </div>
         </div>
@@ -155,7 +158,7 @@ function ChartPreview({
 
         {/* RIGHT LEGEND */}
         {settings.showLegend && settings.legendPosition === 'right' && (
-          <div className={`w-64 shrink-0 p-4 ${isExport ? "h-auto overflow-visible" : "overflow-y-auto"}`}>
+          <div className={`w-32 shrink-0 p-4 ${isExport ? "h-auto overflow-visible" : "overflow-y-auto"}`}>
             <Legend 
             chartData={processedData} 
             rawData={rawData} 

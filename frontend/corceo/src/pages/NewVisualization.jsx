@@ -1,6 +1,6 @@
-import React, { useRef, useState,useEffect } from "react";
-import {toPng} from "html-to-image";
-import { useParams,useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { toPng } from "html-to-image";
+import { useNavigate, useParams } from "react-router-dom";
 
 import Sidebar from "../components/sidebar/Sidebar";
 import DataTable from "../components/data/DataTable";
@@ -10,12 +10,22 @@ import useProjectData from "../hooks/useProjectData";
 import useChartData from "../hooks/useChartData";
 import ChartFiltersPanel from "../components/charts/ChartFiltersPanel";
 import Header from "../components/Header";
+import ActiveFilterChips from "../components/ActiveFilterChips";
+import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
+import useHistoryState from "../hooks/useHistoryState";
 
 function NewVisualization() {
   const { id } = useParams();
 
-  const chartRef = useRef(null);
-  
+const visibleChartRef = useRef(null);
+const exportChartRef = useRef(null);
+const chartResizeRef = useRef({
+  resizing: false,
+  startY: 0,
+  startHeight: 520,
+  latestHeight: 520,
+});
+
   const navigate = useNavigate();
   const {
     data,
@@ -28,6 +38,7 @@ function NewVisualization() {
     saveChartToBackend,
     saveDataset,
   } = useProjectData(id);
+
 
 const removeFieldFromAxis = (axis, field) => {
   setChartConfig((prev) => {
@@ -68,178 +79,451 @@ const removeFieldFromAxis = (axis, field) => {
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem(`activeTab-${id}`) || "data"
   );  
+
+const MIN_CHART_HEIGHT = 320;
+const MAX_CHART_HEIGHT = 1200;
+
+const getInitialChartHeight = () => {
+  const storedValue =
+    localStorage.getItem(
+      `chart-height-${id}`,
+    );
+
+  if (storedValue === null) {
+    return 520;
+  }
+
+  const parsedHeight =
+    Number(storedValue);
+
+  if (!Number.isFinite(parsedHeight)) {
+    return 520;
+  }
+
+  return Math.max(
+    MIN_CHART_HEIGHT,
+    Math.min(
+      MAX_CHART_HEIGHT,
+      parsedHeight,
+    ),
+  );
+};
+
   
-  const [settings, setSettings] = useState({
-    title: "",
-    subtitle: "",
-    description: "",
+  
+const {
+  state: visualizationState,
+  setState: setVisualizationState,
+  undo,
+  redo,
+  reset: resetVisualizationHistory,
+  commit: commitVisualizationHistory,
+  canUndo,
+  canRedo,
+} = useHistoryState(
+  {
+    settings:
+      defaultChartSettings,
 
-    headerAlign: "left",
+    chartConfig:
+      defaultChartConfig,
 
-    palette: "Standard",
-    paletteMode: "repeat",
-    extendPalette: false,
+    selectedChartValues: [],
 
-    showLegend: true,
-    showGrid: true,
+    chartHeight: getInitialChartHeight(),
+  },
+  {
+    maxHistory: 50,
+  },
+);
+const setSettings = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setVisualizationState(
+    (current) => ({
+      ...current,
 
-    legendPosition: "right",
-    legendDirection: "column",
-    legendAlign: "center",
-    legendSize: "medium",
-    legendTitle: "",
-    legendGap: 12,
-    legendFields: [],
-    labelType: "percentage",
-    labelPosition: "inside", 
-    showLabels: true,
-    hideZeros: false,
+      settings:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.settings,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+const setChartConfig = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setVisualizationState(
+    (current) => ({
+      ...current,
+
+      chartConfig:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.chartConfig,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+const setSelectedChartValues = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setVisualizationState(
+    (current) => ({
+      ...current,
+
+      selectedChartValues:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.selectedChartValues,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+const setChartHeight = (
+  nextValueOrUpdater,
+  options,
+) => {
+  setVisualizationState(
+    (current) => ({
+      ...current,
+
+      chartHeight:
+        typeof nextValueOrUpdater ===
+        "function"
+          ? nextValueOrUpdater(
+              current.chartHeight,
+            )
+          : nextValueOrUpdater,
+    }),
+    options,
+  );
+};
+
+  const {
+  settings,
+  chartConfig,
+  selectedChartValues,
+  chartHeight,
+} = visualizationState;
 
 
-    tooltipFields: ["name", "value"],
 
-    formatMode: "decimal",
-    compactNumbers: false,
-    numberFormat: "default",
-    decimalPlaces: 2,
-  });
-  const [chartConfig, setChartConfig] = useState({
-    x: null,
-    y: [],
-    type: "bar",
-
-    aggregation: "none",
-
-    sorting: {
-      field: null,
-      direction: "none",
-    },
-
-    appearance: {
-      barCategoryGap: 24,
-      barGap: 4,
-      barRadius: 5,
-      maxBarSize: 72,
-
-      xAxis: {
-        visible: true,
-        labelLayout: "auto",
-        tickSize: 11,
-        maxLabelLength: 18,
-        minTickGap: 16,
-        showEveryLabel: false,
-        showLine: true,
-        showTicks: false,
-        showGrid: false,
-      },
-
-      yAxis: {
-        visible: true,
-        tickSize: 11,
-        showLine: false,
-        showTicks: false,
-        showGrid: true,
-        min: "auto",
-        max: "auto",
-      },
-    },
-
-    ranking: {
-      enabled: false,
-      direction: "top",
-      count: 10,
-      field: null,
-    },
-
-    dateGrouping: {
-      field: null,
-      interval: "none",
-    },
-
-    filters: [],
-
-    xHierarchy: [],
-    dateHierarchySource: null,
-    groupSmallCategories: false,
-    timeGroupBy: "none",
-  });
-
-const handleMarkClick = (item) => {
-  if (!chartConfig.x || !item?.x) return;
-
-  setChartConfig((prev) => ({
+  const updateSetting = (key, value) => {
+  setSettings(prev => ({
     ...prev,
-    filters: [
-      ...prev.filters.filter(
-        (filter) => filter.field !== chartConfig.x
-      ),
-      {
-        field: chartConfig.x,
-        operator: "equals",
-        value: item.x,
-      },
-    ],
+    [key]: value,
   }));
 };
+
 
     const multiYCharts = ["bar", "line", "area", "composed"];
 
   const isMultiYChart = multiYCharts.includes(chartConfig.type);
-const exportPNG = async () => {
-  if (!chartRef.current) return;
 
-  const node = chartRef.current;
+const createExportImage = async (
+  pixelRatio = 2
+) => {
+  const node = exportChartRef.current;
 
-  // Store original styles to restore them later
-  const originalStyle = {
-    width: node.style.width,
-    height: node.style.height,
-    overflow: node.style.overflow,
-    position: node.style.position,
-    maxHeight: node.style.maxHeight
-  };
+  if (!node) {
+    return null;
+  }
+
+  await document.fonts?.ready;
+
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
+
+  const width = Math.ceil(node.scrollWidth);
+  const height = Math.ceil(node.scrollHeight);
+
+  return toPng(node, {
+    cacheBust: true,
+    pixelRatio,
+    backgroundColor: "#ffffff",
+    width,
+    height,
+    canvasWidth: width * pixelRatio,
+    canvasHeight: height * pixelRatio,
+    style: {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxHeight: "none",
+      overflow: "visible",
+      transform: "none",
+    },
+  });
+};
+
+
+  const exportPNG = async () => {
+  const node = exportChartRef.current;
+
+  if (!node) {
+    console.error("Export chart element was not found.");
+    return;
+  }
 
   try {
-    // 1. Force the node to expand to its full content height
-    node.style.width = "1400px";
-    node.style.height = "auto"; // Let it grow to fit the legend
-    node.style.minHeight = "900px";
-    node.style.overflow = "visible"; 
-    node.style.position = "relative";
-    node.style.maxHeight = "none";
+    await document.fonts?.ready;
 
-    // 2. IMPORTANT: Wait for React/Recharts to re-render at this new height
-    await new Promise((resolve) => setTimeout(resolve, 600));
-console.log(
-  chartRef.current.querySelector(".recharts-responsive-container")
-    ?.getBoundingClientRect()
-);
-    // 3. Capture
+    // Give Recharts time to measure the hidden 1400px version.
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+
+    const width = Math.ceil(node.scrollWidth);
+    const height = Math.ceil(node.scrollHeight);
+
     const dataUrl = await toPng(node, {
       cacheBust: true,
       pixelRatio: 2,
       backgroundColor: "#ffffff",
-      // Ensure the canvas gets the full height of the element
-      height: node.scrollHeight, 
+      width,
+      height,
+      canvasWidth: width * 2,
+      canvasHeight: height * 2,
+      style: {
+        width: `${width}px`,
+        height: `${height}px`,
+        maxHeight: "none",
+        overflow: "visible",
+        transform: "none",
+      },
+
+      // Extra protection if editor-only elements ever enter the export node.
+      filter: (element) => {
+        return !element?.classList?.contains(
+          "no-export"
+        );
+      },
     });
 
     const link = document.createElement("a");
-    link.download = "chart.png";
+    link.download = `${
+      settings.title?.trim() || "chart"
+    }.png`;
     link.href = dataUrl;
     link.click();
-  } catch (err) {
-    console.error("Export failed:", err);
-  } finally {
-    // Restore styles
-    Object.assign(node.style, originalStyle);
+  } catch (error) {
+    console.error("Export failed:", error);
   }
 };
-  const updateSetting = (key, value) => {
-    setSettings(prev => ({
+
+const removeFilterValue = (
+  filterIndex,
+  valueToRemove
+) => {
+  setChartConfig((prev) => {
+    const updatedFilters = (prev.filters || [])
+      .map((filter, index) => {
+        if (index !== filterIndex) {
+          return filter;
+        }
+
+        const currentValues = Array.isArray(filter.value)
+          ? filter.value
+          : [filter.value];
+
+        const remainingValues = currentValues.filter(
+          (value) =>
+            String(value) !== String(valueToRemove)
+        );
+
+        if (remainingValues.length === 0) {
+          return null;
+        }
+
+        return {
+          ...filter,
+          value: remainingValues,
+        };
+      })
+      .filter(Boolean);
+
+    return {
       ...prev,
-      [key]: value,
-    }));
+      filters: updatedFilters,
+    };
+  });
+};
+const handleChartResizeMove = (
+  event,
+) => {
+  const resizeState =
+    chartResizeRef.current;
+
+  if (!resizeState.resizing) return;
+
+  const difference =
+    event.clientY -
+    resizeState.startY;
+
+  const nextHeight = Math.max(
+    320,
+    Math.min(
+      1200,
+      resizeState.startHeight +
+        difference,
+    ),
+  );
+
+  resizeState.latestHeight =
+    nextHeight;
+
+  setChartHeight(nextHeight, {
+    record: false,
+  });
+};
+
+
+const stopChartResize = () => {
+  const resizeState =
+    chartResizeRef.current;
+
+  if (!resizeState.resizing) {
+    return;
+  }
+
+  resizeState.resizing = false;
+
+  const startHeight =
+    resizeState.startHeight;
+
+  const finalHeight =
+    resizeState.latestHeight;
+
+  if (
+    startHeight !== finalHeight
+  ) {
+    commitVisualizationHistory(
+      {
+        ...visualizationState,
+        chartHeight: startHeight,
+      },
+      {
+        ...visualizationState,
+        chartHeight: finalHeight,
+      },
+    );
+  }
+
+  document.removeEventListener(
+    "mousemove",
+    handleChartResizeMove,
+  );
+
+  document.removeEventListener(
+    "mouseup",
+    stopChartResize,
+  );
+};
+
+
+const startChartResize = (
+  event,
+) => {
+  event.preventDefault();
+
+  chartResizeRef.current = {
+    resizing: true,
+    startY: event.clientY,
+    startHeight: chartHeight,
+    latestHeight: chartHeight,
   };
+
+  document.addEventListener(
+    "mousemove",
+    handleChartResizeMove,
+  );
+
+  document.addEventListener(
+    "mouseup",
+    stopChartResize,
+  );
+};
+
+
+
+useEffect(() => {
+  return () => {
+    document.removeEventListener(
+      "mousemove",
+      handleChartResizeMove,
+    );
+
+    document.removeEventListener(
+      "mouseup",
+      stopChartResize,
+    );
+  };
+}, []);
+
+const applyChartSelection = () => {
+  if (!chartConfig.x || selectedChartValues.length === 0) {
+    return;
+  }
+
+  setChartConfig((prev) => {
+    const otherFilters = (prev.filters || []).filter(
+      (filter) => filter.field !== prev.x
+    );
+
+    return {
+      ...prev,
+      filters: [
+        ...otherFilters,
+        {
+          field: prev.x,
+          operator: "in",
+          value: selectedChartValues,
+        },
+      ],
+    };
+  });
+
+  setSelectedChartValues([], { record: false });
+};
+
+const clearChartSelection = () => {
+  setSelectedChartValues(
+    [],
+    {
+      record: false,
+    },
+  );
+};
+
+
+const clearFilters = () => {
+  setChartConfig((prev) => ({
+    ...prev,
+    filters: [],
+  }));
+};
+
 const handleDropAxis = (axis) => (e) => {
   const col = e.dataTransfer.getData("col");
 
@@ -283,42 +567,69 @@ const handleDropAxis = (axis) => (e) => {
 const isUsed = (col) =>
   col === chartConfig.x || chartConfig.y.includes(col);
 
-  const saveChart = async () => {
-    let base64Image = null;
+ const saveChart = async () => {
+  let base64Image = null;
 
-    if (chartRef.current) {
-      try {
-        base64Image = await toPng(chartRef.current, {
-          cacheBust: true,
-          pixelRatio: 1, 
-          width: 1400,  
-          height: 600,
-          style: {
-            transform: 'none',
-            overflow: 'visible',
-          }
-        });
-      } catch (err) {
-        console.error("Failed to generate background preview image:", err);
-      }
-    }
-    
-await saveDataset();
+  try {
+    base64Image = await createExportImage(1);
+  } catch (error) {
+    console.error(
+      "Failed to generate background preview image:",
+      error
+    );
+  }
+
+  await saveDataset();
 
   await saveChartToBackend({
     dataset_id: datasetId,
     chart_type: chartConfig.type,
     x_axis: chartConfig.x,
     y_axis: JSON.stringify(chartConfig.y),
-    settings: {
-      ...settings,
-      aggregation: chartConfig.aggregation,
-      sort: chartConfig.sort,
-    },
+    settings,
     chart_config: chartConfig,
     image_data: base64Image,
   });
 };
+const handleChartItemClick = (item) => {
+  const clickedValue = item?.x;
+
+  if (
+    clickedValue === undefined ||
+    clickedValue === null ||
+    clickedValue === ""
+  ) {
+    return;
+  }
+
+  setSelectedChartValues(
+  (current) => {
+    const alreadySelected =
+      current.some(
+        (value) =>
+          String(value) ===
+          String(clickedValue),
+      );
+
+    if (alreadySelected) {
+      return current.filter(
+        (value) =>
+          String(value) !==
+          String(clickedValue),
+      );
+    }
+
+    return [
+      ...current,
+      clickedValue,
+    ];
+  },
+  {
+    record: false,
+  },
+);
+};
+
 
   const recreateDateHierarchy = (field) => {
   const newFields = [
@@ -383,115 +694,315 @@ useEffect(() => {
   );
 }, [chartConfig.dateHierarchySource, columns, data.length]);
   const publishChart = async () => {
-    try {
-      const saved = await saveChartToBackend({
-        dataset_id: datasetId,
-        chart_type: chartConfig.type,
-        x_axis: chartConfig.x,
-        y_axis: JSON.stringify(chartConfig.y),
-        settings: {
-          ...settings,
-          aggregation: chartConfig.aggregation,
-          sort: chartConfig.sort,
-        },
+  try {
+    await saveDataset();
+
+    const saved = await saveChartToBackend({
+      dataset_id: datasetId,
+      chart_type: chartConfig.type,
+      x_axis: chartConfig.x,
+      y_axis: JSON.stringify(chartConfig.y),
+
+      settings,
+
       chart_config: chartConfig,
+    });
 
-      });
+    if (!saved?.id) {
+      alert("Failed to publish chart");
+      return;
+    }
 
-      if (!saved?.id) {
-        alert("Failed to publish chart");
-        return;
-      }
+    navigate(`/published/${saved.id}`);
+  } catch (error) {
+    console.error("Publish failed:", error);
+  }
+};
 
-      navigate(`/published/${saved.id}`);
+useEffect(() => {
+  if (!savedChart) {
+    return;
+  }
 
-    } catch (err) {
-      console.error(err);
+  console.log(
+    "Loaded savedChart:",
+    savedChart,
+  );
+
+  let parsedSettings = {};
+
+  try {
+    parsedSettings =
+      typeof savedChart.settings ===
+      "string"
+        ? JSON.parse(
+            savedChart.settings,
+          )
+        : savedChart.settings || {};
+  } catch (error) {
+    console.error(
+      "Failed to parse chart settings:",
+      error,
+    );
+
+    parsedSettings = {};
+  }
+
+  let savedConfig = {};
+
+  try {
+    savedConfig =
+      typeof savedChart.chart_config ===
+      "string"
+        ? JSON.parse(
+            savedChart.chart_config,
+          )
+        : savedChart.chart_config || {};
+  } catch (error) {
+    console.error(
+      "Failed to parse chart config:",
+      error,
+    );
+
+    savedConfig = {};
+  }
+
+  let parsedYValues = [];
+
+  if (Array.isArray(savedConfig.y)) {
+    parsedYValues = savedConfig.y;
+  } else if (savedConfig.y) {
+    parsedYValues = [savedConfig.y];
+  } else {
+    try {
+      const parsedY =
+        typeof savedChart.y_axis ===
+        "string"
+          ? JSON.parse(
+              savedChart.y_axis,
+            )
+          : savedChart.y_axis;
+
+      parsedYValues = Array.isArray(
+        parsedY,
+      )
+        ? parsedY
+        : parsedY
+          ? [parsedY]
+          : [];
+    } catch {
+      parsedYValues =
+        savedChart.y_axis
+          ? [savedChart.y_axis]
+          : [];
+    }
+  }
+
+  const inferredDateSource =
+    savedConfig.dateHierarchySource ||
+    (savedConfig.x?.endsWith(
+      "_Month",
+    )
+      ? savedConfig.x.replace(
+          "_Month",
+          "",
+        )
+      : null);
+
+  const inferredHierarchy =
+    inferredDateSource
+      ? [
+          `${inferredDateSource}_Year`,
+          `${inferredDateSource}_Quarter`,
+          `${inferredDateSource}_Month`,
+        ]
+      : [];
+
+  const loadedChartConfig = {
+    ...defaultChartConfig,
+    ...savedConfig,
+
+    x:
+      savedConfig.x ??
+      savedChart.x_axis ??
+      null,
+
+    y: parsedYValues,
+
+    type:
+      savedConfig.type ??
+      savedChart.chart_type ??
+      "bar",
+
+    aggregation:
+      savedConfig.aggregation ??
+      "none",
+
+    sorting: {
+      ...defaultChartConfig.sorting,
+      ...(savedConfig.sorting ||
+        {}),
+    },
+
+    ranking: {
+      ...defaultChartConfig.ranking,
+      ...(savedConfig.ranking ||
+        {}),
+    },
+
+    dateGrouping: {
+      ...defaultChartConfig.dateGrouping,
+      ...(savedConfig.dateGrouping ||
+        {}),
+    },
+
+    filters: Array.isArray(
+      savedConfig.filters,
+    )
+      ? savedConfig.filters
+      : [],
+
+    appearance: {
+      ...defaultChartConfig.appearance,
+      ...(savedConfig.appearance ||
+        {}),
+
+      xAxis: {
+        ...defaultChartConfig
+          .appearance.xAxis,
+
+        ...(savedConfig.appearance
+          ?.xAxis || {}),
+      },
+
+      yAxis: {
+        ...defaultChartConfig
+          .appearance.yAxis,
+
+        ...(savedConfig.appearance
+          ?.yAxis || {}),
+      },
+    },
+
+    xHierarchy:
+      savedConfig.xHierarchy
+        ?.length
+        ? savedConfig.xHierarchy
+        : inferredHierarchy,
+
+    dateHierarchySource:
+      savedConfig.dateHierarchySource ??
+      inferredDateSource,
+
+    timeGroupBy:
+      savedConfig.timeGroupBy ??
+      (inferredDateSource
+        ? "hierarchy"
+        : "none"),
+
+    groupSmallCategories:
+      savedConfig
+        .groupSmallCategories ??
+      false,
+  };
+
+  const loadedSettings = {
+    ...defaultChartSettings,
+    ...parsedSettings,
+  };
+
+  resetVisualizationHistory({
+    settings: loadedSettings,
+    chartConfig:
+      loadedChartConfig,
+    selectedChartValues: [],
+    chartHeight:
+      getInitialChartHeight(),
+  });
+}, [
+  savedChart,
+  id,
+  resetVisualizationHistory,
+]);
+
+
+useEffect(() => {
+  const handleHistoryShortcut = (
+    event,
+  ) => {
+    const target = event.target;
+
+    const isTyping =
+      target instanceof
+        HTMLInputElement ||
+      target instanceof
+        HTMLTextAreaElement ||
+      target instanceof
+        HTMLSelectElement ||
+      target?.isContentEditable;
+
+    if (isTyping) {
+      return;
+    }
+
+    const hasModifier =
+      event.ctrlKey ||
+      event.metaKey;
+
+    if (!hasModifier) {
+      return;
+    }
+
+    const key =
+      event.key.toLowerCase();
+
+    if (
+      key === "z" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      undo();
+      return;
+    }
+
+    if (
+      (key === "z" &&
+        event.shiftKey) ||
+      key === "y"
+    ) {
+      event.preventDefault();
+      redo();
     }
   };
 
+  window.addEventListener(
+    "keydown",
+    handleHistoryShortcut,
+  );
 
-  useEffect(() => {
-    localStorage.setItem(`activeTab-${id}`, activeTab);
-  }, [activeTab, id]);
-  useEffect(() => {
-    
-    if (!savedChart) return;
-      console.log("Loaded savedChart:", savedChart);
-  console.log("Loaded chart_config:", savedChart.chart_config);
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleHistoryShortcut,
+    );
+  };
+}, [undo, redo]);
 
+useEffect(() => {
+  localStorage.setItem(`activeTab-${id}`, activeTab);
+}, [activeTab, id]);
 
-   const settings =
-  typeof savedChart.settings === "string"
-    ? JSON.parse(savedChart.settings)
-    : savedChart.settings || {};
+useEffect(() => {
+  localStorage.setItem(
+    `chart-height-${id}`,
+    String(chartHeight),
+  );
+}, [chartHeight, id]);
 
-
-
-const savedConfig =
-  typeof savedChart.chart_config === "string"
-    ? JSON.parse(savedChart.chart_config)
-    : savedChart.chart_config || {};
-    const inferredDateSource =
-      savedConfig.dateHierarchySource ||
-      (savedConfig.x?.endsWith("_Month")
-        ? savedConfig.x.replace("_Month", "")
-        : null);
-
-      const inferredHierarchy = inferredDateSource
-        ? [
-            `${inferredDateSource}_Year`,
-            `${inferredDateSource}_Quarter`,
-            `${inferredDateSource}_Month`,
-          ]
-        : [];
-  setChartConfig({
-    x: savedConfig.x || savedChart.x_axis,
-
-    y:
-      savedConfig.y ||
-      (() => {
-        try {
-          const parsed = JSON.parse(savedChart.y_axis);
-          return Array.isArray(parsed) ? parsed : [parsed];
-        } catch {
-          return savedChart.y_axis ? [savedChart.y_axis] : [];
-        }
-      })(),
-
-    type: savedConfig.type || savedChart.chart_type || "bar",
-
-    aggregation: savedConfig.aggregation || "none",
-    sort: savedConfig.sort || "none",
-
-    xHierarchy: savedConfig.xHierarchy?.length
-      ? savedConfig.xHierarchy
-      : inferredHierarchy,
-
-    dateHierarchySource: inferredDateSource,
-
-    appearance: savedConfig.appearance || {},
-    timeGroupBy: inferredDateSource
-      ? "hierarchy"
-      : savedConfig.timeGroupBy || "none",
-
-    groupSmallCategories: savedConfig.groupSmallCategories || false,
-    filterField: savedConfig.filterField || null,
-
-    limit: savedConfig.limit || null,
-    sortBy: savedConfig.sortBy || null,
-  });
-
-    setSettings(prev => ({
-      ...prev,
-      ...settings,
-    }));
-
-  }, [savedChart]);
   return (
-    <> 
+    <>
     <Header/>
-  <div className="app-page w-full h-screen flex flex-col overflow-hidden">
+  <div className="app-page w-full h-screen flex flex-col">
     {/* Editor toolbar */}
     <div className="app-surface app-border h-12 shrink-0 flex items-center border-b px-4 gap-4">
       <button
@@ -538,6 +1049,41 @@ const savedConfig =
           </button>
         ) : (
           <>
+           <button
+              type="button"
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+              className="
+                btn-secondary
+                rounded-lg
+                px-3
+                py-2
+                text-sm
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
+              ↶ Undo
+            </button>
+
+            <button
+              type="button"
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Shift+Z)"
+              className="
+                btn-secondary
+                rounded-lg
+                px-3
+                py-2
+                text-sm
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
+              ↷ Redo
+            </button>
             <button
               onClick={publishChart}
               className="btn-secondary px-4 py-2 text-sm rounded-lg"
@@ -558,12 +1104,13 @@ const savedConfig =
             >
               Save
             </button>
+           
           </>
         )}
       </div>
     </div>
 
-      <div className="app-text flex-1 flex overflow-hidden">
+      <div className="app-text flex-1 flex ">
 
       {activeTab === "data" ? (
         <DataTable
@@ -601,7 +1148,7 @@ const savedConfig =
       </div>
     </div>
 
-    <div className="app-page flex-1 p-4 overflow-hidden">
+    <div className="app-page flex-1 p-4">
 
       <div className="mb-4 space-y-2 w-full">
         
@@ -647,10 +1194,54 @@ const savedConfig =
             ))}
           </div>
         </div>
-        <div
-        className="app-card flex-1 border rounded-lg p-4"
-        >
-          <div className="w-full h-[530px]">
+      <div className="app-card min-h-0 flex-1 border rounded-lg p-4">
+        {selectedChartValues.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <span className="text-sm font-semibold text-blue-800">
+              Selected:
+            </span>
+
+            {selectedChartValues.map((value) => (
+              <span
+                key={String(value)}
+                className="rounded-full bg-blue-600 px-3 py-1 text-xs text-white"
+              >
+                {String(value)}
+              </span>
+            ))}
+
+            <button
+              type="button"
+              onClick={applyChartSelection}
+              className="ml-auto rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Keep selected
+            </button>
+
+            <button
+              type="button"
+              onClick={clearChartSelection}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+                
+        <ActiveFilterChips
+          filters={chartConfig.filters || []}
+          onRemoveFilterValue={removeFilterValue}
+          onClearFilters={clearFilters}
+        />
+
+        <div className="w-full">
+          <div
+            ref={visibleChartRef}
+            className="w-full overflow-hidden"
+            style={{
+              height: `${chartHeight}px`,
+            }}
+          >
             <ChartPreview
               chartData={chartData}
               rawData={data}
@@ -659,11 +1250,46 @@ const savedConfig =
               columns={columns}
               generatedColors={generatedColors}
               visibleYKeys={visibleYKeys}
-              settings={settings}
+              settings={{
+                ...settings,
+                exportMode: false,
+              }}
+              onChartItemClick={
+                handleChartItemClick
+              }
+              selectedChartValues={
+                selectedChartValues
+              }
             />
           </div>
-          
-  
+
+          <div
+            role="separator"
+            aria-label="Resize chart height"
+            onMouseDown={startChartResize}
+            className="
+              group
+              flex
+              h-5
+              w-full
+              cursor-row-resize
+              items-center
+              justify-center
+            "
+          >
+            <div
+              className="
+                h-1
+                w-16
+                rounded-full
+                bg-slate-300
+                transition-all
+                group-hover:w-24
+                group-hover:bg-blue-500
+              "
+            />
+          </div>
+          </div>
         </div>
       </div>
       
@@ -682,7 +1308,7 @@ const savedConfig =
   }}
 >
   <div
-    ref={chartRef}
+    ref={exportChartRef}
     style={{
       width: "1400px",
       minHeight: "900px", // Fixed casing typo from 'minheight'

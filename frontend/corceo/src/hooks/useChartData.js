@@ -21,6 +21,91 @@ function parseNumericValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function applyFilters(rawData, filters = []) {
+  if (!Array.isArray(filters) || filters.length === 0) {
+    return rawData;
+  }
+
+  return rawData.filter((row) => {
+    return filters.every((filter) => {
+      const rowValue = row[filter.field];
+      const filterValue = filter.value;
+
+      switch (filter.operator) {
+        case "equals":
+          return (
+            String(rowValue ?? "").trim().toLowerCase() ===
+            String(filterValue ?? "").trim().toLowerCase()
+          );
+
+        case "notEquals":
+          return (
+            String(rowValue ?? "").trim().toLowerCase() !==
+            String(filterValue ?? "").trim().toLowerCase()
+          );
+
+        case "contains":
+          return String(rowValue ?? "")
+            .toLowerCase()
+            .includes(
+              String(filterValue ?? "").toLowerCase()
+            );
+
+        case "greaterThan":
+          return (
+            parseNumericValue(rowValue) >
+            parseNumericValue(filterValue)
+          );
+
+        case "greaterThanOrEqual":
+          return (
+            parseNumericValue(rowValue) >=
+            parseNumericValue(filterValue)
+          );
+
+        case "lessThan":
+          return (
+            parseNumericValue(rowValue) <
+            parseNumericValue(filterValue)
+          );
+
+        case "lessThanOrEqual":
+          return (
+            parseNumericValue(rowValue) <=
+            parseNumericValue(filterValue)
+          );
+
+        case "between": {
+          const min = parseNumericValue(filter.min);
+          const max = parseNumericValue(filter.max);
+          const value = parseNumericValue(rowValue);
+
+          return value >= min && value <= max;
+        }
+
+        case "in": {
+          const selectedValues = Array.isArray(filter.value)
+            ? filter.value
+            : [];
+
+          return selectedValues.some(
+            (selectedValue) =>
+              String(selectedValue ?? "")
+                .trim()
+                .toLowerCase() ===
+              String(rowValue ?? "")
+                .trim()
+                .toLowerCase()
+          );
+        }
+
+        default:
+          return true;
+      }
+    });
+  });
+}
+
 function aggregateData(rawData, xField, yFields, mode = "none") {
   const yKeys = Array.isArray(yFields)
     ? yFields
@@ -191,68 +276,77 @@ function applyRanking(chartRows, ranking, yFields) {
   return sorted.slice(0, count);
 }
 
+
 function useChartData({ data, chartConfig, settings }) {
   const processed = useMemo(() => {
-    const yKeys = Array.isArray(chartConfig.y)
-      ? chartConfig.y
-      : chartConfig.y
-        ? [chartConfig.y]
-        : [];
+  const yKeys = Array.isArray(chartConfig.y)
+    ? chartConfig.y
+    : chartConfig.y
+      ? [chartConfig.y]
+      : [];
 
-    if (
-      !Array.isArray(data) ||
-      data.length === 0 ||
-      !chartConfig.x ||
-      yKeys.length === 0
-    ) {
-      return {
-        rows: [],
-        visibleYKeys: [],
-      };
-    }
-
-    let rows = aggregateData(
-      data,
-      chartConfig.x,
-      yKeys,
-      chartConfig.aggregation
-    );
-
-    const filteredYKeys = yKeys;
-
-    if (settings.hideZeros) {
-      rows = rows.filter((row) =>
-        filteredYKeys.some(
-          (key) => parseNumericValue(row[key]) !== 0
-        )
-      );
-    }
-
-    rows = sortData(
-      rows,
-      chartConfig.sorting,
-      filteredYKeys
-    );
-
-    rows = applyRanking(
-      rows,
-      chartConfig.ranking,
-      filteredYKeys
-    );
-
+  if (
+    !Array.isArray(data) ||
+    data.length === 0 ||
+    !chartConfig.x ||
+    yKeys.length === 0
+  ) {
     return {
-      rows,
-      visibleYKeys: filteredYKeys,
+      rows: [],
+      visibleYKeys: [],
     };
-  }, [
+  }
+
+  const filteredRawData = applyFilters(
     data,
+    chartConfig.filters
+  );
+
+  let rows = aggregateData(
+    filteredRawData,
     chartConfig.x,
-    chartConfig.y,
-    chartConfig.aggregation,
+    yKeys,
+    chartConfig.aggregation
+  );
+
+  const filteredYKeys = yKeys;
+
+  if (settings.hideZeros) {
+    rows = rows.filter((row) =>
+      filteredYKeys.some(
+        (key) => parseNumericValue(row[key]) !== 0
+      )
+    );
+  }
+
+  rows = sortData(
+    rows,
     chartConfig.sorting,
+    filteredYKeys
+  );
+
+  rows = applyRanking(
+    rows,
     chartConfig.ranking,
-    settings.hideZeros,
-  ]);
+    filteredYKeys
+  );
+
+  return {
+    rows,
+    visibleYKeys: filteredYKeys,
+  };
+}, [
+  data,
+  chartConfig.x,
+  chartConfig.y,
+  chartConfig.aggregation,
+  chartConfig.sorting,
+  chartConfig.ranking,
+  chartConfig.filters,
+  settings.hideZeros,
+]);
+
+
 
   const generatedColors = useMemo(() => {
     const colorCount = Math.max(

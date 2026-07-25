@@ -13,23 +13,21 @@ import {
 import { formatValue } from "../../utils/formatters";
 
 function BarChartView({
-  chartData = [],
-  generatedColors = [],
-  settings = {},
-  chartConfig = {},
-  visibleKeys,
+  chartData,
+  settings,
+  generatedColors,
+  chartConfig,
+  visibleYKeys,
+  onChartItemClick,
+  selectedChartValues = [],
 }) {
   const yKeys =
-    visibleKeys ??
+    visibleYKeys ??
     (Array.isArray(chartConfig.y)
       ? chartConfig.y
       : chartConfig.y
         ? [chartConfig.y]
         : []);
-
-  /*
-   * These values come from ChartAppearanceSettings.
-   */
   const appearance = chartConfig.appearance || {};
   const xAxisSettings = appearance.xAxis || {};
   const yAxisSettings = appearance.yAxis || {};
@@ -114,16 +112,20 @@ const xAxisAngle =
       ? yAxisSettings.max
       : "auto";
 
-const xAxisHeight = !showXAxisLabels
-  ? showXAxisTitle
-    ? 34 + xTitleOffset
-    : 10
-  : resolvedLabelLayout === "vertical"
-    ? 95 + xTitleOffset
-    : resolvedLabelLayout === "angled"
-      ? 62 + xTitleOffset
-      : 28 + xTitleOffset;
+  const xTickAreaHeight = !showXAxisLabels
+    ? 10
+    : resolvedLabelLayout === "vertical"
+      ? 110
+      : resolvedLabelLayout === "angled"
+        ? 80
+        : 40;
 
+  const xTitleAreaHeight = showXAxisTitle
+    ? 36 + Math.max(0, xTitleOffset)
+    : 0;
+
+  const xAxisHeight =
+    xTickAreaHeight + xTitleAreaHeight;
       
   const bottomMargin =
     Math.abs(xAxisAngle) > 60
@@ -144,8 +146,6 @@ const xAxisHeight = !showXAxisLabels
           barGap={appearance.barGap ?? 8}
           barCategoryGap={`${appearance.barCategoryGap ?? 10}%`}
           margin={{
-            top: 20,
-            right: 50,
             left: yAxisSettings.title ? 65 : 40,
             bottom: xAxisSettings.title
               ? bottomMargin + 25
@@ -261,6 +261,16 @@ const xAxisHeight = !showXAxisLabels
             <Bar
               key={key}
               dataKey={key}
+              name={key}
+              onClick={(data) => {
+                const clickedItem =
+                  data?.payload ||
+                  data?.activePayload?.[0]?.payload ||
+                  data;
+
+                onChartItemClick?.(clickedItem);
+              }}
+              className="cursor-pointer"
               barSize={appearance.barSize ?? undefined}
               maxBarSize={appearance.maxBarSize ?? 100}
               opacity={appearance.opacity ?? 1}
@@ -281,6 +291,14 @@ const xAxisHeight = !showXAxisLabels
                       seriesIndex % generatedColors.length
                     ] ||
                     "#3b82f6"
+                  }
+                  opacity={
+                    selectedChartValues.length === 0 ||
+                    selectedChartValues.some(
+                      (value) => String(value) === String(entry.x)
+                    )
+                      ? 1
+                      : 0.25
                   }
                 />
               ))}

@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 
 import ChartPreview from "../components/charts/ChartPreview";
 import useChartData from "../hooks/useChartData";
+import { defaultChartConfig,defaultChartSettings } from "../components/config/chartDefaults";
+
 
 function safeParse(value, fallback = {}) {
   if (!value) return fallback;
@@ -19,6 +21,45 @@ function safeParse(value, fallback = {}) {
   }
 }
 
+function addDateHierarchyFields(
+  rows,
+  dateHierarchySource
+) {
+  if (
+    !Array.isArray(rows) ||
+    !dateHierarchySource
+  ) {
+    return rows;
+  }
+
+  return rows.map((row) => {
+    const rawDate = row?.[dateHierarchySource];
+    const date = new Date(rawDate);
+
+    if (Number.isNaN(date.getTime())) {
+      return row;
+    }
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const quarter =
+      Math.floor((month - 1) / 3) + 1;
+
+    return {
+      ...row,
+
+      [`${dateHierarchySource}_Year`]:
+        String(year),
+
+      [`${dateHierarchySource}_Quarter`]:
+        `${year} Q${quarter}`,
+
+      [`${dateHierarchySource}_Month`]:
+        `${year}-${String(month).padStart(2, "0")}`,
+    };
+  });
+}
+
 function PublishedChart() {
   const { chartId } = useParams();
 
@@ -27,9 +68,17 @@ function PublishedChart() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const parsedSettings = useMemo(() => {
-    return safeParse(chart?.settings, {});
-  }, [chart]);
+const parsedSettings = useMemo(() => {
+  const savedSettings = safeParse(
+    chart?.settings,
+    {}
+  );
+
+  return {
+    ...defaultChartSettings,
+    ...savedSettings,
+  };
+}, [chart]);
 
   const savedChartConfig = useMemo(() => {
     return safeParse(chart?.chart_config, {});
@@ -47,55 +96,97 @@ function PublishedChart() {
     return savedY ? [savedY] : [];
   }, [chart, savedChartConfig]);
 
-  const chartConfig = useMemo(() => {
-    return {
-      /*
-       * Start with the complete saved config.
-       * This restores appearance.xAxis, appearance.yAxis,
-       * bar settings, pie radius settings, and everything else.
-       */
-      ...savedChartConfig,
+const chartConfig = useMemo(() => {
+  return {
+    ...defaultChartConfig,
+    ...savedChartConfig,
 
-      /*
-       * Use fallback database columns when older charts
-       * do not contain x, y, or type in chart_config.
-       */
-      x:
-        savedChartConfig.x ??
-        chart?.x_axis ??
-        null,
+    x:
+      savedChartConfig.x ??
+      chart?.x_axis ??
+      null,
 
-      y: parsedY,
+    y: parsedY,
 
-      type:
-        savedChartConfig.type ??
-        chart?.chart_type ??
-        "bar",
+    type:
+      savedChartConfig.type ??
+      chart?.chart_type ??
+      "bar",
 
-      aggregation:
-        savedChartConfig.aggregation ??
-        parsedSettings.aggregation ??
-        "none",
+    aggregation:
+      savedChartConfig.aggregation ??
+      "none",
 
-      sort:
-        savedChartConfig.sort ??
-        parsedSettings.sort ??
-        "none",
-
-      /*
-       * Make sure appearance always exists.
-       */
-      appearance: {
-        ...(savedChartConfig.appearance || {}),
+    sorting:
+      savedChartConfig.sorting ?? {
+        field: null,
+        direction: "none",
       },
-    };
-  }, [
-    chart,
-    parsedY,
-    parsedSettings,
-    savedChartConfig,
-  ]);
 
+    ranking: {
+      ...defaultChartConfig.ranking,
+      ...(savedChartConfig.ranking || {}),
+    },
+
+    dateGrouping: {
+      ...defaultChartConfig.dateGrouping,
+      ...(savedChartConfig.dateGrouping || {}),
+    },
+
+    filters: Array.isArray(
+      savedChartConfig.filters
+    )
+      ? savedChartConfig.filters
+      : [],
+
+    appearance: {
+      ...defaultChartConfig.appearance,
+      ...(savedChartConfig.appearance || {}),
+
+      xAxis: {
+        ...defaultChartConfig.appearance.xAxis,
+        ...(savedChartConfig.appearance?.xAxis ||
+          {}),
+      },
+
+      yAxis: {
+        ...defaultChartConfig.appearance.yAxis,
+        ...(savedChartConfig.appearance?.yAxis ||
+          {}),
+      },
+    },
+
+    xHierarchy: Array.isArray(
+      savedChartConfig.xHierarchy
+    )
+      ? savedChartConfig.xHierarchy
+      : [],
+
+    dateHierarchySource:
+      savedChartConfig.dateHierarchySource ??
+      null,
+
+    groupSmallCategories:
+      savedChartConfig.groupSmallCategories ??
+      false,
+
+    timeGroupBy:
+      savedChartConfig.timeGroupBy ?? "none",
+  };
+}, [
+  chart,
+  parsedY,
+  savedChartConfig,
+]);
+const preparedRows = useMemo(() => {
+  return addDateHierarchyFields(
+    rows,
+    chartConfig.dateHierarchySource
+  );
+}, [
+  rows,
+  chartConfig.dateHierarchySource,
+]);
   useEffect(() => {
     const loadChart = async () => {
       try {
@@ -172,15 +263,16 @@ function PublishedChart() {
     loadChart();
   }, [chartId]);
 
-  const {
-    chartData,
-    generatedColors,
-    visibleYKeys,
-  } = useChartData({
-    data: rows,
-    chartConfig,
-    settings: parsedSettings,
-  });
+const {
+  chartData,
+  generatedColors,
+  visibleYKeys,
+} = useChartData({
+  data: preparedRows,
+  chartConfig,
+  settings: parsedSettings,
+});
+
 
   if (loading) {
     return (
@@ -215,17 +307,22 @@ function PublishedChart() {
   }
 
   return (
-    <div className="app-page min-h-screen p-8">
+    <div className="app-page min-h-screen p-6">
       <div
         className="
           app-card
-          mx-auto h-[720px] w-full max-w-6xl
-          rounded-xl p-6
+          mx-auto
+          h-[calc(100vh-48px)]
+          min-h-[600px]
+          w-full
+          max-w-[1400px]
+          rounded-xl
+          p-6
         "
       >
         <ChartPreview
           chartData={chartData}
-          rawData={rows}
+          rawData={preparedRows}
           chartConfig={chartConfig}
           generatedColors={generatedColors}
           visibleYKeys={visibleYKeys}

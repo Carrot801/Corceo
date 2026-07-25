@@ -66,10 +66,10 @@ function Legend({
   };
 
   const positionMap = {
-    top: "order-first mb-4",
-    bottom: "order-last mt-4",
-    left: "mr-6",
-    right: "ml-6",
+    top: "order-first ",
+    bottom: "order-last ",
+    left: "mr-2",
+    right: "ml-2",
   };
 
   const direction =
