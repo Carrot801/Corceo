@@ -15,7 +15,7 @@ const fetchProjects = async (req, res) => {
         ($2::int IS NULL AND folder_id IS NULL)
         OR folder_id = $2::int
       )
-      ORDER BY id DESC
+      ORDER BY is_favorite DESC, id DESC
       `,
       [userId, folder_id]
     );
@@ -36,7 +36,7 @@ const fetchAllProjects = async (req, res) => {
       SELECT *
       FROM projects
       WHERE user_id = $1
-      ORDER BY id DESC
+      ORDER BY is_favorite DESC, id DESC
       `,
       [userId]
     );
@@ -270,6 +270,7 @@ const duplicateProject = async (req, res) => {
       {
         name: `${originalProject.name} Copy`,
         user_id: userId,
+        is_favorite: false,
       },
       ["id"]
     );
@@ -405,5 +406,67 @@ const getProjectChart = async (req, res) => {
   }
 };
 
+const updateProjectFavorite = async (req, res) => {
+  try {
+    const { project_id } = req.params;
+    const { is_favorite } = req.body;
+    const userId = req.user.userId;
 
-module.exports = { fetchProjects, addProject, renameProject, deleteProject, duplicateProject, fetchAllProjects,getProjectChart };
+    if (!project_id || Number.isNaN(Number(project_id))) {
+      return res.status(400).json({
+        error: "Invalid project ID",
+      });
+    }
+
+    if (typeof is_favorite !== "boolean") {
+      return res.status(400).json({
+        error: "is_favorite must be a boolean",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE projects
+      SET is_favorite = $1
+      WHERE id = $2
+        AND user_id = $3
+      RETURNING *
+      `,
+      [
+        is_favorite,
+        project_id,
+        userId,
+      ],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Project not found",
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(
+      "Update project favorite error:",
+      error,
+    );
+
+    res.status(500).json({
+      error:
+        "Failed to update project favorite",
+    });
+  }
+};
+
+
+module.exports = { 
+  fetchProjects, 
+  addProject, 
+  renameProject, 
+  deleteProject, 
+  duplicateProject, 
+  fetchAllProjects,
+  getProjectChart,
+  updateProjectFavorite,
+ };

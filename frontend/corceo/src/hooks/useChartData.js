@@ -105,14 +105,27 @@ function applyFilters(rawData, filters = []) {
     });
   });
 }
-
-function aggregateData(rawData, xField, yFields, mode = "none") {
+function aggregateData(
+  rawData,
+  xField,
+  yFields,
+  mode = "none",
+  tooltipExtraFields = []
+) {
   const yKeys = Array.isArray(yFields)
     ? yFields
     : yFields
       ? [yFields]
       : [];
 
+  const extraFields = Array.isArray(tooltipExtraFields)
+    ? tooltipExtraFields
+    : [];
+
+  /*
+   * No aggregation:
+   * preserve the extra tooltip values directly from each row.
+   */
   if (mode === "none") {
     return rawData.map((row) => {
       const result = {
@@ -123,38 +136,54 @@ function aggregateData(rawData, xField, yFields, mode = "none") {
         result[key] = parseNumericValue(row[key]);
       });
 
+      extraFields.forEach((field) => {
+        result[field] = row[field] ?? null;
+      });
+
       return result;
     });
   }
 
+  /*
+   * Aggregation:
+   * store all original rows belonging to each X category.
+   */
   const groupedData = new Map();
 
   rawData.forEach((row) => {
     const xValue = row[xField];
 
     if (!groupedData.has(xValue)) {
-      groupedData.set(xValue, {});
+      groupedData.set(xValue, {
+        valuesByKey: {},
+        sourceRows: [],
+      });
     }
 
     const group = groupedData.get(xValue);
 
+    group.sourceRows.push(row);
+
     yKeys.forEach((key) => {
-      if (!group[key]) {
-        group[key] = [];
+      if (!group.valuesByKey[key]) {
+        group.valuesByKey[key] = [];
       }
 
-      group[key].push(parseNumericValue(row[key]));
+      group.valuesByKey[key].push(
+        parseNumericValue(row[key])
+      );
     });
   });
 
   return Array.from(groupedData.entries()).map(
-    ([xValue, valuesByKey]) => {
+    ([xValue, group]) => {
       const result = {
         x: xValue,
       };
 
       yKeys.forEach((key) => {
-        const values = valuesByKey[key] || [];
+        const values =
+          group.valuesByKey[key] || [];
 
         if (values.length === 0) {
           result[key] = 0;
@@ -164,8 +193,10 @@ function aggregateData(rawData, xField, yFields, mode = "none") {
         switch (mode) {
           case "avg":
             result[key] =
-              values.reduce((sum, value) => sum + value, 0) /
-              values.length;
+              values.reduce(
+                (sum, value) => sum + value,
+                0
+              ) / values.length;
             break;
 
           case "min":
@@ -188,6 +219,31 @@ function aggregateData(rawData, xField, yFields, mode = "none") {
             );
             break;
         }
+      });
+
+      /*
+       * Combine unique tooltip values from all rows
+       * belonging to the aggregated X category.
+       */
+      extraFields.forEach((field) => {
+        const uniqueValues = [
+          ...new Set(
+            group.sourceRows
+              .map((row) => row[field])
+              .filter(
+                (value) =>
+                  value !== null &&
+                  value !== undefined &&
+                  value !== ""
+              )
+              .map((value) => String(value))
+          ),
+        ];
+
+        result[field] =
+          uniqueValues.length > 0
+            ? uniqueValues.join(", ")
+            : null;
       });
 
       return result;
@@ -297,39 +353,45 @@ function useChartData({ data, chartConfig, settings }) {
     };
   }
 
-  const filteredRawData = applyFilters(
-    data,
-    chartConfig.filters
+  
+const filteredRawData = applyFilters(
+  data,
+  chartConfig.filters
+);
+
+const tooltipExtraFields =
+  settings.tooltipExtraFields ?? [];
+
+let rows = aggregateData(
+  filteredRawData,
+  chartConfig.x,
+  yKeys,
+  chartConfig.aggregation,
+  tooltipExtraFields
+);
+
+const filteredYKeys = yKeys;
+
+if (settings.hideZeros) {
+  rows = rows.filter((row) =>
+    filteredYKeys.some(
+      (key) =>
+        parseNumericValue(row[key]) !== 0
+    )
   );
+}
 
-  let rows = aggregateData(
-    filteredRawData,
-    chartConfig.x,
-    yKeys,
-    chartConfig.aggregation
-  );
+rows = sortData(
+  rows,
+  chartConfig.sorting,
+  filteredYKeys
+);
 
-  const filteredYKeys = yKeys;
-
-  if (settings.hideZeros) {
-    rows = rows.filter((row) =>
-      filteredYKeys.some(
-        (key) => parseNumericValue(row[key]) !== 0
-      )
-    );
-  }
-
-  rows = sortData(
-    rows,
-    chartConfig.sorting,
-    filteredYKeys
-  );
-
-  rows = applyRanking(
-    rows,
-    chartConfig.ranking,
-    filteredYKeys
-  );
+rows = applyRanking(
+  rows,
+  chartConfig.ranking,
+  filteredYKeys
+);
 
   return {
     rows,
@@ -344,6 +406,7 @@ function useChartData({ data, chartConfig, settings }) {
   chartConfig.ranking,
   chartConfig.filters,
   settings.hideZeros,
+  settings.tooltipExtraFields,
 ]);
 
 

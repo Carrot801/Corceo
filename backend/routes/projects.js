@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchProjects, addProject,renameProject, deleteProject, duplicateProject, fetchAllProjects, getProjectChart } = require("../controllers/projectsController");
+const { fetchProjects, addProject,renameProject, deleteProject, duplicateProject, fetchAllProjects, getProjectChart,updateProjectFavorite } = require("../controllers/projectsController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 router.get("/", authMiddleware, fetchProjects);
@@ -10,5 +10,6 @@ router.put("/:project_id", authMiddleware, renameProject);
 router.delete("/:project_id", authMiddleware, deleteProject);
 router.post("/duplicate/:project_id", authMiddleware, duplicateProject);
 router.get("/chart/:project_id", authMiddleware, getProjectChart);
+router.patch("/:project_id/favorite", authMiddleware, updateProjectFavorite);
 
 module.exports = router;

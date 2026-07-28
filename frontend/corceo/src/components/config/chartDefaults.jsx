@@ -20,6 +20,11 @@ export const defaultChartSettings = {
   legendGap: 12,
   legendFields: [],
 
+  showTooltip: true,
+  tooltipFields: ["name", "value"],
+  tooltipExtraFields: [],
+  tooltipUseChartFormat: true,
+
   labelType: "percentage",
   labelPosition: "inside",
   showLabels: true,

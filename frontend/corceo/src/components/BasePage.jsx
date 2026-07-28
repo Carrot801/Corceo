@@ -18,6 +18,8 @@ function BasePage() {
   const [renamingProject, setRenamingProject] = useState(null);
   const [newProjectName, setNewProjectName] = useState("");
   const [search, setSearch] = useState("");
+  const [showFavoritesOnly, setShowFavoritesOnly] =
+  useState(false);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchResults, setSearchResults] = useState({
@@ -93,10 +95,17 @@ const loadTreeItemsForFolder = async (folderId) => {
   const projectData = await projectRes.json();
   const storyData = await storyRes.json();
 
-  setTreeProjects(prev => [
-    ...prev.filter(p => p.folder_id !== folderId),
+  setTreeProjects((previous) =>
+  sortProjects([
+    ...previous.filter(
+      (project) =>
+        project.folder_id !==
+        folderId,
+    ),
+
     ...projectData,
-  ]);
+  ]),
+);
 
   setTreeStories(prev => [
     ...prev.filter(s => s.folder_id !== folderId),
@@ -264,17 +273,75 @@ const createFolder = async () => {
       ))}
 
       {/* PROJECT ROWS */}
-      {currentProjects.map((project) => (
-        <div
-          key={`project-${project.id}`}
-          onClick={() => navigate(`/newVisualization/${project.id}`)}
-          className={`cursor-pointer hover:bg-gray-100 py-1.5 text-sm flex items-center gap-2 app-text`}
-          style={{ paddingLeft: `${(level ) * 16 +10}px` }} // Extra padding to align with children
+      {currentProjects.map(
+  (project) => (
+    <div
+      key={`project-${project.id}`}
+      onClick={() =>
+        navigate(
+          `/newVisualization/${project.id}`,
+        )
+      }
+      className="
+        app-text
+        flex
+        cursor-pointer
+        items-center
+        gap-2
+        py-1.5
+        text-sm
+        hover:bg-gray-100
+      "
+      style={{
+        paddingLeft:
+          `${level * 16 + 10}px`,
+      }}
+    >
+      <button
+        type="button"
+        title={
+          project.is_favorite
+            ? "Remove from favorites"
+            : "Add to favorites"
+        }
+        onClick={(event) => {
+          event.stopPropagation();
+
+          toggleProjectFavorite(
+            project,
+          );
+        }}
+        className="
+          flex
+          h-6
+          w-6
+          items-center
+          justify-center
+          rounded
+          hover:bg-black/5
+        "
+      >
+        <span
+          className={
+            project.is_favorite
+              ? "text-amber-500"
+              : "text-slate-400"
+          }
         >
-          <span>📄</span>
-          {project.name}
-        </div>
-      ))}
+          {project.is_favorite
+            ? "★"
+            : "☆"}
+        </span>
+      </button>
+
+      <span>📄</span>
+
+      <span className="truncate">
+        {project.name}
+      </span>
+    </div>
+  ),
+)}
     </div>
   );
 };
@@ -501,6 +568,179 @@ const duplicateStory = async (storyId) => {
   }
 };
 
+const sortProjects = (projectList) => {
+  return [...projectList].sort(
+    (first, second) => {
+      const favoriteDifference =
+        Number(Boolean(second.is_favorite)) -
+        Number(Boolean(first.is_favorite));
+
+      if (favoriteDifference !== 0) {
+        return favoriteDifference;
+      }
+
+      return Number(second.id) -
+        Number(first.id);
+    },
+  );
+};
+const toggleProjectFavorite = async (
+  project,
+) => {
+  const nextFavorite =
+    !Boolean(project.is_favorite);
+
+  /*
+   * Optimistic update:
+   * change the star immediately.
+   */
+  const updateLocalProject = (
+    projectList,
+    favoriteValue,
+  ) =>
+    sortProjects(
+      projectList.map((item) =>
+        item.id === project.id
+          ? {
+              ...item,
+              is_favorite:
+                favoriteValue,
+            }
+          : item,
+      ),
+    );
+
+  setProjects((previous) =>
+    updateLocalProject(
+      previous,
+      nextFavorite,
+    ),
+  );
+
+  setTreeProjects((previous) =>
+    updateLocalProject(
+      previous,
+      nextFavorite,
+    ),
+  );
+
+  setSearchResults((previous) => ({
+    ...previous,
+
+    projects: updateLocalProject(
+      previous.projects || [],
+      nextFavorite,
+    ),
+  }));
+
+  try {
+    const token =
+      localStorage.getItem("token");
+
+    const response = await fetch(
+      `http://localhost:5000/projects/${project.id}/favorite`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          is_favorite:
+            nextFavorite,
+        }),
+      },
+    );
+
+    const updatedProject =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        updatedProject.error ||
+          "Failed to update favorite",
+      );
+    }
+
+    /*
+     * Replace optimistic data with
+     * the canonical backend response.
+     */
+    const applyServerProject = (
+      projectList,
+    ) =>
+      sortProjects(
+        projectList.map((item) =>
+          item.id ===
+          updatedProject.id
+            ? updatedProject
+            : item,
+        ),
+      );
+
+    setProjects(applyServerProject);
+    setTreeProjects(
+      applyServerProject,
+    );
+
+    setSearchResults(
+      (previous) => ({
+        ...previous,
+
+        projects:
+          applyServerProject(
+            previous.projects || [],
+          ),
+      }),
+    );
+  } catch (error) {
+    console.error(
+      "Favorite update failed:",
+      error,
+    );
+
+    /*
+     * Roll back the optimistic update.
+     */
+    setProjects((previous) =>
+      updateLocalProject(
+        previous,
+        Boolean(
+          project.is_favorite,
+        ),
+      ),
+    );
+
+    setTreeProjects((previous) =>
+      updateLocalProject(
+        previous,
+        Boolean(
+          project.is_favorite,
+        ),
+      ),
+    );
+
+    setSearchResults(
+      (previous) => ({
+        ...previous,
+
+        projects:
+          updateLocalProject(
+            previous.projects || [],
+            Boolean(
+              project.is_favorite,
+            ),
+          ),
+      }),
+    );
+  }
+};
+
 const deleteStory = async (storyId) => {
   try {
     const res = await fetch(`http://localhost:5000/stories/${storyId}`, {
@@ -526,9 +766,20 @@ const deleteStory = async (storyId) => {
 
     // Determine what to display
     const isSearching = search.trim().length > 0;
-    const displayedProjects = isSearching 
-      ? searchResults.projects 
-      : projects;
+    const projectSource =
+      isSearching
+        ? searchResults.projects
+        : projects;
+
+    const displayedProjects =
+      showFavoritesOnly
+        ? projectSource.filter(
+            (project) =>
+              Boolean(
+                project.is_favorite,
+              ),
+          )
+        : projectSource;
 
     const displayedStories = isSearching 
       ? searchResults.stories 
@@ -558,8 +809,23 @@ const deleteStory = async (storyId) => {
         >
           + New story
         </button>
-
-        <div className="mt-6 flex flex-col gap-2 text-gray-600">
+        <button
+          type="button"
+          onClick={() => {
+            setShowFavoritesOnly(
+              (current) => !current,
+            );
+          }}
+          className={
+            showFavoritesOnly
+              ? "app-active rounded  text-left text-sm"
+              : "app-hover rounded text-left text-sm"
+          }
+        >
+          ★ Favorites
+        </button>
+        <div className="flex flex-col gap-2 text-gray-600">
+            
             <span className="font-semibold">Projects</span>
             <button
               onClick={() => {
@@ -723,8 +989,68 @@ const deleteStory = async (storyId) => {
           {displayedProjects.map((project) => (
             <div
               key={project.id}
-              className="app-card relative h-[280px] w-[280px] rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
+              className="
+                app-card
+                relative
+                h-[280px]
+                w-[280px]
+                overflow-hidden
+                rounded-lg
+                border
+                transition-shadow
+                hover:shadow-md
+              "
             >
+              <button
+                type="button"
+                aria-label={
+                  project.is_favorite
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+                }
+                title={
+                  project.is_favorite
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+
+                  toggleProjectFavorite(
+                    project,
+                  );
+                }}
+                className="
+                  absolute
+                  left-2
+                  top-2
+                  z-30
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-full
+                  text-xl
+                  shadow-sm
+                  transition
+                  hover:bg-white
+                "
+              >
+                <span
+                  className={
+                    project.is_favorite
+                      ? "text-amber-500"
+                      : "text-slate-400"
+                  }
+                >
+                  {project.is_favorite
+                    ? "★"
+                    : "☆"}
+                </span>
+              </button>
+
+              {/* Existing menu and card */}
               {/* MENU */}
               <div className="absolute top-1 right-2 z-20">
                 <button

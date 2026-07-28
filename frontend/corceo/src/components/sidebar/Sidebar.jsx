@@ -2,7 +2,7 @@ import { useState } from "react";
 import PalettePicker from "./PalettePicker";
 import ChartTypeSelector from "./ChartTypeSelector";
 import ChartAppearanceSettings from "./ChartAppearanceSettings";
-
+import { formatValue } from "../../utils/formatters";
 
 import {
   BarChart3,
@@ -88,6 +88,41 @@ const moveLegendField = (index, direction) => {
     y: next,
   }));
 };
+
+
+const handleDropTooltipField = (event) => {
+  event.preventDefault();
+
+  const field =
+    event.dataTransfer.getData("col");
+
+  if (!field) {
+    return;
+  }
+
+  const current =
+    settings.tooltipExtraFields || [];
+
+  if (current.includes(field)) {
+    return;
+  }
+
+  updateSetting("tooltipExtraFields", [
+    ...current,
+    field,
+  ]);
+};
+
+const removeTooltipField = (fieldToRemove) => {
+  const next = (
+    settings.tooltipExtraFields || []
+  ).filter(
+    (field) => field !== fieldToRemove
+  );
+
+  updateSetting("tooltipExtraFields", next);
+};
+
 
 const removeLegendField = (field) => {
   setChartConfig((prev) => ({
@@ -449,105 +484,164 @@ const chartTypes = [
 
 
         {/* TOOLTIP FIELDS SECTION */}
+
+{/* TOOLTIP SETTINGS SECTION */}
 <div className="app-border border-t">
   <button
+    type="button"
     onClick={() => toggleSection("tooltip")}
-    className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
+    className="app-surface-secondary app-text flex w-full items-center justify-between p-4 text-xs font-bold transition-colors hover:bg-[rgb(var(--color-surface-hover))]"
   >
-    Tooltip Content
-    <span className={`transition-transform ${openSection === "tooltip" ? "rotate-180" : ""}`}>^</span>
+    Tooltip
+    <span
+      className={`transition-transform ${
+        openSection === "tooltip"
+          ? "rotate-180"
+          : ""
+      }`}
+    >
+      ^
+    </span>
   </button>
 
   {openSection === "tooltip" && (
-    <div className="p-4 space-y-2">
-      <p className="app-text-muted text-[10px] uppercase font-bold">Show in Hover:</p>
-      {["name", "value", "percentage"].map((field) => (
-        <label key={field} className="app-text-secondary flex items-center gap-2 text-xs capitalize">
-          <input
-            type="checkbox"
-            checked={settings.tooltipFields?.includes(field) ?? true}
-            onChange={(e) => {
-              const current = settings.tooltipFields || ["name", "value"];
-              const next = e.target.checked 
-                ? [...current, field] 
-                : current.filter(f => f !== field);
-              updateSetting("tooltipFields", next);
-            }}
-          />
-          {field}
-        </label>
-      ))}
-    </div>
-    
-  )}
-</div>
-{/* LABEL SETTINGS SECTION */}
-<div className="app-border border-t">
-  <button
-    onClick={() => toggleSection("labels")}
-    className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
-  >
-    Label Settings
-    <span className={`transition-transform ${openSection === "labels" ? "rotate-180" : ""}`}>^</span>
-  </button>
-
-  {openSection === "labels" && (
-    <div className="p-4 space-y-4">
-      {/* Show Labels Toggle */}
+    <div className="space-y-4 p-4">
+      {/* Enable tooltip */}
       <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold">
         <input
           type="checkbox"
-          checked={settings.showLabels ?? true}
-          onChange={(e) => updateSetting("showLabels", e.target.checked)}
+          checked={settings.showTooltip ?? true}
+          onChange={(e) =>
+            updateSetting(
+              "showTooltip",
+              e.target.checked
+            )
+          }
         />
-        Show Labels
+
+        Show Tooltip
       </label>
 
-      {/* Label Content Selector */}
-      <div>
-        <label className="app-text-muted text-[11px] font-bold uppercase">Label Content</label>
-        <select 
-          className="app-input w-full mt-1 rounded p-2 text-sm"
-          value={settings.labelType || "percentage"}
-          onChange={(e) => updateSetting("labelType", e.target.value)}
-        >
-          <option value="name">Category Name</option>
-          <option value="percentage">Percentage</option>
-        </select>
-      </div>
+      {settings.showTooltip !== false && (
+        <>
+          {/* Standard tooltip content */}
+          <div>
+            <p className="app-text-muted mb-2 text-[10px] font-bold uppercase">
+              Standard Content
+            </p>
 
-      {/* Label Position Selector */}
-      <div>
-        <label className="app-text-muted text-[11px] font-bold uppercase">Position</label>
-        <div className="flex gap-2 mt-1">
-          {["inside", "outside"].map((pos) => (
-            <button
-              key={pos}
-              onClick={() => updateSetting("labelPosition", pos)}
-              className={`flex-1 py-1.5 text-xs font-bold rounded ${
-                settings.labelPosition === pos 
-                ? "bg-[rgb(var(--color-primary))] text-white" 
-                : "app-surface-secondary app-text-secondary"
-              }`}
+            <div className="space-y-2">
+              {[
+                {
+                  value: "name",
+                  label: "Category name",
+                },
+                {
+                  value: "value",
+                  label: "Value",
+                },
+                {
+                  value: "percentage",
+                  label: "Percentage",
+                },
+              ].map(({ value, label }) => {
+                const selectedFields =
+                  settings.tooltipFields ??
+                  ["name", "value"];
+
+                return (
+                  <label
+                    key={value}
+                    className="app-text-secondary flex items-center gap-2 text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedFields.includes(
+                        value
+                      )}
+                      onChange={(e) => {
+                        const current =
+                          settings.tooltipFields ??
+                          ["name", "value"];
+
+                        const next =
+                          e.target.checked
+                            ? [
+                                ...new Set([
+                                  ...current,
+                                  value,
+                                ]),
+                              ]
+                            : current.filter(
+                                (field) =>
+                                  field !== value
+                              );
+
+                        updateSetting(
+                          "tooltipFields",
+                          next
+                        );
+                      }}
+                    />
+
+                    {label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Extra dataset fields */}
+          <div>
+            <p className="app-text-muted mb-2 text-[10px] font-bold uppercase">
+              Additional Fields
+            </p>
+
+            <div
+              onDragOver={(e) =>
+                e.preventDefault()
+              }
+              onDrop={handleDropTooltipField}
+              className="app-surface-secondary app-border min-h-[64px] rounded-lg border-2 border-dashed p-3"
             >
-              {pos.charAt(0).toUpperCase() + pos.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-      {/* Font Size Slider */}
-<div className="mt-4">
-  <label className="app-text-muted text-[11px] font-bold uppercase">Label Size</label>
-  <input
-    type="range"
-    min="8"
-    max="20"
-    className="w-full h-2 bg-[rgb(var(--color-surface-hover))] rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-primary))]"
-    value={settings.labelSize || 12}
-    onChange={(e) => updateSetting("labelSize", parseInt(e.target.value))}
-  />
-  <span className="app-text-muted text-xs">{settings.labelSize || 12}px</span>
-</div>
+              {(settings.tooltipExtraFields || [])
+                .length === 0 ? (
+                <p className="app-text-muted text-xs">
+                  Drag fields here to show them
+                  in the tooltip
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {settings.tooltipExtraFields.map(
+                    (field) => (
+                      <div
+                        key={field}
+                        className="app-surface app-border app-text-secondary flex items-center justify-between rounded border px-2 py-1 text-xs"
+                      >
+                        <span className="truncate">
+                          {field}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeTooltipField(
+                              field
+                            )
+                          }
+                          className="text-[rgb(var(--color-danger))] hover:opacity-80"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )}
 </div>
@@ -847,65 +941,251 @@ const chartTypes = [
         </div>
         
         {/* LAYOUT */}
-        <div className="app-border border-t">
-        <button
-            onClick={() => toggleSection("valueFormatting")}
-            className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
-        >
-            Value Formatting
+{/* VALUE FORMATTING SECTION */}
+<div className="app-border border-t">
+  <button
+    type="button"
+    onClick={() => toggleSection("valueFormatting")}
+    className="app-surface-secondary app-text flex w-full items-center justify-between p-4 text-xs font-bold transition-colors hover:bg-[rgb(var(--color-surface-hover))]"
+  >
+    Value Formatting
 
-            <span
-            className={`transition-transform ${
-                openSection === "valueFormatting"
-                ? "rotate-180"
-                : ""
-            }`}
-            >
-            ^
-            </span>
-        </button>
-
-        {openSection === "valueFormatting" && (
-           <div className="p-4 space-y-4">
-  {/* Format Selector */}
-  <div>
-    <label className="app-text-secondary block text-xs font-medium mb-1">Number Format</label>
-    <select
-      value={settings.numberFormat}
-      onChange={(e) => updateSetting("numberFormat", e.target.value)}
-      className="app-input w-full rounded px-2 py-1"
+    <span
+      className={`transition-transform ${
+        openSection === "valueFormatting"
+          ? "rotate-180"
+          : ""
+      }`}
     >
-      <option value="default">Default</option>
-      <option value="percentage">Percentage</option>
-      <option value="currency">Currency</option>
-    </select>
-  </div>
+      ^
+    </span>
+  </button>
 
-  {/* Compact Toggle */}
-  <label className="app-text-secondary flex items-center gap-2 text-xs font-medium cursor-pointer">
-    <input
-      type="checkbox"
-      checked={settings.compactNumbers || false}
-      onChange={(e) => updateSetting("compactNumbers", e.target.checked)}
-    />
-    Compact Large Numbers (e.g., 1.2M)
-  </label>
+  {openSection === "valueFormatting" && (
+    <div className="space-y-4 p-4">
+      <p className="app-text-muted text-[11px]">
+        These settings apply to axis values, labels, and tooltips that use the
+        chart format.
+      </p>
 
-  {/* Decimal Places */}
-  <div>
-    <label className="app-text-secondary block text-xs font-medium mb-1">Decimal Places</label>
-    <input
-      type="number"
-      min="0"
-      max="6"
-      value={settings.decimalPlaces ?? 2}
-      onChange={(e) => updateSetting("decimalPlaces", Number(e.target.value))}
-      className="app-input w-full rounded px-2 py-1"
-    />
-  </div>
-</div>
-        )}
+      {/* Number format */}
+      <div>
+        <label className="app-text-secondary mb-1 block text-xs font-medium">
+          Number Format
+        </label>
+
+        <select
+          value={settings.numberFormat ?? "default"}
+          onChange={(e) =>
+            updateSetting("numberFormat", e.target.value)
+          }
+          className="app-input w-full rounded px-2 py-1.5 text-sm"
+        >
+          <option value="default">Number</option>
+          <option value="currency">Currency</option>
+          <option value="percentage">Percentage</option>
+        </select>
+      </div>
+
+      {/* Currency settings */}
+      {settings.numberFormat === "currency" && (
+        <div>
+          <label className="app-text-secondary mb-1 block text-xs font-medium">
+            Currency
+          </label>
+
+          <select
+            value={settings.currency ?? "USD"}
+            onChange={(e) =>
+              updateSetting("currency", e.target.value)
+            }
+            className="app-input w-full rounded px-2 py-1.5 text-sm"
+          >
+            <option value="USD">USD — $</option>
+            <option value="EUR">EUR — €</option>
+            <option value="PLN">PLN — zł</option>
+            <option value="GBP">GBP — £</option>
+            <option value="UAH">UAH — ₴</option>
+          </select>
         </div>
+      )}
+
+      {/* Percentage input mode */}
+      {settings.numberFormat === "percentage" && (
+        <div>
+          <label className="app-text-secondary mb-1 block text-xs font-medium">
+            Percentage Calculation
+          </label>
+
+          <select
+  value={
+    settings.percentageInputMode ??
+    "whole"
+  }
+  onChange={(e) =>
+    updateSetting(
+      "percentageInputMode",
+      e.target.value
+    )
+  }
+  className="app-input w-full rounded px-2 py-1.5 text-sm"
+>
+  <option value="whole">
+    Values are percentages — 25 means 25%
+  </option>
+
+  <option value="decimal">
+    Values are decimals — 0.25 means 25%
+  </option>
+
+  <option value="total">
+    Percentage of total — 25 of 100 means 25%
+  </option>
+</select>
+
+          <p className="app-text-muted mt-1 text-[10px]">
+            Choose how percentage values are stored in your dataset.
+          </p>
+        </div>
+      )}
+
+      {/* Decimal places */}
+      <div>
+        <label className="app-text-secondary mb-1 block text-xs font-medium">
+          Decimal Places
+        </label>
+
+        <input
+          type="number"
+          min="0"
+          max="6"
+          value={settings.decimalPlaces ?? 2}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+
+            updateSetting(
+              "decimalPlaces",
+              Number.isFinite(value)
+                ? Math.min(6, Math.max(0, value))
+                : 0
+            );
+          }}
+          className="app-input w-full rounded px-2 py-1.5 text-sm"
+        />
+      </div>
+
+      {/* Thousands separator */}
+      <label className="app-text-secondary flex cursor-pointer items-center gap-2 text-xs font-medium">
+        <input
+          type="checkbox"
+          checked={
+            settings.useThousandsSeparator ??
+            true
+          }
+          onChange={(e) =>
+            updateSetting(
+              "useThousandsSeparator",
+              e.target.checked
+            )
+          }
+        />
+
+        Use thousands separator
+      </label>
+
+      {/* Compact numbers */}
+      <label className="app-text-secondary flex cursor-pointer items-center gap-2 text-xs font-medium">
+        <input
+          type="checkbox"
+          checked={
+            settings.compactNumbers ?? false
+          }
+          onChange={(e) =>
+            updateSetting(
+              "compactNumbers",
+              e.target.checked
+            )
+          }
+        />
+
+        Compact large numbers
+      </label>
+
+      {settings.compactNumbers && (
+        <p className="app-text-muted -mt-2 text-[10px]">
+          For example: 1,200 becomes 1.2K and 1,500,000 becomes 1.5M.
+        </p>
+      )}
+
+      {/* Negative values */}
+      <div>
+        <label className="app-text-secondary mb-1 block text-xs font-medium">
+          Negative Number Style
+        </label>
+
+        <select
+          value={
+            settings.negativeNumberStyle ??
+            "minus"
+          }
+          onChange={(e) =>
+            updateSetting(
+              "negativeNumberStyle",
+              e.target.value
+            )
+          }
+          className="app-input w-full rounded px-2 py-1.5 text-sm"
+        >
+          <option value="minus">
+            -1,250
+          </option>
+
+          <option value="parentheses">
+            (1,250)
+          </option>
+        </select>
+      </div>
+
+      {/* Preview */}
+      <div className="app-surface-secondary app-border rounded-lg border p-3">
+        <p className="app-text-muted mb-1 text-[10px] font-bold uppercase">
+          Preview
+        </p>
+
+        <p className="app-text text-sm font-semibold">
+          {formatValue(
+            1234567.89,
+            settings,
+            1234567.89
+          )}
+        </p>
+      </div>
+
+      {/* Reset */}
+      <button
+        type="button"
+        onClick={() => {
+          updateSetting("numberFormat", "default");
+          updateSetting("currency", "USD");
+          updateSetting("decimalPlaces", 2);
+          updateSetting("compactNumbers", false);
+          updateSetting("useThousandsSeparator", true);
+          updateSetting(
+            "percentageInputMode",
+            "whole"
+          );
+          updateSetting(
+            "negativeNumberStyle",
+            "minus"
+          );
+        }}
+        className="app-surface-secondary app-border app-text-secondary w-full rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-[rgb(var(--color-surface-hover))]"
+      >
+        Reset Formatting
+      </button>
+    </div>
+  )}
+</div>
       
         </div>
     );

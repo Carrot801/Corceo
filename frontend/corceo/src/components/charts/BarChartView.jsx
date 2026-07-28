@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Label,
 } from "recharts";
+import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 
 import { formatValue } from "../../utils/formatters";
 
@@ -39,15 +40,17 @@ function BarChartView({
     return 80;
   };
 
-  const total = chartData.reduce((sum, row) => {
-    return (
-      sum +
-      yKeys.reduce(
-        (innerSum, key) => innerSum + (Number(row[key]) || 0),
-        0,
-      )
-    );
-  }, 0);
+const total = chartData.reduce(
+  (sum, row) =>
+    sum +
+    yKeys.reduce(
+      (seriesSum, key) =>
+        seriesSum +
+        (Number(row[key]) || 0),
+      0
+    ),
+  0
+);
 
   const showXGrid = xAxisSettings.showGrid ?? false;
 
@@ -230,8 +233,13 @@ const xAxisAngle =
                   : false
               }
               tickFormatter={(value) =>
-                formatValue(value, settings, total)
-              }
+    formatValue(
+      value,
+      settings,
+      total
+    )
+  }
+
             >
               {showYAxisTitle && (
                 <Label
@@ -250,12 +258,24 @@ const xAxisAngle =
             </YAxis>
           )}
 
-          <Tooltip
+          {settings.showTooltip !== false && (
+            <Tooltip
             formatter={(value, name) => [
-              formatValue(value, settings, total),
+              formatValue(
+                value,
+                settings,
+                total
+              ),
               name,
             ]}
-          />
+              content={
+                <CustomChartTooltip
+                  settings={settings}
+                  total={total}
+                />
+              }
+            />
+          )}
 
           {yKeys.map((key, seriesIndex) => (
             <Bar
