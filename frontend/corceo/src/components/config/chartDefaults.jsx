@@ -6,9 +6,13 @@ export const defaultChartSettings = {
   headerAlign: "left",
 
   palette: "Standard",
-  paletteMode: "repeat",
   extendPalette: false,
+  paletteMode: "automatic",
 
+  useCustomPalette: false,
+  customPalette: [],
+  extendCustomPalette: true,
+  customExtensionMode: "distinct",
   showLegend: true,
   showGrid: true,
 

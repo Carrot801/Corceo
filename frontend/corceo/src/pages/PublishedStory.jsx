@@ -62,7 +62,9 @@ function PublishedStory() {
         <div className="relative flex-1 border rounded-xl bg-slate-50 overflow-hidden">
           {currentSlide?.content?.map((item) => (
             <div key={item.id} className="w-full h-full">
-              <StoryChart chartId={item.chartId} />
+              <StoryChart 
+              chartId={item.chartId}
+              storyMode />
             </div>
           ))}
 

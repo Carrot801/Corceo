@@ -52,43 +52,16 @@ function ChartAppearanceSettings({
           <p className="app-text text-xs font-bold">
             Bars
           </p>
-
-          <SettingRange
-            label="Bar width"
-            min={4}
-            max={100}
-            value={appearance.barSize ?? 32}
-            unit="px"
-            onChange={(value) =>
-              updateAppearance("barSize", value)
-            }
-          />
-
-          <SettingRange
-            label="Category spacing"
-            min={0}
-            max={60}
-            value={appearance.barCategoryGap ?? 24}
-            unit="%"
-            onChange={(value) =>
-                updateAppearance("barCategoryGap", value)
-            }
-            />
-
-            {Array.isArray(chartConfig.y) &&
-            chartConfig.y.length > 1 && (
-                <SettingRange
-                label="Series gap"
-                min={0}
-                max={30}
-                value={appearance.barGap ?? 4}
-                unit="px"
-                onChange={(value) =>
-                    updateAppearance("barGap", value)
-                }
-                />
-            )}
-
+<SettingRange
+  label="Bar width"
+  min={5}
+  max={100}
+  value={appearance.barWidthPercent ?? 70}
+  unit="%"
+  onChange={(value) =>
+    updateAppearance("barWidthPercent", value)
+  }
+/>
           <SettingRange
             label="Corner radius"
             min={0}

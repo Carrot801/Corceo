@@ -13,6 +13,8 @@ import Header from "../components/Header";
 import ActiveFilterChips from "../components/ActiveFilterChips";
 import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
 import useHistoryState from "../hooks/useHistoryState";
+import SheetSelectionDialog from "../components/SheetSelectionDialog";
+
 
 function NewVisualization() {
   const { id } = useParams();
@@ -31,14 +33,43 @@ const chartResizeRef = useRef({
     data,
     setData,
     columns,
+    setColumns,
     datasetId,
     savedChart,
-    setColumns,
+
     uploadCSV,
-    saveChartToBackend,
     saveDataset,
+    saveChartToBackend,
+
+    handleDataFile,
+
+    excelImport,
+    selectExcelSheet,
+    confirmExcelSheet,
+    cancelExcelImport,
+
+    isUploadingFile,
+    error,
+    clearError,
   } = useProjectData(id);
 
+
+const handleFileChange = async (event) => {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    await handleDataFile(file);
+  } catch (error) {
+    console.error("File import failed:", error);
+  } finally {
+    // Allows the same file to be selected again.
+    event.target.value = "";
+  }
+};
 
 const removeFieldFromAxis = (axis, field) => {
   setChartConfig((prev) => {
@@ -1109,6 +1140,21 @@ useEffect(() => {
         )}
       </div>
     </div>
+    {error && (
+      <div className="mx-4 mt-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <p className="text-sm text-red-700">
+          {error}
+        </p>
+
+        <button
+          type="button"
+          onClick={clearError}
+          className="text-sm font-medium text-red-700 hover:underline"
+        >
+          Close
+        </button>
+      </div>
+    )}
 
       <div className="app-text flex-1 flex ">
 
@@ -1118,8 +1164,10 @@ useEffect(() => {
           setData={setData}
           columns={columns}
           setColumns={setColumns}
-          datasetId={datasetId} 
+          datasetId={datasetId}
           uploadCSV={uploadCSV}
+          handleFileChange={handleFileChange}
+          isUploadingFile={isUploadingFile}
         />
       ) : (
         <div className="flex flex-1 overflow-hidden">
@@ -1339,7 +1387,18 @@ useEffect(() => {
       )}
     </div>
 
+
     </div>
+    <SheetSelectionDialog
+      isOpen={excelImport.isOpen}
+      fileName={excelImport.fileName}
+      sheetNames={excelImport.sheetNames}
+      selectedSheet={excelImport.selectedSheet}
+      onSheetChange={selectExcelSheet}
+      onConfirm={confirmExcelSheet}
+      onCancel={cancelExcelImport}
+      isLoading={isUploadingFile}
+    />
   </>
   );
 }

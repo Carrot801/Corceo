@@ -5,10 +5,10 @@ function DataTable({
   setData,
   columns,
   setColumns,
+  datasetId,
   uploadCSV,
-  compactMode = false,
-  enableDrag = false,
-  setChartConfig,
+  handleFileChange,
+  isUploadingFile,
 }) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 

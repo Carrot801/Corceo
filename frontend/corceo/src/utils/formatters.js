@@ -1,3 +1,16 @@
+const replaceThousandsSeparatorWithSpace = (
+  formatted,
+  useThousandsSeparator = true
+) => {
+  if (!useThousandsSeparator) {
+    return formatted;
+  }
+
+  return formatted
+    .replace(/[\u00A0\u202F]/g, " ")
+    .replace(/(?<=\d),(?=\d{3}(?:\D|$))/g, " ");
+};
+
 export const formatValue = (
   value,
   settings = {},
@@ -31,17 +44,15 @@ export const formatValue = (
   const numberFormat =
     settings.numberFormat || "default";
 
+  const useThousandsSeparator =
+    settings.useThousandsSeparator ?? true;
+
   const formatOptions = {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-    useGrouping:
-      settings.useThousandsSeparator ?? true,
+    useGrouping: useThousandsSeparator,
   };
 
-  /*
-   * Compact notation is useful for numbers and currency,
-   * but not percentages.
-   */
   if (
     settings.compactNumbers &&
     numberFormat !== "percentage"
@@ -57,14 +68,8 @@ export const formatValue = (
       settings.percentageInputMode || "whole";
 
     if (percentageMode === "decimal") {
-      /*
-       * 0.25 -> 25%
-       */
       valueToFormat = val;
     } else if (percentageMode === "total") {
-      /*
-       * 25 out of 100 -> 25%
-       */
       const numericTotal = Number(total);
 
       if (
@@ -76,17 +81,19 @@ export const formatValue = (
 
       valueToFormat = val / numericTotal;
     } else {
-      /*
-       * whole mode:
-       * 25 -> 25%
-       */
       valueToFormat = val / 100;
     }
 
-    return new Intl.NumberFormat(locale, {
-      ...formatOptions,
-      style: "percent",
-    }).format(valueToFormat);
+    const formattedPercentage =
+      new Intl.NumberFormat(locale, {
+        ...formatOptions,
+        style: "percent",
+      }).format(valueToFormat);
+
+    return replaceThousandsSeparatorWithSpace(
+      formattedPercentage,
+      useThousandsSeparator
+    );
   }
 
   if (numberFormat === "currency") {
@@ -103,6 +110,12 @@ export const formatValue = (
     locale,
     formatOptions
   ).format(valueToFormat);
+
+  formatted =
+    replaceThousandsSeparatorWithSpace(
+      formatted,
+      useThousandsSeparator
+    );
 
   if (
     val < 0 &&

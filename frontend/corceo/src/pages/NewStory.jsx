@@ -1,320 +1,54 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import StoryChart from "../components/StoryChart";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "../components/Header";
 import useHistoryState from "../hooks/useHistoryState";
 
-function SlideThumbnail({
-  slide,
-  slideNumber,
-}) {
-  return (
-    <div
-      className="
-        relative
-        h-full
-        w-full
-        overflow-hidden
-        bg-white
-      "
-    >
-      {/* Slide title */}
-      {slide.description && (
-        <div
-          className="
-            absolute
-            left-[4%]
-            right-[4%]
-            top-[4%]
-            z-40
-            truncate
-            text-[7px]
-            font-bold
-            text-slate-800
-          "
-        >
-          {slide.description}
-        </div>
-      )}
+import StoryTopToolbar from "../components/story/StoryTopToolbar";
+import StorySlidesSidebar from "../components/story/StorySlidesSidebar";
+import StoryMainCanvas from "../components/story/StoryMainCanvas";
+import StoryAnnotationsSidebar from "../components/story/StoryAnnotationsSidebar";
+import StoryExportSlides from "../components/story/StoryExportSlides";
+import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal";
 
-      {/* Chart image layout */}
-      <div
-        className="
-          absolute
-          bottom-[4%]
-          left-[4%]
-          right-[4%]
-          top-[18%]
-          overflow-hidden
-          rounded-sm
-          bg-slate-50
-        "
-      >
-        {(slide.content || []).map(
-          (item, index) => (
-            <div
-              key={item.id || `${item.chartId}-${index}`}
-              className="
-                absolute
-                overflow-hidden
-                bg-white
-              "
-              style={{
-                left: `${item.x ?? 0}%`,
-                top: `${item.y ?? 0}%`,
-                width: `${item.width ?? 100}%`,
-                height: `${item.height ?? 100}%`,
-                zIndex: item.zIndex ?? index + 1,
-              }}
-            >
-              {item.imageUrl ? (
-                <img
-                  src={item.imageUrl}
-                  alt=""
-                  className="
-                    h-full
-                    w-full
-                    object-contain
-                  "
-                  draggable={false}
-                />
-              ) : (
-                <div
-                  className="
-                    flex
-                    h-full
-                    w-full
-                    items-center
-                    justify-center
-                    bg-slate-100
-                    text-[8px]
-                    text-slate-400
-                  "
-                >
-                  Chart
-                </div>
-              )}
-            </div>
-          ),
-        )}
 
-        {/* Basic annotation connectors */}
-        <svg
-          className="
-            pointer-events-none
-            absolute
-            inset-0
-            z-20
-            h-full
-            w-full
-          "
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          {(slide.annotations || []).map(
-            (annotation) => {
-              if (
-                annotation.connectorType === "none"
-              ) {
-                return null;
-              }
+export const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
 
-              const x1 =
-                annotation.textX ?? 55;
-              const y1 =
-                annotation.textY ?? 55;
-              const x2 =
-                annotation.x ?? 50;
-              const y2 =
-                annotation.y ?? 40;
+export function createChartItem(
+  chartId,
+  name,
+  imageUrl,
+  index = 0,
+) {
+  const width = 100;
 
-              return (
-                <line
-                  key={`line-${annotation.id}`}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke={
-                    annotation.lineColor ||
-                    "#64748b"
-                  }
-                  strokeWidth="0.5"
-                />
-              );
-            },
-          )}
-        </svg>
+  return {
+    id: `chart-${crypto.randomUUID()}`,
+    type: "chart",
+    chartId,
+    name,
+    imageUrl: imageUrl || null,
 
-        {/* Annotation markers and labels */}
-        {(slide.annotations || []).map(
-          (annotation) => (
-            <React.Fragment
-              key={annotation.id}
-            >
-              {annotation.markerType ===
-                "dot" && (
-                <div
-                  className="
-                    absolute
-                    z-30
-                    rounded-full
-                    border
-                    border-white
-                  "
-                  style={{
-                    left: `${
-                      annotation.x ?? 50
-                    }%`,
-                    top: `${
-                      annotation.y ?? 40
-                    }%`,
+    x: 0,
+    y: 0,
 
-                    width: "5px",
-                    height: "5px",
+    width,
+    height: 100,
 
-                    transform:
-                      "translate(-50%, -50%)",
+    resizeMode: "free",
+    aspectRatio: DEFAULT_CHART_ASPECT_RATIO,
 
-                    backgroundColor:
-                      annotation.fillColor ||
-                      "#3b82f6",
-                  }}
-                />
-              )}
-
-              {annotation.markerType ===
-                "circle" && (
-                <div
-                  className="
-                    absolute
-                    z-30
-                    rounded-full
-                    border
-                  "
-                  style={{
-                    left: `${
-                      annotation.x ?? 50
-                    }%`,
-                    top: `${
-                      annotation.y ?? 40
-                    }%`,
-
-                    width: `${
-                      annotation.width ?? 15
-                    }%`,
-
-                    aspectRatio: "1 / 1",
-
-                    borderColor:
-                      annotation.fillColor ||
-                      "#3b82f6",
-                  }}
-                />
-              )}
-
-              {annotation.markerType ===
-                "square" && (
-                <div
-                  className="
-                    absolute
-                    z-30
-                    rounded-sm
-                    border
-                  "
-                  style={{
-                    left: `${
-                      annotation.x ?? 50
-                    }%`,
-                    top: `${
-                      annotation.y ?? 40
-                    }%`,
-
-                    width: `${
-                      annotation.width ?? 15
-                    }%`,
-
-                    height: `${
-                      annotation.height ?? 15
-                    }%`,
-
-                    borderColor:
-                      annotation.fillColor ||
-                      "#3b82f6",
-                  }}
-                />
-              )}
-
-              <div
-                className="
-                  absolute
-                  z-40
-                  max-w-[45%]
-                  truncate
-                  rounded-sm
-                  px-1
-                  py-0.5
-                  text-[5px]
-                  leading-tight
-                "
-                style={{
-                  left: `${
-                    annotation.textX ?? 55
-                  }%`,
-
-                  top: `${
-                    annotation.textY ?? 55
-                  }%`,
-
-                  transform:
-                    "translate(-50%, -50%)",
-
-                  color:
-                    annotation.textColor ||
-                    "#1e293b",
-
-                  backgroundColor:
-                    annotation.textBg ===
-                    "transparent"
-                      ? "transparent"
-                      : annotation.textBg ||
-                        "#ffffff",
-                }}
-              >
-                {annotation.text ||
-                  "Annotation"}
-              </div>
-            </React.Fragment>
-          ),
-        )}
-      </div>
-
-      {(slide.content || []).length === 0 && (
-        <div
-          className="
-            absolute
-            inset-0
-            flex
-            items-center
-            justify-center
-            text-[9px]
-            text-slate-400
-          "
-        >
-          Slide {slideNumber}
-        </div>
-      )}
-    </div>
-  );
+    zIndex: index + 1,
+  };
 }
 
 
 function NewStory() {
   const { storyId } = useParams();
   const navigate = useNavigate();
-
+  const SLIDE_WIDTH = 1280;
+  const SLIDE_HEIGHT = 720;
   const isSlideActionRef = useRef(false);
 
   const createInitialStoryState = () => ({
@@ -521,7 +255,7 @@ const exportStoryPDF = async () => {
     const pdf = new jsPDF(
       "landscape",
       "pt",
-      [1280, 720],
+      [SLIDE_WIDTH, SLIDE_HEIGHT],
     );
 
     for (
@@ -533,7 +267,7 @@ const exportStoryPDF = async () => {
         await html2canvas(
           slideElements[index],
           {
-            scale: 1.5,
+            scale: 2,
             useCORS: true,
             allowTaint: false,
             backgroundColor:
@@ -543,10 +277,7 @@ const exportStoryPDF = async () => {
         );
 
       const imageData =
-        canvas.toDataURL(
-          "image/jpeg",
-          0.9,
-        );
+  canvas.toDataURL("image/png");
 
       if (index > 0) {
         pdf.addPage(
@@ -556,13 +287,13 @@ const exportStoryPDF = async () => {
       }
 
       pdf.addImage(
-        imageData,
-        "JPEG",
-        0,
-        0,
-        1280,
-        720,
-      );
+  imageData,
+  "PNG",
+  0,
+  0,
+  SLIDE_WIDTH,
+  SLIDE_HEIGHT
+);
     }
 
     pdf.save(
@@ -908,25 +639,15 @@ const deleteSlide = async (index) => {
   }
 };
 
-const createChartItem = (
-  chartId,
-  name,
-  imageUrl,
-  index = 0,
-) => ({
-  id: `chart-${crypto.randomUUID()}`,
-  type: "chart",
-  chartId,
-  name,
-  imageUrl: imageUrl || null,
+function withCurrentRatio(item) {
+  const width = Number(item.width) || 1;
+  const height = Number(item.height) || 1;
 
-  x: 0,
-  y: 0,
-  width: 100,
-  height: 100,
-  zIndex: index + 1,
-});
-
+  return {
+    ...item,
+    aspectRatio: width / height,
+  };
+}
 
   const arrangeCharts = (items = []) => {
     const count = items.length;
@@ -2261,1344 +1982,87 @@ const handleDragEnd = () => {
   };
   
 
+
   return (
     <>
-    <Header/>
-    <div className="app-page flex h-screen flex-col font-sans select-none">
-      <div className="app-surface app-border h-12 shrink-0 flex items-center border-b px-4 gap-4">
+      <Header />
 
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="app-text-muted text-sm hover:text-[rgb(var(--color-text))]"
-      >
-        ← Back to projects
-      </button>
+      <div className="app-page flex h-screen flex-col font-sans select-none">
+        <StoryTopToolbar
+          navigate={navigate}
+          storyName={storyName}
+          storyNameBeforeEditRef={storyNameBeforeEditRef}
+          setStoryName={setStoryName}
+          commitStoryHistory={commitStoryHistory}
+          storyHistoryState={storyHistoryState}
+          undoStory={undoStory}
+          canUndoStory={canUndoStory}
+          redoStory={redoStory}
+          canRedoStory={canRedoStory}
+          exportStoryPDF={exportStoryPDF}
+          publishStory={publishStory}
+          saveStory={saveStory}
+        />
 
-      <div className="h-6 w-px bg-[rgb(var(--color-border))]" />
-
-      <input
-        value={storyName}
-        onFocus={() => {
-          storyNameBeforeEditRef.current =
-            storyName;
-        }}
-        onChange={(event) => {
-          setStoryName(
-            event.target.value,
-            {
-              record: false,
-            },
-          );
-        }}
-        onBlur={() => {
-  const previousName =
-    storyNameBeforeEditRef.current;
-
-  if (
-    previousName === storyName
-  ) {
-    return;
-  }
-
-  commitStoryHistory(
-    {
-      ...storyHistoryState,
-      storyName:
-        previousName,
-    },
-    {
-      ...storyHistoryState,
-      storyName,
-    },
-  );
-}}
-className="
-  bg-transparent
-  app-text
-  w-72
-  border-none
-  text-lg
-  font-semibold
-  outline-none
-"
-/>
-
-      <div className="ml-auto flex gap-2">
-
-      <button
-        type="button"
-        onClick={undoStory}
-        disabled={!canUndoStory}
-        title="Undo (Ctrl+Z)"
-        className="
-          btn-secondary
-          rounded-lg
-          px-3
-          py-2
-          text-sm
-          disabled:cursor-not-allowed
-          disabled:opacity-40
-        "
-      >
-        ↶ Undo
-      </button>
-
-      <button
-        type="button"
-        onClick={redoStory}
-        disabled={!canRedoStory}
-        title="Redo (Ctrl+Shift+Z)"
-        className="
-          btn-secondary
-          rounded-lg
-          px-3
-          py-2
-          text-sm
-          disabled:cursor-not-allowed
-          disabled:opacity-40
-        "
-      >
-        ↷ Redo
-      </button>
-        <button
-          onClick={exportStoryPDF}
-          className="btn-secondary px-4 py-2 text-sm rounded-lg"
-        >
-          Export
-        </button>
-
-        {/* Later */}
-          <button
-            onClick={publishStory}
-            className="btn-secondary px-4 py-2 text-sm rounded-lg"
-          >
-            Publish
-          </button> 
-
-        <button
-          onClick={saveStory}
-          className="btn-primary px-4 py-2 text-sm rounded-lg"
-        >
-          Save
-        </button>
-
-      </div>
-    </div>
-
-    <div className="flex min-h-0 flex-1 overflow-hidden">
-
-      {/* LEFT SIDEBAR: Slide Deck */}
-      <div
-        className="
-          app-surface
-          app-border
-          flex
-          w-72
-          shrink-0
-          flex-col
-          gap-4
-          border-r
-          p-4
-        "
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="app-text text-sm font-semibold">
-            Slides
-          </h2>
-
-          <span className="app-text-muted text-xs">
-            {slides.length}
-          </span>
-        </div>        
-        <div
-          className="
-            flex
-            min-h-0
-            w-full
-            flex-1
-            flex-col
-            gap-3
-            overflow-y-auto
-            pr-1
-          "
-        >
-          {slides.map((slide, index) => {
-
-            const isActive =
-              activeSlideIndex === index;
-
-            return (
-              <div
-                key={slide.id}
-                className="group flex w-full shrink-0 gap-2"
-              >
-                {/* Slide number */}
-                <div className="app-text-muted flex w-5 shrink-0 items-start justify-center pt-3 text-[11px] font-semibold">
-                  {index + 1}
-                </div>
-
-                {/* Slide thumbnail */}
-                <div
-                  onClick={() => {
-                    setActiveSlideIndex(index);
-                    setSelectedAnnoId(null);
-                    setSelectedChartId(null);
-                  }}
-                  className={`
-                    relative
-                    aspect-video
-                    min-w-0
-                    flex-1
-                    cursor-pointer
-                    overflow-hidden
-                    rounded-lg
-                    border
-                    bg-white
-                    shadow-sm
-                    transition-all
-                    ${
-                      isActive
-                        ? `
-                          border-[rgb(var(--color-primary))]
-                          ring-2
-                          ring-[rgb(var(--color-highlight))]
-                        `
-                        : `
-                          border-[rgb(var(--color-border))]
-                          hover:border-[rgb(var(--color-border-strong))]
-                          hover:shadow-md
-                        `
-                    }
-                  `}
-                >
-                  <SlideThumbnail
-                    slide={slide}
-                    slideNumber={index + 1}
-                  />
-                  {/* Active slide overlay */}
-                  {isActive && (
-                    <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--color-primary))]/[0.03]" />
-                  )}
-
-                  {/* Slide actions */}
-                  <div
-                    className={`
-                      absolute
-                      right-1.5
-                      top-1.5
-                      z-20
-                      flex
-                      gap-1
-                      transition-opacity
-                      ${
-                        isActive
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      }
-                    `}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => duplicateSlide(index)}
-                      title="Duplicate slide"
-                      className="
-                        flex
-                        h-7
-                        w-7
-                        items-center
-                        justify-center
-                        rounded-md
-                        border
-                        border-slate-200
-                        bg-white/95
-                        text-xs
-                        text-slate-700
-                        shadow-sm
-                        backdrop-blur-sm
-                        hover:border-blue-400
-                        hover:text-blue-600
-                      "
-                    >
-                      ⧉
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => deleteSlide(index)}
-                      title="Delete slide"
-                      className="
-                        flex
-                        h-7
-                        w-7
-                        items-center
-                        justify-center
-                        rounded-md
-                        border
-                        border-slate-200
-                        bg-white/95
-                        text-xs
-                        text-slate-700
-                        shadow-sm
-                        backdrop-blur-sm
-                        hover:border-red-400
-                        hover:text-red-600
-                      "
-                    >
-                      🗑
-                    </button>
-                  </div>
-
-                  {/* Slide title */}
-                  <div
-                    className="
-                      absolute
-                      bottom-0
-                      left-0
-                      right-0
-                      z-10
-                      truncate
-                      bg-gradient-to-t
-                      from-black/65
-                      to-transparent
-                      px-2
-                      pb-1.5
-                      pt-5
-                      text-[10px]
-                      font-medium
-                      text-white
-                    "
-                  >
-                    {slide.description || `Slide ${index + 1}`}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        <button onClick={addSlide} className="w-full py-2.5 rounded-lg text-sm font-semibold bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-surface-hover))] transition-colors">+ Add Slide</button>
-      </div>
-
-      {/* CENTRAL MAIN CANVAS */}
-      <div className="flex-1 p-8 flex flex-col items-center justify-center overflow-hidden">
-        <div className="story-slide app-card w-full max-w-4xl shadow-xl h-[620px] rounded-2xl p-6 flex flex-col gap-4 relative">          
-          <input
-            type="text"
-            placeholder="Enter slide title or description narrative..."
-            value={currentSlide.description || ""}
-            onChange={(e) => {
-              const updatedSlides = [...slides];
-              updatedSlides[activeSlideIndex].description = e.target.value;
-              setSlides(updatedSlides);
-            }}
-            className="app-text bg-transparent w-full text-2xl font-bold border-b border-transparent hover:border-[rgb(var(--color-border))] focus:border-[rgb(var(--color-highlight))] outline-none pb-2 transition-colors"
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <StorySlidesSidebar
+            slides={slides}
+            activeSlideIndex={activeSlideIndex}
+            setActiveSlideIndex={setActiveSlideIndex}
+            setSelectedAnnoId={setSelectedAnnoId}
+            setSelectedChartId={setSelectedChartId}
+            duplicateSlide={duplicateSlide}
+            deleteSlide={deleteSlide}
+            addSlide={addSlide}
           />
 
-          {/* Core Interactive Bounding Canvas Wrapper */}
-          <div 
-            ref={canvasRef}
-            className="app-surface-secondary app-border flex-1 border rounded-xl relative group"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setSelectedAnnoId(null);
-                setSelectedChartId(null);
-              }
-            }}
-          >
-            {/* Chart Renderer Layer */}
-            <div className="absolute inset-0 z-[5] overflow-hidden rounded-xl">
-              {(currentSlide.content || []).map((item) => {
-                const isSelected = selectedChartId === item.id;
+          <StoryMainCanvas
+            activeSlideIndex={activeSlideIndex}
+            currentSlide={currentSlide}
+            setSlides={setSlides}
+            slides={slides}
+            canvasRef={canvasRef}
+            selectedChartId={selectedChartId}
+            selectedAnnoId={selectedAnnoId}
+            setSelectedChartId={setSelectedChartId}
+            setSelectedAnnoId={setSelectedAnnoId}
+            startChartInteraction={startChartInteraction}
+            duplicateChartItem={duplicateChartItem}
+            deleteChartItem={deleteChartItem}
+            sendChartToBack={sendChartToBack}
+            setShowPicker={setShowPicker}
+            canvasDimensions={canvasDimensions}
+            renderConnectorPath={renderConnectorPath}
+            handleDragStart={handleDragStart}
+            setActiveSlideIndex={setActiveSlideIndex}
+          />
 
-                return (
-                  <div
-                    key={item.id}
-                    className={`absolute group rounded-xl transition-shadow ${
-                      isSelected
-                        ? "ring-2 ring-[rgb(var(--color-primary))] shadow-xl"
-                        : "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]"
-                    }`}
-                    style={{
-                      left: `${item.x ?? 5}%`,
-                      top: `${item.y ?? 5}%`,
-                      width: `${item.width ?? 48}%`,
-                      height: `${item.height ?? 45}%`,
-                      zIndex: item.zIndex ?? 1,
-                    }}
-                    onMouseDown={(event) => {
-                      event.stopPropagation();
-                      setSelectedChartId(item.id);
-                      setSelectedAnnoId(null);
-                    }}
-                  >
-                    <div className="app-card relative h-full w-full overflow-hidden rounded-sm">
-                      <div
-                        className={`absolute left-0 right-0 top-0 z-20 flex h-9 items-center justify-between border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/90 px-2 backdrop-blur-sm transition-opacity ${
-                          isSelected
-                            ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="app-text-secondary min-w-0 flex-1 cursor-move truncate text-left text-[11px] font-semibold"
-                          title="Drag chart"
-                          onMouseDown={(event) =>
-                            startChartInteraction(event, "move", item)
-                          }
-                        >
-                          ⋮⋮ {item.name || "Chart"}
-                        </button>
-
-                        <div className="ml-2 flex shrink-0 gap-1">
-                          <button
-                            type="button"
-                            title="Send backward"
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              sendChartToBack(item.id);
-                            }}
-                            className="app-icon-button h-6 w-6 rounded text-xs"
-                          >
-                            ↓
-                          </button>
-
-                          <button
-                            type="button"
-                            title="Duplicate chart"
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              duplicateChartItem(item.id);
-                            }}
-                            className="app-icon-button h-6 w-6 rounded text-xs"
-                          >
-                            ⧉
-                          </button>
-
-                          <button
-                            type="button"
-                            title="Delete chart"
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteChartItem(item.id);
-                            }}
-                            className="app-icon-button h-6 w-6 rounded text-xs text-[rgb(var(--color-danger))]"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="h-full w-full">
-                        <StoryChart chartId={item.chartId} />
-                      </div>
-
-                      {isSelected && (
-                        <>
-                          <div
-                            onMouseDown={(event) =>
-                              startChartInteraction(event, "top", item)
-                            }
-                            className="absolute left-3 right-3 top-0 z-30 h-2 -translate-y-1/2 cursor-n-resize"
-                          />
-                          <div
-                            onMouseDown={(event) =>
-                              startChartInteraction(event, "bottom", item)
-                            }
-                            className="absolute bottom-0 left-3 right-3 z-30 h-2 translate-y-1/2 cursor-s-resize"
-                          />
-                          <div
-                            onMouseDown={(event) =>
-                              startChartInteraction(event, "left", item)
-                            }
-                            className="absolute bottom-3 left-0 top-3 z-30 w-2 -translate-x-1/2 cursor-w-resize"
-                          />
-                          <div
-                            onMouseDown={(event) =>
-                              startChartInteraction(event, "right", item)
-                            }
-                            className="absolute bottom-3 right-0 top-3 z-30 w-2 translate-x-1/2 cursor-e-resize"
-                          />
-
-                          {[
-                            ["top-left", "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"],
-                            ["top-right", "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"],
-                            ["bottom-left", "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"],
-                            ["bottom-right", "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"],
-                          ].map(([mode, position]) => (
-                            <button
-                              key={mode}
-                              type="button"
-                              aria-label={`Resize chart from ${mode}`}
-                              onMouseDown={(event) =>
-                                startChartInteraction(event, mode, item)
-                              }
-                              className={`absolute z-40 h-3 w-3 rounded-sm border border-[rgb(var(--color-surface))] bg-[rgb(var(--color-primary))] shadow ${position}`}
-                            />
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {(currentSlide.content || []).length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowPicker(true)}
-                  className="app-text-muted flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[rgb(var(--color-border-strong))] transition-all hover:bg-[rgb(var(--color-surface-hover))]"
-                >
-                  <span className="text-2xl">📊</span>
-                  <span className="text-xs font-semibold">
-                    Add your first chart
-                  </span>
-                </button>
-              )}
-
-              {(currentSlide.content || []).length > 0 && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setShowPicker(true);
-                  }}
-                  className="btn-primary absolute bottom-3 right-3 z-[100] rounded-lg px-3 py-2 text-xs shadow-lg"
-                >
-                  + Add chart
-                </button>
-              )}
-            </div>
-
-            {/* Sharp SVG Connector Path Layer - Absolute dimensions prevent stretching distortion */}
-            <svg 
-              className="absolute inset-0 pointer-events-none z-10"
-              style={{ width: canvasDimensions.width, height: canvasDimensions.height }}
-            >
-              <defs>
-                {(currentSlide.annotations || []).map((anno) => (
-                  <marker 
-                    key={anno.id}
-                    id={`arrow-${anno.id}`} 
-                    viewBox="0 0 10 10" 
-                    refX="6" refY="5" 
-                    markerWidth="7" markerHeight="7" 
-                    orient="auto-start-reverse"
-                  >
-                    {/* Sleek, razor-thin sharp triangle matching target UI style */}
-                    <path d="M 0 2 L 8 5 L 0 8 z" fill={anno.lineColor || "#64748b"} />
-                  </marker>
-                ))}
-              </defs>
-              {(currentSlide.annotations || []).map((anno) => renderConnectorPath(anno))}
-            </svg>
-
-            {/* DOM Element Layer */}
-            {(currentSlide.annotations || []).map((anno, listIdx) => {
-              const isSelected = selectedAnnoId === anno.id;
-              return (
-                <div key={anno.id} className="absolute inset-0 pointer-events-none z-20">
-                  
-                  {/* Context Circle Highlight Ring */}
-                  {/* Bounding Box Resizable Shape Component Wrapper */}
-                  {anno.markerType !== "none" && (
-                    <div
-                      className={`absolute pointer-events-auto transition-shadow ${
-                        isSelected ? 'z-40' : 'z-30'
-                      }`}
-                      style={{
-                        left: `${anno.x}%`,
-                        top: `${anno.y}%`,
-                        // If it's a dot, use pixels. Otherwise use percentage width.
-                        width: anno.markerType === "dot" ? `${(anno.radius || 6) * 2.5}px` : `${anno.width || 15}%`,
-                        
-                        // FIX: For circles, let CSS calculate height automatically based on width to stay perfectly round
-                        height: anno.markerType === "dot" 
-                          ? `${(anno.radius || 6) * 2.5}px` 
-                          : anno.markerType === "circle" 
-                            ? "auto" 
-                            : `${anno.height || 15}%`,
-                        
-                        // FORCE 1:1 aspect ratio strictly for circles
-                        aspectRatio: anno.markerType === "circle" ? "1 / 1" : "auto",
-                        
-                        transform: anno.markerType === "dot" ? 'translate(-50%, -50%)' : 'none',
-                      }}
-                    >
-                      {/* 1. If it's a regular standalone Dot handle */}
-                      {anno.markerType === "dot" && (
-                        <div 
-                          onMouseDown={(e) => handleDragStart(e, "target", anno.id)}
-                          onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                          className={`w-full h-full rounded-full cursor-move shadow-md border flex items-center justify-center text-[9px] font-bold text-white transition-transform ${
-                            isSelected ? 'ring-4 ring-blue-500/20 border-blue-600' : 'border-white hover:scale-110'
-                          }`}
-                          style={{ backgroundColor: anno.fillColor }}
-                        >
-                        </div>
-                      )}
-
-                      {/* 2. If it's an expandable visual Circle Ring */}
-                      {anno.markerType === "circle" && (
-                        <div 
-                          onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id) }}
-                          onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                          className={`w-full h-full border-2 border-dashed rounded-full cursor-move relative transition-all ${
-                            isSelected ? 'border-solid border-blue-500 shadow-xs' : 'hover:border-gray-400'
-                          }`}
-                          style={{ borderColor: anno.fillColor, backgroundColor: `${anno.fillColor}08` }}
-                        >
-                        </div>
-                      )}
-
-                      {/* 3. If it's an expandable visual Square Block */}
-                      {anno.markerType === "square" && (
-                        <div 
-                          onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id) }}
-                          onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                          className={`w-full h-full border-2 border-dashed rounded-lg cursor-move relative transition-all ${
-                            isSelected ? 'border-solid border-blue-500 shadow-xs' : 'hover:border-gray-400'
-                          }`}
-                          style={{ borderColor: anno.fillColor, backgroundColor: `${anno.fillColor}05` }}
-                        >
-                        </div>
-                      )}
-
-                      {/* Dynamic Handle Anchor Link ("Punk Circle") - Displayed only on selection for custom shapes */}
-                      {isSelected && anno.markerType !== "dot" && (
-                        <div 
-                          onMouseDown={(e) => handleDragStart(e, "resize", anno.id, anno)}
-                          className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[rgb(var(--color-primary))] border-2 border-[rgb(var(--color-surface))] rounded-full translate-x-1/2 translate-y-1/2 cursor-se-resize shadow-md hover:scale-125 transition-transform z-50"
-                          title="Drag to resize shape frame layout"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Floating Content Label Text Box */}
-                  <div 
-                    onMouseDown={(e) => handleDragStart(e, "label", anno.id)}
-                    onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                    className={`absolute p-2 pointer-events-auto cursor-move shadow-xs select-text rounded border border-transparent transition-all ${
-                      isSelected ? 'ring-2 ring-blue-500 shadow-lg rounded-lg z-50 bg-white border-blue-100' : ''
-                    }`}
-                    style={{
-                      left: `${anno.textX}%`,
-                      top: `${anno.textY}%`,
-                      transform: 'translate(-50%, -50%)',
-                      maxWidth: `${anno.labelWidth || 12}rem`,
-                      fontSize: `${anno.textSize || 0.85}rem`,
-                      color: anno.textColor || "#1e293b",
-                      fontWeight: anno.fontWeight || "normal",
-                      textAlign: anno.textAlign || "left",
-                      backgroundColor: anno.textBg === "transparent" ? "transparent" : (anno.textBg || "#ffffff"),
-                      border: anno.textBg === "outline" ? `1px solid ${anno.textColor}40` : (isSelected ? "1px solid #3b82f6" : "none"),
-                      padding: anno.textBg !== "transparent" ? "5px 10px" : "2px"
-                    }}
-                  >
-                    <div className="break-words leading-snug pointer-events-none">
-                      {anno.text || "Comment text..."}
-                    </div>
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
-
-          {/* LOWER CONTROLS */}
-          <div className="app-border flex justify-between items-center pt-3 border-t mt-auto">
-            <div className="flex gap-2">
-              <button 
-                onClick={() => { setActiveSlideIndex(Math.max(0, activeSlideIndex - 1)); setSelectedAnnoId(null); }}
-                disabled={activeSlideIndex === 0}
-                className="btn-secondary px-5 py-2 text-sm rounded-xl disabled:opacity-40"
-              >
-                &larr; Previous
-              </button>
-              <button 
-                onClick={() => { setActiveSlideIndex(Math.min(slides.length - 1, activeSlideIndex + 1)); setSelectedAnnoId(null); }}
-                disabled={activeSlideIndex === slides.length - 1}
-                className="btn-primary px-5 py-2 text-sm rounded-xl disabled:opacity-40"
-              >
-                Next &rarr;
-              </button>
-            </div>
-            <span className="app-text-muted text-xs font-bold uppercase tracking-wider">
-              Slide {activeSlideIndex + 1} / {slides.length}
-            </span>
-          </div>
+          <StoryAnnotationsSidebar
+            currentSlide={currentSlide}
+            addAnnotation={addAnnotation}
+            selectedAnnoId={selectedAnnoId}
+            setSelectedAnnoId={setSelectedAnnoId}
+            removeAnnotation={removeAnnotation}
+            updateAnnotation={updateAnnotation}
+          />
         </div>
       </div>
 
-      {/* RIGHT SIDEBAR: Flourish-Style Option Matrix Panels */}
-      <div className="app-surface app-border w-80 border-l flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
-        
-        <div className="flex flex-col gap-2">
-          <h3 className="app-text-muted text-xs font-bold uppercase tracking-wider">Annotations Matrix</h3>
-          <button 
-            onClick={addAnnotation}
-            className="btn-secondary w-full py-2 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5"
-          >
-            <span>➕</span> Add Annotation Point
-          </button>
-        </div>
+      <StoryExportSlides
+        isExporting={isExporting}
+        slides={slides}
+        SLIDE_WIDTH={SLIDE_WIDTH}
+        SLIDE_HEIGHT={SLIDE_HEIGHT}
+      />
 
-        <hr className="app-border" />
-
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
-          <h4 className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Points on this slide</h4>
-          
-          {(currentSlide.annotations || []).length === 0 ? (
-            <div className="app-text-muted text-center text-xs italic py-6">No annotations on this slide view.</div>
-          ) : (
-            (currentSlide.annotations || []).map((anno, listIdx) => {
-              const isEditingThis = selectedAnnoId === anno.id;
-              return (
-                <div 
-                  key={anno.id} 
-                  className={`app-card rounded-xl transition-all overflow-hidden ${
-                    isEditingThis ? 'border-[rgb(var(--color-primary))] shadow-md ring-1 ring-[rgb(var(--color-highlight))]' : 'border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-border-strong))]'
-                  }`}
-                >
-                  {/* Summary Bar Card Header Trigger */}
-                  <div 
-                    onClick={() => setSelectedAnnoId(anno.id)}
-                    className={`p-3 cursor-pointer flex items-center justify-between text-xs font-bold transition-colors ${
-                      isEditingThis ? 'bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))]' : 'app-text-secondary hover:bg-[rgb(var(--color-surface-hover))]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white shrink-0" style={{ backgroundColor: anno.fillColor }}>
-                        {listIdx + 1}
-                      </span>
-                      <span className="truncate font-medium">{anno.text || "Untitled point note..."}</span>
-                    </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeAnnotation(anno.id); }} className="app-text-muted hover:text-[rgb(var(--color-danger))] font-bold px-1">✕</button>
-                  </div>
-
-                  {/* ACTIVE PROPERTIES NESTED SUBPANEL */}
-                  {isEditingThis && (
-                    <div className="app-surface-secondary app-border p-3 border-t flex flex-col gap-4 text-xs max-h-[400px] overflow-y-auto">
-                      
-                      {/* Text Entry Field */}
-                      <div className="flex flex-col gap-1">
-                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Annotation Text</label>
-                        <textarea 
-                          value={anno.text}
-                          onChange={(e) => updateAnnotation(anno.id, "text", e.target.value)}
-                          rows={2}
-                          className="app-input w-full rounded-lg p-2 text-xs resize-none leading-normal font-medium"
-                        />
-                      </div>
-
-                      {/* Marker Types Form Matrix */}
-                      <div className="flex flex-col gap-1">
-                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Marker Type</label>
-                        <div className="app-surface-secondary app-text-secondary grid grid-cols-3 gap-1 p-1 rounded-md text-center font-semibold">
-                          {[
-                            { id: "none", label: "None" },
-                            { id: "dot", label: "Dot •" },
-                            { id: "circle", label: "Circle ◯" },
-                            { id: "square", label: "Square ▢" }
-                          ].map(m => (
-                            <button 
-                              key={m.id}
-                              onClick={() => updateAnnotation(anno.id, "markerType", m.id)}
-                              className={`py-1 rounded text-[10px] transition-all ${anno.markerType === m.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
-                            >
-                              {m.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Connector Vector Options */}
-                      <div className="flex flex-col gap-1">
-                        <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Connector Type</label>
-                        <div className="app-surface-secondary app-text-secondary grid grid-cols-4 gap-1 p-1 rounded-md text-center font-semibold">
-                          {[
-                            { id: "none", label: "None" },
-                            { id: "curved", label: "Arc" },
-                            { id: "straight", label: "Line" },
-                            { id: "angled", label: "Elbow" }
-                          ].map(c => (
-                            <button 
-                              key={c.id}
-                              onClick={() => updateAnnotation(anno.id, "connectorType", c.id)}
-                              className={`py-1 rounded text-[9px] transition-all truncate px-0.5 ${anno.connectorType === c.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
-                            >
-                              {c.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Accent / Marker Sizing metrics */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Fill Color</label>
-                          <input 
-                            type="color" 
-                            value={anno.fillColor || "#3b82f6"} 
-                            onChange={(e) => updateAnnotation(anno.id, "fillColor", e.target.value)}
-                            className="app-surface app-border w-full h-8 border rounded-lg p-0.5 cursor-pointer"
-                          />
-                        </div>
-
-                        
-                        {anno.markerType === "dot" && (
-                        <div className="flex flex-col gap-1">
-                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Radius Size</label>
-                          <input 
-                            type="number" step="1" min="3" max="20"
-                            value={anno.radius || 6} 
-                            onChange={(e) => updateAnnotation(anno.id, "radius", parseFloat(e.target.value) || 6)}
-                            className="app-input w-full h-8 rounded-lg px-2 text-center"
-                          />
-                        </div>
-                        )}
-                        
-                      </div>
-
-                      {/* Marker Center Text Label Input */}
-                      {anno.markerType !== "none" && (
-                        <div className="flex flex-col gap-1">
-                          <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Marker Center Label</label>
-                          <input 
-                            type="text" maxLength={2} placeholder="e.g. 1"
-                            value={anno.markerLabel || ""} 
-                            onChange={(e) => updateAnnotation(anno.id, "markerLabel", e.target.value)}
-                            className="app-input w-full h-8 rounded-lg px-2"
-                          />
-                        </div>
-                      )}
-
-                      {/* Text styling & layout parameters wrapper */}
-                      <div className="app-border border-t pt-3 flex flex-col gap-3">
-                        <span className="app-text-muted text-[10px] font-bold uppercase tracking-wider block mb-1">Text and Connector Styles</span>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Weight</label>
-                            <div className="app-surface-secondary flex p-0.5 rounded-md mt-1">
-                              <button 
-                                onClick={() => updateAnnotation(anno.id, "fontWeight", "normal")}
-                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight !== "bold" ? "app-surface shadow-xs text-[rgb(var(--color-primary))] font-bold" : "app-text-secondary"}`}
-                              >
-                                Normal
-                              </button>
-                              <button 
-                                onClick={() => updateAnnotation(anno.id, "fontWeight", "bold")}
-                                className={`flex-1 py-1 rounded text-[10px] font-medium ${anno.fontWeight === "bold" ? "app-surface shadow-xs text-[rgb(var(--color-primary))] font-bold" : "app-text-secondary"}`}
-                              >
-                                Bold
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Text Size (rem)</label>
-                            <input 
-                              type="number" step="0.05" min="0.5" max="2"
-                              value={anno.textSize || 0.85}
-                              onChange={(e) => updateAnnotation(anno.id, "textSize", parseFloat(e.target.value) || 0.85)}
-                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Text Color</label>
-                            <input 
-                              type="color" value={anno.textColor || "#1e293b"}
-                              onChange={(e) => updateAnnotation(anno.id, "textColor", e.target.value)}
-                              className="app-surface app-border w-full h-7 border rounded-md p-0.5 mt-1 cursor-pointer"
-                            />
-                          </div>
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Max Width (rem)</label>
-                            <input 
-                              type="number" min="5" max="30"
-                              value={anno.labelWidth || 12}
-                              onChange={(e) => updateAnnotation(anno.id, "labelWidth", parseInt(e.target.value) || 12)}
-                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Background</label>
-                            <select 
-                              value={anno.textBg || "white"} 
-                              onChange={(e) => updateAnnotation(anno.id, "textBg", e.target.value)}
-                              className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
-                            >
-                              <option value="transparent">Transparent</option>
-                              <option value="#ffffff">Solid White</option>
-                              <option value="#f1f5f9">Light Gray</option>
-                              <option value="outline">Outline Border</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Alignment</label>
-                            <select 
-                              value={anno.textAlign || "left"} 
-                              onChange={(e) => updateAnnotation(anno.id, "textAlign", e.target.value)}
-                              className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
-                            >
-                              <option value="left">Left</option>
-                              <option value="center">Center</option>
-                              <option value="right">Right</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Direct Line / Arrow style toggles */}
-                      <div className="app-border border-t pt-3 flex flex-col gap-2">
-                        <span className="app-text-muted text-[10px] font-bold uppercase tracking-wider block mb-1">Line Interface Properties</span>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Line Color</label>
-                            <input 
-                              type="color" value={anno.lineColor || "#64748b"}
-                              onChange={(e) => updateAnnotation(anno.id, "lineColor", e.target.value)}
-                              className="app-surface app-border w-full h-7 border rounded-md p-0.5 mt-1 cursor-pointer"
-                            />
-                          </div>
-                          <div>
-                            <label className="app-text-secondary text-[10px] font-semibold">Thickness (px)</label>
-                            <input 
-                              type="number" step="0.5" min="0.5" max="8"
-                              value={anno.lineWidth || 1.5}
-                              onChange={(e) => updateAnnotation(anno.id, "lineWidth", parseFloat(e.target.value) || 1.5)}
-                              className="app-input w-full h-7 rounded-md mt-1 text-center px-2 py-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-{/* Hidden slides used only for story preview and PDF export */}
-{isExporting && (
-  <div
-    style={{
-      position: "fixed",
-      left: "-10000px",
-      top: 0,
-      width: "1280px",
-      pointerEvents: "none",
-    }}
-  >
-    {slides.map((slide, slideIndex) => (
-      <div
-        key={`export-${slide.id}`}
-        className="export-slide"
-        style={{
-          width: "1280px",
-          height: "720px",
-          padding: "48px",
-          boxSizing: "border-box",
-          position: "relative",
-          overflow: "hidden",
-          backgroundColor: "#ffffff",
-          color: "#0f172a",
-        }}
-      >
-        <h1
-          style={{
-            height: "48px",
-            margin: 0,
-            marginBottom: "24px",
-            overflow: "hidden",
-            fontSize: "34px",
-            fontWeight: 700,
-            lineHeight: "48px",
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {slide.description ||
-            `Slide ${slideIndex + 1}`}
-        </h1>
-
-        <div
-          style={{
-            position: "relative",
-            width: "1184px",
-            height: "552px",
-            overflow: "hidden",
-            border: "1px solid #e2e8f0",
-            borderRadius: "18px",
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          {(slide.content || []).map(
-            (item, itemIndex) => (
-              <div
-                key={
-                  item.id ||
-                  `${slide.id}-${item.chartId}-${itemIndex}`
-                }
-                style={{
-                  position: "absolute",
-                  left: `${item.x ?? 0}%`,
-                  top: `${item.y ?? 0}%`,
-                  width: `${item.width ?? 100}%`,
-                  height: `${item.height ?? 100}%`,
-                  zIndex:
-                    item.zIndex ??
-                    itemIndex + 1,
-                  overflow: "hidden",
-                  backgroundColor: "#ffffff",
-                }}
-              >
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name || "Chart"}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                      backgroundColor: "#ffffff",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      height: "100%",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                      backgroundColor: "#f1f5f9",
-                      fontSize: "20px",
-                    }}
-                  >
-                    Chart preview unavailable
-                  </div>
-                )}
-              </div>
-            ),
-          )}
-
-          {/* Annotation lines */}
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              zIndex: 20,
-              pointerEvents: "none",
-            }}
-          >
-            {(slide.annotations || []).map(
-              (annotation) => {
-                if (
-                  !annotation.connectorType ||
-                  annotation.connectorType ===
-                    "none"
-                ) {
-                  return null;
-                }
-
-                const x1 =
-                  annotation.textX ?? 55;
-                const y1 =
-                  annotation.textY ?? 55;
-                const x2 =
-                  annotation.x ?? 50;
-                const y2 =
-                  annotation.y ?? 40;
-
-                if (
-                  annotation.connectorType ===
-                  "curved"
-                ) {
-                  const middleX =
-                    (x1 + x2) / 2;
-
-                  const middleY =
-                    (y1 + y2) / 2 - 8;
-
-                  return (
-                    <path
-                      key={`export-line-${annotation.id}`}
-                      d={`M ${x1} ${y1} Q ${middleX} ${middleY} ${x2} ${y2}`}
-                      fill="none"
-                      stroke={
-                        annotation.lineColor ||
-                        "#64748b"
-                      }
-                      strokeWidth={
-                        Number(
-                          annotation.lineWidth,
-                        ) || 1.5
-                      }
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  );
-                }
-
-                if (
-                  annotation.connectorType ===
-                  "angled"
-                ) {
-                  return (
-                    <path
-                      key={`export-line-${annotation.id}`}
-                      d={`M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`}
-                      fill="none"
-                      stroke={
-                        annotation.lineColor ||
-                        "#64748b"
-                      }
-                      strokeWidth={
-                        Number(
-                          annotation.lineWidth,
-                        ) || 1.5
-                      }
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  );
-                }
-
-                return (
-                  <line
-                    key={`export-line-${annotation.id}`}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke={
-                      annotation.lineColor ||
-                      "#64748b"
-                    }
-                    strokeWidth={
-                      Number(
-                        annotation.lineWidth,
-                      ) || 1.5
-                    }
-                    vectorEffect="non-scaling-stroke"
-                  />
-                );
-              },
-            )}
-          </svg>
-
-          {/* Annotation markers and labels */}
-          {(slide.annotations || []).map(
-            (annotation) => (
-              <React.Fragment
-                key={`export-annotation-${annotation.id}`}
-              >
-                {annotation.markerType ===
-                  "dot" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${
-                        annotation.x ?? 50
-                      }%`,
-                      top: `${
-                        annotation.y ?? 40
-                      }%`,
-                      width: `${
-                        (annotation.radius ||
-                          6) * 2
-                      }px`,
-                      height: `${
-                        (annotation.radius ||
-                          6) * 2
-                      }px`,
-                      transform:
-                        "translate(-50%, -50%)",
-                      borderRadius: "9999px",
-                      backgroundColor:
-                        annotation.fillColor ||
-                        "#3b82f6",
-                      zIndex: 30,
-                    }}
-                  />
-                )}
-
-                {annotation.markerType ===
-                  "circle" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${
-                        annotation.x ?? 50
-                      }%`,
-                      top: `${
-                        annotation.y ?? 40
-                      }%`,
-                      width: `${
-                        annotation.width ?? 15
-                      }%`,
-                      aspectRatio: "1 / 1",
-                      border: `3px solid ${
-                        annotation.fillColor ||
-                        "#3b82f6"
-                      }`,
-                      borderRadius: "9999px",
-                      boxSizing: "border-box",
-                      zIndex: 30,
-                    }}
-                  />
-                )}
-
-                {annotation.markerType ===
-                  "square" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${
-                        annotation.x ?? 50
-                      }%`,
-                      top: `${
-                        annotation.y ?? 40
-                      }%`,
-                      width: `${
-                        annotation.width ?? 15
-                      }%`,
-                      height: `${
-                        annotation.height ?? 15
-                      }%`,
-                      border: `3px solid ${
-                        annotation.fillColor ||
-                        "#3b82f6"
-                      }`,
-                      boxSizing: "border-box",
-                      zIndex: 30,
-                    }}
-                  />
-                )}
-
-                <div
-                  style={{
-                    position: "absolute",
-                    left: `${
-                      annotation.textX ?? 55
-                    }%`,
-                    top: `${
-                      annotation.textY ?? 55
-                    }%`,
-                    transform:
-                      "translate(-50%, -50%)",
-                    maxWidth: `${
-                      annotation.labelWidth ||
-                      12
-                    }rem`,
-                    padding: "6px 9px",
-                    borderRadius: "6px",
-                    color:
-                      annotation.textColor ||
-                      "#1e293b",
-                    backgroundColor:
-                      annotation.textBg ===
-                      "transparent"
-                        ? "transparent"
-                        : annotation.textBg ||
-                          "#ffffff",
-                    fontSize: `${
-                      annotation.textSize ||
-                      0.85
-                    }rem`,
-                    fontWeight:
-                      annotation.fontWeight ||
-                      "normal",
-                    textAlign:
-                      annotation.textAlign ||
-                      "left",
-                    zIndex: 40,
-                  }}
-                >
-                  {annotation.text ||
-                    "Annotation"}
-                </div>
-              </React.Fragment>
-            ),
-          )}
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-      {/* SELECTION MODAL */}
-      {showPicker && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="app-card w-full max-w-xl h-[480px] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="app-border flex justify-between items-center px-5 py-4 border-b">
-              <h2 className="app-text text-base font-bold">Select Project Element Block</h2>
-              <button onClick={() => setShowPicker(false)} className="app-text-muted hover:text-[rgb(var(--color-text))] font-bold">✕</button>
-            </div>
-            <div className="app-surface-secondary app-border p-3 border-b">
-              <input 
-                type="text" 
-                placeholder="Search matching visualization layouts..." 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-                className="app-input w-full rounded-xl p-2.5 text-xs" 
-              />
-            </div>
-            <div className="app-surface-secondary flex-1 overflow-y-auto p-4">
-              <div className="grid grid-cols-3 gap-4">
-                {availableProjects
-                  .filter(p => p.name?.toLowerCase().includes(search.toLowerCase()))
-                  .map((project) => (
-                    <div 
-                      key={project.id} 
-                      onClick={() => handleProjectClick(project.id)} 
-                      className="app-card hover:border-[rgb(var(--color-primary))] rounded-xl p-3 cursor-pointer shadow-2xs transition-all items-center gap-3 group"
-                    >
-                     <div className="app-surface-secondary app-border flex-1 border-b flex items-center justify-center"> 
-                      {project.image_url ? 
-                      ( <img src={project.image_url} 
-                      alt={project.name} 
-                      className="w-full h-24 " /> ) 
-                      : ( 
-                      <div className="app-text-muted w-full h-24 flex items-center justify-center"> 📊 
-                      </div> 
-                    )} </div>                   
-                      <div className="app-text-secondary font-semibold text-xs truncate">
-                        {project.name}
-                        </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-    </div>
-  </div>
+      <StoryProjectPickerModal
+        showPicker={showPicker}
+        setShowPicker={setShowPicker}
+        search={search}
+        setSearch={setSearch}
+        availableProjects={availableProjects}
+        handleProjectClick={handleProjectClick}
+      />
     </>
   );
 }

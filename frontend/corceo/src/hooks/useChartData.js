@@ -410,25 +410,55 @@ rows = applyRanking(
 ]);
 
 
-
-  const generatedColors = useMemo(() => {
-    const colorCount = Math.max(
-      processed.visibleYKeys.length,
-      processed.rows.length,
-      1
-    );
-
-    return generatePalette(
-      settings.palette,
-      settings.paletteMode,
-      colorCount
-    );
-  }, [
-    settings.palette,
-    settings.paletteMode,
+const generatedColors = useMemo(() => {
+  const colorCount = Math.max(
     processed.visibleYKeys.length,
     processed.rows.length,
-  ]);
+    1
+  );
+
+  const sequentialCharts = [
+    "heatmap",
+    "waterfall",
+  ];
+
+  const isSequential =
+    sequentialCharts.includes(
+      chartConfig.type
+    );
+
+  return generatePalette(
+    settings.palette ?? "Standard",
+    settings.paletteMode ?? "automatic",
+    colorCount,
+    {
+      useCustomPalette:
+        settings.useCustomPalette ?? false,
+
+      customColors:
+        settings.customPalette ?? [],
+
+      extendCustomPalette:
+        settings.extendCustomPalette ?? true,
+
+      customExtensionMode:
+        settings.customExtensionMode ?? "distinct",
+
+      ordered: isSequential,
+    }
+  );
+}, [
+  settings.palette,
+  settings.paletteMode,
+  settings.useCustomPalette,
+  settings.customPalette,
+  settings.extendCustomPalette,
+  settings.customExtensionMode,
+  chartConfig.type,
+  processed.visibleYKeys.length,
+  processed.rows.length,
+]);
+
 
   return {
     chartData: processed.rows,

@@ -1,0 +1,316 @@
+import {
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+} from "lucide-react";
+
+function LegendSection({
+  settings,
+  updateSetting,
+  openSection,
+  toggleSection,
+  handleDropLegend,
+  removeMainLegendField,
+  yKeys,
+  legendShapes,
+  moveLegendField,
+  removeLegendField,
+}) {
+  return (
+            <div className="app-border border-t">
+            <button
+                onClick={() => toggleSection("legend")}
+                className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
+            >
+                Legend
+                <span
+                className={`transition-transform ${
+                    openSection === "legend" ? "rotate-180" : ""
+                }`}
+                >
+                ^
+                </span>
+            </button>
+
+            {openSection === "legend" && (
+                <div className="px-4 pb-4 pt-3 space-y-4">
+
+                <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold">
+      <input
+        type="checkbox"
+        checked={settings.showLegend}
+        onChange={(e) =>
+          updateSetting("showLegend", e.target.checked)
+        }
+      />
+      Show Legend
+    </label>
+
+    {settings.showLegend && (
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDropLegend}
+        className="app-surface-secondary app-border min-h-[60px] border-2 border-dashed rounded-lg p-3"
+      >
+        {(settings.legendFields || []).length === 0 ? (
+          <p className="app-text-muted text-xs">
+            Drag fields here for legend
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {settings.legendFields.map((field) => (
+              <div
+                key={field}
+                className="app-surface app-border app-text-secondary flex items-center justify-between border rounded px-2 py-1 text-xs"
+              >
+                <span>{field}</span>
+
+                <button
+                  onClick={() => removeMainLegendField(field)}
+                  className="text-[rgb(var(--color-danger))] hover:opacity-80"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}        
+                {/* ALIGN */}
+
+
+                <div className="space-y-1.5">
+                    <label className="app-text-secondary text-xs font-bold">
+                        Alignment
+                        </label>
+
+                        <div className="flex gap-1 mt-1">
+
+                            <button
+                                onClick={() => updateSetting("legendAlign", "start")}
+                                className={`
+                                flex w-10 h-9 items-center justify-center
+                                border rounded-md p-2 transition 
+                                ${
+                                    settings.legendAlign === "start"
+                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                                }
+                                `}
+                            >
+                                <AlignLeft size={16} />
+                            </button>
+
+                            <button
+                                onClick={() => updateSetting("legendAlign", "center")}
+                                className={`
+                                flex w-10 h-9 items-center justify-center
+                                border rounded-md p-2 transition
+                                ${
+                                    settings.legendAlign === "center"
+                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                                }
+                                `}
+                            >
+                                <AlignCenter size={16} />
+                            </button>
+
+                            <button
+                                onClick={() => updateSetting("legendAlign", "end")}
+                                className={`
+                                flex w-10 h-9 items-center justify-center
+                                border rounded-md p-2 transition
+                                ${
+                                    settings.legendAlign === "end"
+                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
+                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                                }
+                                `}
+                            >
+                                <AlignRight size={16} />
+                            </button>
+
+                        </div>
+                </div>
+                <div className="space-y-2">
+                <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Legend Fields
+                </label>
+
+                {yKeys.length > 1 && (
+                <div className="space-y-2">
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Y Axis Legend
+                    </label>
+
+                {yKeys.map((field, index) => {
+                    const shape = legendShapes[index % legendShapes.length];
+
+                    return (
+                    <div
+                        key={field}
+                        className="app-surface app-border app-text-secondary flex items-center justify-between gap-2 border rounded-md px-2 py-1.5 text-xs"
+                    >
+                        <div className="flex items-center gap-2 min-w-0">
+                        <span className="app-text-muted cursor-grab">☰</span>
+
+                        <span className="w-4 text-center">
+                            {shape === "circle" && "●"}
+                            {shape === "square" && "■"}
+                            {shape === "triangle" && "▲"}
+                            {shape === "diamond" && "◆"}
+                            {shape === "star" && "★"}
+                        </span>
+
+                        <span className="app-text-secondary truncate font-medium">
+                            {field}
+                        </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => moveLegendField(index, -1)}
+                            className="app-text-muted px-1 hover:text-[rgb(var(--color-text))]"
+                        >
+                            ↑
+                        </button>
+
+                        <button
+                            onClick={() => moveLegendField(index, 1)}
+                            className="app-text-muted px-1 hover:text-[rgb(var(--color-text))]"
+                        >
+                            ↓
+                        </button>
+
+                        <button
+                            onClick={() => removeLegendField(field)}
+                            className="px-1 text-[rgb(var(--color-danger))] hover:opacity-80"
+                        >
+                            ×
+                        </button>
+                        </div>
+                    </div>
+                    );  
+                })}
+                </div>
+                )}
+                </div>
+                {/* LEGEND TITLE */}
+                <div>
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Legend Title
+                    </label>
+
+                    <input
+                    value={settings.legendTitle}
+                    onChange={(e) =>
+                        updateSetting("legendTitle", e.target.value)
+                    }
+                    className="app-input w-full mt-1 p-2 text-sm rounded-md"
+                    placeholder="Legend"
+                    />
+                </div>
+
+                {/* POSITION */}
+                <div className="space-y-1.5">
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Position
+                    </label>
+
+                    <div className="app-surface-secondary app-border grid grid-cols-4 gap-1 p-1 rounded-xl border">
+                    {["top", "right", "bottom", "left"].map((val) => (
+                        <button
+                        key={val}
+                        onClick={() =>
+                            updateSetting("legendPosition", val)
+                        }
+                        className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
+                            settings.legendPosition === val
+                            ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
+                        }`}
+                        >
+                        {val}
+                        </button>
+                    ))}
+                    </div>
+                </div>
+
+                {/* DIRECTION */}
+                <div className="space-y-1.5">
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Direction
+                    </label>
+
+                    <div className="app-surface-secondary app-border grid grid-cols-2 gap-1 p-1 rounded-xl border">
+                    {["row", "column"].map((val) => (
+                        <button
+                        key={val}
+                        onClick={() =>
+                            updateSetting("legendDirection", val)
+                        }
+                        className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
+                            settings.legendDirection === val
+                            ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
+                        }`}
+                        >
+                        {val}
+                        </button>
+                    ))}
+                    </div>
+                </div>
+
+
+
+                {/* SIZE */}
+                <div className="space-y-1.5">
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Size
+                    </label>
+
+                    <div className="app-surface-secondary app-border grid grid-cols-3 gap-1 p-1 rounded-xl border">
+                    {["small", "medium", "large"].map((val) => (
+                        <button
+                        key={val}
+                        onClick={() =>
+                            updateSetting("legendSize", val)
+                        }
+                        className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
+                            settings.legendSize === val
+                            ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
+                        }`}
+                        >
+                        {val}
+                        </button>
+                    ))}
+                    </div>
+                </div>
+
+                {/* GAP */}
+                <div>
+                    <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
+                    Gap ({settings.legendGap}px)
+                    </label>
+
+                    <input
+                    type="range"
+                    min="0"
+                    max="40"
+                    value={settings.legendGap}
+                    onChange={(e) =>
+                        updateSetting("legendGap", Number(e.target.value))
+                    }
+                    className="w-full mt-2 accent-[rgb(var(--color-primary))]"
+                    />
+                </div>
+                </div>
+            )}
+            </div>
+  );
+}
+
+export default LegendSection;
