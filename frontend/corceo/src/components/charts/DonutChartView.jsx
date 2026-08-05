@@ -1,5 +1,16 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
+import {
+  getConditionalColor,
+} from "../../utils/conditionalFormatting";
 import {
   getYKey,
   getTotal,
@@ -11,42 +22,149 @@ function DonutChartView({
   settings = {},
   generatedColors = [],
   chartConfig = {},
+  onChartItemClick,
+  selectedChartValues = [],
 }) {
-  const fields = settings.tooltipFields || ["name", "value"];
+  const appearance =
+    chartConfig.appearance || {};
 
   const yKey = getYKey(chartConfig);
-  const total = getTotal(chartData, yKey);
+
+  const total = getTotal(
+    chartData,
+    yKey,
+  );
+
+  /*
+   * Sidebar values are percentages.
+   *
+   * Recharts accepts percentages such as:
+   * "55%"
+   * "80%"
+   */
+  const outerRadius = `${
+    appearance.outerRadius ?? 80
+  }%`;
+
+  const innerRadius = `${
+    appearance.innerRadius ?? 55
+  }%`;
+
+  const paddingAngle =
+    Number(
+      appearance.paddingAngle ?? 1,
+    );
+
+  const startAngle =
+    Number(
+      appearance.startAngle ?? 90,
+    );
+
+  /*
+   * Recharts draws clockwise when
+   * endAngle is lower than startAngle.
+   */
+  const endAngle =
+    startAngle - 360;
+
+  const chartOpacity =
+    Number(
+      appearance.opacity ?? 1,
+    );
 
   const renderLabel = (props) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, x, y, payload } = props;
-    const fontSize = settings.labelSize || 12;
+    const {
+      cx,
+      cy,
+      midAngle,
+      innerRadius:
+        calculatedInnerRadius,
+      outerRadius:
+        calculatedOuterRadius,
+      x,
+      y,
+      payload,
+    } = props;
+
+    const fontSize =
+      Number(
+        settings.labelSize ?? 12,
+      );
 
     let labelText = "";
 
-    if (settings.labelType === "name") {
-      labelText = payload.x;
-    } else if (settings.labelType === "percentage") {
-      const percent = getPercent(payload[yKey], total);
-      labelText = `${percent.toFixed(0)}%`;
+    if (
+      settings.labelType === "name"
+    ) {
+      labelText =
+        payload.x ?? "";
+    } else if (
+      settings.labelType ===
+      "percentage"
+    ) {
+      const percentage =
+        getPercent(
+          payload[yKey],
+          total,
+        );
+
+      labelText =
+        `${percentage.toFixed(
+          settings.decimalPlaces ?? 0,
+        )}%`;
     } else {
-      labelText = formatValue(payload[yKey], settings, total);
+      labelText =
+        formatValue(
+          payload[yKey],
+          settings,
+          total,
+        );
     }
 
-    if (settings.labelPosition === "inside") {
-      const RADIAN = Math.PI / 180;
-      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-      const posX = cx + radius * Math.cos(-midAngle * RADIAN);
-      const posY = cy + radius * Math.sin(-midAngle * RADIAN);
+    if (
+      settings.labelPosition ===
+      "inside"
+    ) {
+      const RADIAN =
+        Math.PI / 180;
+
+      const radius =
+        calculatedInnerRadius +
+        (
+          calculatedOuterRadius -
+          calculatedInnerRadius
+        ) *
+          0.5;
+
+      const positionX =
+        cx +
+        radius *
+          Math.cos(
+            -midAngle * RADIAN,
+          );
+
+      const positionY =
+        cy +
+        radius *
+          Math.sin(
+            -midAngle * RADIAN,
+          );
 
       return (
         <text
-          x={posX}
-          y={posY}
-          fill="#fff"
+          x={positionX}
+          y={positionY}
+          fill={
+            settings.labelColor ||
+            "#ffffff"
+          }
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={fontSize}
-          fontWeight={600}
+          fontWeight={
+            settings.labelWeight ??
+            600
+          }
         >
           {labelText}
         </text>
@@ -57,65 +175,192 @@ function DonutChartView({
       <text
         x={x}
         y={y}
-        fill="#333"
-        textAnchor={x > cx ? "start" : "end"}
+        fill={
+          settings.labelColor ||
+          "currentColor"
+        }
+        textAnchor={
+          x > cx
+            ? "start"
+            : "end"
+        }
         dominantBaseline="central"
         fontSize={fontSize}
+        fontWeight={
+          settings.labelWeight ??
+          500
+        }
       >
         {labelText}
       </text>
     );
   };
 
+  if (
+    !yKey ||
+    chartData.length === 0
+  ) {
+    return (
+      <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
+        Select a value field to display the donut chart.
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={chartData}
-          dataKey={yKey}
-          nameKey="x"
-          innerRadius={60}
-          outerRadius={120}
-          label={settings.showLabels !== false ? renderLabel : false}
-          labelLine={settings.labelPosition === "outside"}
-        >
-          {chartData.map((entry, index) => (
-            <Cell
-              key={index}
-              fill={generatedColors[index % generatedColors.length]}
-            />
-          ))}
-        </Pie>
-
-        <Tooltip
-          content={({ active, payload }) => {
-            if (!active || !payload?.length) return null;
-
-            const data = payload[0].payload;
-
-            return (
-              <div className="bg-white p-3 border shadow-md rounded">
-                {fields.includes("name") && (
-                  <p className="font-bold">{data.x}</p>
-                )}
-
-                {fields.includes("value") && (
-                  <p>
-                    Value: {formatValue(data[yKey], settings, total)}
-                  </p>
-                )}
-
-                {fields.includes("percentage") && (
-                  <p>
-                    Percent: {getPercent(data[yKey], total).toFixed(1)}%
-                  </p>
-                )}
-              </div>
-            );
+    <div className="h-full min-h-0 w-full">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+      >
+        <PieChart
+          margin={{
+            top: 20,
+            right: 30,
+            bottom: 20,
+            left: 30,
           }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+        >
+          <Pie
+            data={chartData}
+            dataKey={yKey}
+            nameKey="x"
+            innerRadius={
+              innerRadius
+            }
+            outerRadius={
+              outerRadius
+            }
+            paddingAngle={
+              paddingAngle
+            }
+            startAngle={
+              startAngle
+            }
+            endAngle={
+              endAngle
+            }
+            opacity={
+              chartOpacity
+            }
+            minAngle={
+              appearance.minSliceAngle ??
+              0
+            }
+            cornerRadius={
+              appearance.sliceRadius ??
+              0
+            }
+            stroke={
+              appearance.showSliceBorder ===
+              false
+                ? "none"
+                : appearance.sliceBorderColor ||
+                  "#ffffff"
+            }
+            strokeWidth={
+              appearance.showSliceBorder ===
+              false
+                ? 0
+                : appearance.sliceBorderWidth ??
+                  1
+            }
+            label={
+              settings.showLabels !==
+              false
+                ? renderLabel
+                : false
+            }
+            labelLine={
+              settings.showLabels !==
+                false &&
+              settings.labelPosition ===
+                "outside"
+            }
+            onClick={(data) => {
+              const clickedItem =
+                data?.payload ||
+                data;
+
+              onChartItemClick?.(
+                clickedItem,
+              );
+            }}
+            className={
+              onChartItemClick
+                ? "cursor-pointer"
+                : ""
+            }
+          >
+            {chartData.map(
+              (
+                entry,
+                index,
+              ) => {
+                const isSelected =
+                  selectedChartValues.length ===
+                    0 ||
+                  selectedChartValues.some(
+                    (selectedValue) =>
+                      String(
+                        selectedValue,
+                      ) ===
+                      String(
+                        entry.x,
+                      ),
+                  );
+
+                const fallbackColor =
+                  generatedColors[
+                    index %
+                      Math.max(
+                        generatedColors.length,
+                        1,
+                      )
+                  ] ||
+                  "#3b82f6";
+
+                return (
+                  <Cell
+                    key={`donut-cell-${entry.x}-${index}`}
+                      fill={getConditionalColor({
+                      entry,
+                      seriesKey: yKey,
+                      settings,
+                      fallbackColor:
+                        entry.color ||
+                        fallbackColor,
+                    })}
+                    opacity={
+                      isSelected
+                        ? chartOpacity
+                        : 0.25
+                    }
+                  />
+                );
+              },
+            )}
+          </Pie>
+
+          {settings.showTooltip !==
+            false && (
+            <Tooltip
+              content={
+                <CustomChartTooltip
+                  settings={
+                    settings
+                  }
+                  chartConfig={
+                    chartConfig
+                  }
+                  total={total}
+                />
+              }
+            />
+          )}
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

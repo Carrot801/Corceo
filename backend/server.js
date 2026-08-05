@@ -21,7 +21,7 @@ const userRoutes = require("./routes/user")
 app.use("/search", searchRoutes);
 app.use("/projects", projectsRoutes);
 app.use("/folders", foldersRoutes);
-app.use("/upload-csv", uploadRoutes);
+app.use("/upload-data", uploadRoutes);
 app.use("/auth", authRoutes);
 app.use("/data", dataRoutes);
 app.use("/charts", chartsRoutes);

@@ -7,12 +7,6 @@ const EXCEL_EXTENSIONS = [".xlsx", ".xls"];
 const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-/**
- * Returns a lowercase file extension, including the dot.
- *
- * Example:
- * "sales.xlsx" -> ".xlsx"
- */
 export function getFileExtension(filename = "") {
   const lastDot = filename.lastIndexOf(".");
 
@@ -23,9 +17,7 @@ export function getFileExtension(filename = "") {
   return filename.slice(lastDot).toLowerCase();
 }
 
-/**
- * Checks whether a value should be considered empty.
- */
+
 function isEmptyValue(value) {
   return (
     value === null ||
@@ -34,9 +26,6 @@ function isEmptyValue(value) {
   );
 }
 
-/**
- * Checks whether an object row contains only empty values.
- */
 function isEmptyRow(row) {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return true;
@@ -45,9 +34,7 @@ function isEmptyRow(row) {
   return Object.values(row).every(isEmptyValue);
 }
 
-/**
- * Converts special values into a safe form for the frontend and backend.
- */
+
 function normalizeValue(value) {
   if (value === null || value === undefined) {
     return "";
@@ -60,15 +47,7 @@ function normalizeValue(value) {
   return value;
 }
 
-/**
- * Creates safe and unique column names.
- *
- * Example:
- * ["Name", "Value", "Value", ""]
- *
- * becomes:
- * ["Name", "Value", "Value_2", "Column 4"]
- */
+
 export function createUniqueHeaders(headers = []) {
   const headerCounts = new Map();
 
@@ -89,14 +68,6 @@ export function createUniqueHeaders(headers = []) {
   });
 }
 
-/**
- * Normalizes rows so that:
- *
- * - empty rows are removed;
- * - every row contains the same columns;
- * - null and undefined values become empty strings;
- * - dates become ISO strings.
- */
 export function normalizeRows(rows, suppliedHeaders = null) {
   if (!Array.isArray(rows)) {
     return {
@@ -195,9 +166,7 @@ export function validateDataFile(file) {
   };
 }
 
-/**
- * Parses a CSV file.
- */
+
 export function parseCSV(file) {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -260,11 +229,7 @@ export function parseCSV(file) {
   });
 }
 
-/**
- * Reads an Excel workbook but does not yet select a sheet.
- *
- * The returned workbook is later used by parseExcelSheet().
- */
+
 export async function readExcelWorkbook(file) {
   try {
     const buffer = await file.arrayBuffer();
@@ -301,9 +266,7 @@ export async function readExcelWorkbook(file) {
   }
 }
 
-/**
- * Parses one selected Excel sheet.
- */
+
 export function parseExcelSheet(workbook, sheetName) {
   if (!workbook) {
     throw new Error("The Excel workbook is not loaded.");
@@ -321,11 +284,7 @@ export function parseExcelSheet(workbook, sheetName) {
     );
   }
 
-  /*
-   * header: 1 returns an array of arrays.
-   *
-   * This gives us more control over duplicate and missing headers.
-   */
+
   const matrix = XLSX.utils.sheet_to_json(worksheet, {
     header: 1,
     defval: "",
@@ -373,16 +332,6 @@ export function parseExcelSheet(workbook, sheetName) {
   };
 }
 
-/**
- * Main function used by the frontend.
- *
- * CSV files are parsed immediately.
- *
- * Excel files:
- * - with one sheet are parsed immediately;
- * - with multiple sheets return the workbook and sheet names,
- *   allowing the user to select a worksheet.
- */
 export async function parseDataFile(file) {
   const { extension, fileType } = validateDataFile(file);
 
@@ -418,9 +367,6 @@ export async function parseDataFile(file) {
   const { workbook, sheetNames } =
     await readExcelWorkbook(file);
 
-  /*
-   * Automatically parse an Excel workbook containing one sheet.
-   */
   if (sheetNames.length === 1) {
     const sheetName = sheetNames[0];
 
@@ -449,10 +395,8 @@ export async function parseDataFile(file) {
     };
   }
 
-  /*
-   * Multiple sheets exist, so the UI must ask the user
-   * which one should be imported.
-   */
+
+
   return {
     fileName: file.name,
     fileType: "excel",

@@ -8,7 +8,10 @@ export const defaultChartSettings = {
   palette: "Standard",
   extendPalette: false,
   paletteMode: "automatic",
-
+  conditionalFormatting: {
+      enabled: false,
+      rules: [],
+    },
   useCustomPalette: false,
   customPalette: [],
   extendCustomPalette: true,
@@ -25,7 +28,7 @@ export const defaultChartSettings = {
   legendFields: [],
 
   showTooltip: true,
-  tooltipFields: ["name", "value"],
+  tooltipFields: [],
   tooltipExtraFields: [],
   tooltipUseChartFormat: true,
 
@@ -34,7 +37,6 @@ export const defaultChartSettings = {
   showLabels: true,
   hideZeros: false,
 
-  tooltipFields: ["name", "value"],
 
   formatMode: "decimal",
   compactNumbers: false,

@@ -1,20 +1,61 @@
-function DropUpload({ uploadCSV }) {
+function DropUpload({
+  handleDataFile,
+  isUploadingFile = false,
+}) {
+  const handleDrop = async (event) => {
+    event.preventDefault();
 
-  const handleDrop = (e) => {
-    e.preventDefault();
+    if (isUploadingFile) {
+      return;
+    }
 
-    const file = e.dataTransfer.files[0];
+    const file =
+      event.dataTransfer.files?.[0];
 
-    uploadCSV(file);
+    if (!file) {
+      return;
+    }
+
+    if (
+      typeof handleDataFile !==
+      "function"
+    ) {
+      console.error(
+        "handleDataFile was not passed to DropUpload."
+      );
+      return;
+    }
+
+    try {
+      await handleDataFile(file);
+    } catch (error) {
+      console.error(
+        "File import failed:",
+        error
+      );
+    }
   };
 
   return (
     <div
       onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
-      className="w-full h-full flex items-center justify-center border-2 border-dashed text-slate-400"
+      onDragOver={(event) =>
+        event.preventDefault()
+      }
+      className="
+        flex
+        h-full
+        w-full
+        items-center
+        justify-center
+        border-2
+        border-dashed
+        text-slate-400
+      "
     >
-      Drop CSV file here
+      {isUploadingFile
+        ? "Importing..."
+        : "Drop CSV or Excel file here"}
     </div>
   );
 }

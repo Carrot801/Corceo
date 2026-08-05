@@ -4,9 +4,10 @@ function DataTable({
   data,
   setData,
   columns,
-  uploadCSV,
   setColumns,
   datasetId,
+  handleDataFile,
+  isUploadingFile = false,
 }) {
 
   const MIN_ROWS = 30;
@@ -205,14 +206,36 @@ const deleteColumn = async(columnName) => {
   const handleDragOver = (e) => {
     e.preventDefault();
   };
-  const handleDrop = (e) => {
-    e.preventDefault();
+const handleDrop = async (event) => {
+  event.preventDefault();
 
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
+  if (isUploadingFile) {
+    return;
+  }
 
-    uploadCSV(file);
-  };
+  const file =
+    event.dataTransfer.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  if (typeof handleDataFile !== "function") {
+    console.error(
+      "DataTable requires handleDataFile."
+    );
+    return;
+  }
+
+  try {
+    await handleDataFile(file);
+  } catch (error) {
+    console.error(
+      "File upload failed:",
+      error
+    );
+  }
+};
   
 useEffect(() => {
   const handleKeyDown = (e) => {
@@ -277,7 +300,12 @@ useEffect(() => {
 }, []);
 
   if (!data || data.length === 0 || !columns?.length) {
-    return <DropUpload uploadCSV={uploadCSV} />;
+  return (
+    <DropUpload
+      handleDataFile={handleDataFile}
+      isUploadingFile={isUploadingFile}
+    />
+  );
   }
   return (
     <div 

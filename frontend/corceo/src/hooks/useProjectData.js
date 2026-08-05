@@ -1,281 +1,831 @@
-import { useEffect, useState } from "react";
-import Papa from "papaparse";
-import * as XLSX from "xlsx";
-function useProjectData(id) {
-    const MIN_ROWS = 30;
-    const [columns, setColumns] = useState([
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    ]);
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
-    const [data, setData] = useState(() => {
-    const cols = columns;
+import { parseDataFile, parseExcelSheet } from "../hooks/fileParser";
 
-    const emptyRows = Array.from({ length: MIN_ROWS }, () => {
-        const row = {};
-        cols.forEach(c => (row[c] = ""));
-        return row;
-    });
+const API_URL = "http://localhost:5000";
 
-    return emptyRows;
-    });
-    const applyCSV = (rows) => {
-        if (!rows?.length) return;
+const DEFAULT_COLUMNS = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+];
 
-        const cols = Object.keys(rows[0]);
+const MIN_ROWS = 30;
 
-        const normalized = rows.map(row => {
-            const clean = {};
-            cols.forEach(c => {
-            clean[c] = row?.[c] ?? "";
-            });
-            return clean;
-        });
+function createEmptyRows(
+  columns = DEFAULT_COLUMNS,
+  count = MIN_ROWS
+) {
+  return Array.from(
+    { length: count },
+    () => {
+      const row = {};
 
-        setColumns(cols);
-        setData(normalized);
-    };
-    const resetSheet = (rows, cols) => {
-    const normalized = rows.map(row => {
-        const clean = {};
-        cols.forEach(c => {
-        clean[c] = row?.[c] ?? "";
-        });
-        return clean;
-    });
+      columns.forEach((column) => {
+        row[column] = "";
+      });
 
-    setColumns(cols);
-    setData(normalized);
-    };
-
-    const [datasetId, setDatasetId] = useState(null);
-
-    const [savedChart, setSavedChart] = useState(null);
-
-    const loadChart = async () => {
-    try {
-        const res = await fetch(
-        `http://localhost:5000/charts?project_id=${id}`,
-            {
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                }
-            }
-        );
-
-        const chart = await res.json();
-
-        if (!chart || Object.keys(chart).length === 0) {
-        setSavedChart(null);
-        return;
-        }
-
-        setSavedChart(chart);
-    } catch (err) {
-        console.error(err);
+      return row;
     }
-    };
+  );
+}
+
+function getReturnedDatasetId(responseData) {
+  return (
+    responseData?.datasetId ??
+    responseData?.dataset_id ??
+    responseData?.id ??
+    responseData?.dataset?.id ??
+    null
+  );
+}
 
 
-  const loadProject = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/data/datasets?project_id=${id}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          }
+function useProjectData(id) {
+  const [columns, setColumns] = useState(
+    DEFAULT_COLUMNS
+  );
+
+  const [data, setData] = useState(() =>
+    createEmptyRows()
+  );
+
+  const [datasetId, setDatasetId] =
+    useState(null);
+
+  const [savedChart, setSavedChart] =
+    useState(null);
+
+  const [isLoadingProject, setIsLoadingProject] =
+    useState(false);
+
+  const [isUploadingFile, setIsUploadingFile] =
+    useState(false);
+
+  const [isSavingDataset, setIsSavingDataset] =
+    useState(false);
+
+  const [error, setError] = useState("");
+
+  const [excelImport, setExcelImport] =
+    useState({
+      isOpen: false,
+      fileName: "",
+      workbook: null,
+      sheetNames: [],
+      selectedSheet: "",
+    });
+
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem("token");
+
+    return token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {};
+  }, []);
+  
+
+  const clearError = useCallback(() => {
+    setError("");
+  }, []);
+
+  const resetEmptySheet = useCallback(() => {
+    setColumns(DEFAULT_COLUMNS);
+    setData(createEmptyRows(DEFAULT_COLUMNS));
+    setDatasetId(null);
+  }, []);
+
+  const applyRows = useCallback(
+    (
+      rows,
+      suppliedColumns = null,
+      padToMinimum = false
+    ) => {
+      const safeRows = Array.isArray(rows)
+        ? rows
+        : [];
+
+      const detectedColumns =
+        Array.isArray(suppliedColumns) &&
+        suppliedColumns.length > 0
+          ? suppliedColumns
+          : safeRows.length > 0
+            ? Object.keys(safeRows[0])
+            : DEFAULT_COLUMNS;
+
+      const normalizedRows = safeRows.map(
+        (row) => {
+          const normalizedRow = {};
+
+          detectedColumns.forEach(
+            (column) => {
+              normalizedRow[column] =
+                row?.[column] ?? "";
+            }
+          );
+
+          return normalizedRow;
         }
       );
 
-      const dataset = await res.json();
+      if (
+        padToMinimum &&
+        normalizedRows.length < MIN_ROWS
+      ) {
+        const missingRows =
+          MIN_ROWS - normalizedRows.length;
+
+        normalizedRows.push(
+          ...createEmptyRows(
+            detectedColumns,
+            missingRows
+          )
+        );
+      }
+
+      setColumns(detectedColumns);
+      setData(normalizedRows);
+    },
+    []
+  );
+
+  const readJsonResponse = async (
+    response,
+    fallbackMessage
+  ) => {
+    const responseData =
+      await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        responseData?.message ??
+          responseData?.error ??
+          fallbackMessage
+      );
+    }
+
+    return responseData;
+  };
+
+  const loadProject = useCallback(
+    async (signal) => {
+      const datasetResponse = await fetch(
+        `${API_URL}/data/datasets?project_id=${id}`,
+        {
+          headers: getAuthHeaders(),
+          signal,
+        }
+      );
+
+      if (datasetResponse.status === 404) {
+        resetEmptySheet();
+        return;
+      }
+
+      const dataset = await readJsonResponse(
+        datasetResponse,
+        "Could not load the project dataset."
+      );
 
       if (!dataset?.id) {
+        resetEmptySheet();
         return;
       }
 
       setDatasetId(dataset.id);
 
-      const rowsRes = await fetch(
-        `http://localhost:5000/data/rows?dataset_id=${dataset.id}`,
+      const rowsResponse = await fetch(
+        `${API_URL}/data/rows?dataset_id=${dataset.id}`,
         {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          }
+          headers: getAuthHeaders(),
+          signal,
         }
       );
 
-      const rows = await rowsRes.json();
+      const rows = await readJsonResponse(
+        rowsResponse,
+        "Could not load dataset rows."
+      );
 
-      setData(rows);
-
-      if (rows.length > 0) {
-        setColumns(Object.keys(rows[0]));
+      if (
+        !Array.isArray(rows) ||
+        rows.length === 0
+      ) {
+        setColumns(DEFAULT_COLUMNS);
+        setData(createEmptyRows(DEFAULT_COLUMNS));
+        return;
       }
 
-    } catch (err) {
-      console.error(err);
-    }
-  };
-const uploadCSV = async (file) => {
-  if (!file) return;
+      applyRows(
+        rows,
+        Object.keys(rows[0]),
+        true
+      );
+    },
+    [
+      id,
+      getAuthHeaders,
+      resetEmptySheet,
+      applyRows,
+    ]
+  );
 
-  const isCSV =
-    file.name.endsWith(".csv") ||
-    file.type === "text/csv";
+  // ===================================
+  // LOAD CHART
+  // ===================================
+  const loadChart = useCallback(
+    async (signal) => {
+      const response = await fetch(
+        `${API_URL}/charts?project_id=${id}`,
+        {
+          headers: getAuthHeaders(),
+          signal,
+        }
+      );
 
-  const isXLSX =
-    file.name.endsWith(".xlsx") ||
-    file.name.endsWith(".xls");
+      if (response.status === 404) {
+        setSavedChart(null);
+        return;
+      }
 
-  try {
-    let rows = [];
-    if (isCSV) {
-      rows = await new Promise((resolve, reject) => {
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (result) => resolve(result.data),
-          error: (err) => reject(err),
-        });
-      });
-    }
-    else if (isXLSX) {
-      const data = await file.arrayBuffer();
+      const chart = await readJsonResponse(
+        response,
+        "Could not load the saved chart."
+      );
 
-      const workbook = XLSX.read(data, {
-        type: "array",
-      });
+      if (
+        !chart ||
+        typeof chart !== "object" ||
+        Object.keys(chart).length === 0
+      ) {
+        setSavedChart(null);
+        return;
+      }
 
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+      setSavedChart(chart);
+    },
+    [id, getAuthHeaders]
+  );
 
-      rows = XLSX.utils.sheet_to_json(sheet, {
-        defval: "",
-      });
-    }
-    else {
-      alert("Unsupported file type");
+  // ===================================
+  // INITIAL LOAD
+  // ===================================
+  useEffect(() => {
+    if (!id) {
+      resetEmptySheet();
+      setSavedChart(null);
       return;
     }
 
-    if (!rows.length) return;
+    const controller =
+      new AbortController();
 
+    const initializeProject = async () => {
+      setIsLoadingProject(true);
+      setError("");
+
+      try {
+        await Promise.all([
+          loadProject(controller.signal),
+          loadChart(controller.signal),
+        ]);
+      } catch (loadError) {
+        if (
+          loadError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        console.error(
+          "Project loading failed:",
+          loadError
+        );
+
+        setError(
+          loadError.message ??
+            "Could not load the project."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingProject(false);
+        }
+      }
+    };
+
+    initializeProject();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    id,
+    loadProject,
+    loadChart,
+    resetEmptySheet,
+  ]);
+
+  // ===================================
+  // UPLOAD PARSED ROWS
+  // ===================================
+const uploadData = async (
+  rows,
+  uploadedColumns = null,
+  metadata = {}
+) => {
+  if (!id) {
+    throw new Error("No project selected.");
+  }
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("There are no rows to upload.");
+  }
+
+  const columnsToUpload =
+    Array.isArray(uploadedColumns) &&
+    uploadedColumns.length > 0
+      ? uploadedColumns
+      : Object.keys(rows[0] ?? {});
+
+  const requestBody = {
+    project_id: Number(id),
+    rows,
+
+    // Keep these only if your backend accepts them.
+    columns: columnsToUpload,
+    file_name: metadata.fileName ?? null,
+    file_type: metadata.fileType ?? null,
+    sheet_name: metadata.sheetName ?? null,
+  };
+
+  console.log("UPLOAD DATA REQUEST:", requestBody);
+
+  try {
     const response = await fetch(
-      "http://localhost:5000/upload-csv",
+      `${API_URL}/upload-data`,
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          project_id: id,
-          rows,
-        }),
+
+        body: JSON.stringify(requestBody),
       }
     );
 
-    const savedDataset = await response.json();
-    setDatasetId(savedDataset.datasetId);
+    const responseText = await response.text();
 
-    const cols = Object.keys(rows[0]);
+    console.log(
+      "UPLOAD DATA STATUS:",
+      response.status
+    );
 
-    resetSheet(rows, cols);
-  } catch (err) {
-    console.error("Upload failed:", err);
-  }
-};
+    console.log(
+      "UPLOAD DATA RESPONSE:",
+      responseText
+    );
 
+    let savedDataset = null;
 
-const saveDataset = async () => {
-  try {
-    const response = await fetch("http://localhost:5000/data/save_dataset", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        project_id: id,
-        rows: data,
-      }),
-    });
-
-    const saved = await response.json();
-
-    if (saved.datasetId) {
-      setDatasetId(saved.datasetId);
+    if (responseText) {
+      try {
+        savedDataset = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          `The backend returned invalid JSON: ${responseText}`
+        );
+      }
     }
 
-    return saved;
-  } catch (err) {
-    console.error(err);
+    if (!response.ok) {
+      throw new Error(
+        savedDataset?.message ??
+          savedDataset?.error ??
+          `Upload failed with status ${response.status}.`
+      );
+    }
+
+    const newDatasetId =
+      getReturnedDatasetId(savedDataset);
+
+    if (!newDatasetId) {
+      console.error(
+        "Unexpected backend response:",
+        savedDataset
+      );
+
+      throw new Error(
+        "Upload succeeded, but the backend did not return a dataset ID."
+      );
+    }
+
+    setDatasetId(newDatasetId);
+
+    applyRows(
+      rows,
+      columnsToUpload,
+      true
+    );
+
+    return {
+      ...savedDataset,
+      id: newDatasetId,
+      datasetId: newDatasetId,
+    };
+  } catch (uploadError) {
+    console.error(
+      "Dataset upload failed:",
+      uploadError
+    );
+
+    setError(
+      uploadError.message ??
+        "Could not upload the dataset."
+    );
+
+    throw uploadError;
   }
 };
 
-    const saveChartToBackend = async (chart) => {
-        console.log("SENDING:", chart);
-  
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            throw new Error("No token found");
+  // ===================================
+  // SELECT CSV OR EXCEL FILE
+  // ===================================
+  const handleDataFile = async (file) => {
+    if (!file) {
+      return null;
+    }
+
+    setIsUploadingFile(true);
+    setError("");
+
+    try {
+      const parsedFile =
+        await parseDataFile(file);
+
+      if (
+        parsedFile.requiresSheetSelection
+      ) {
+        setExcelImport({
+          isOpen: true,
+          fileName: parsedFile.fileName,
+          workbook: parsedFile.workbook,
+          sheetNames:
+            parsedFile.sheetNames,
+          selectedSheet:
+            parsedFile.sheetNames[0] ??
+            "",
+        });
+
+        return parsedFile;
+      }
+
+      const savedDataset =
+        await uploadData(
+          parsedFile.rows,
+          parsedFile.columns,
+          {
+            fileName:
+              parsedFile.fileName,
+            fileType:
+              parsedFile.fileType,
+            sheetName:
+              parsedFile.sheetName,
+          }
+        );
+
+      return {
+        ...parsedFile,
+        savedDataset,
+      };
+    } catch (fileError) {
+      console.error(
+        "File import failed:",
+        fileError
+      );
+
+      setError(
+        fileError.message ??
+          "Could not import the file."
+      );
+
+      throw fileError;
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  // ===================================
+  // EXCEL SHEET SELECTION
+  // ===================================
+  const selectExcelSheet = (
+    sheetName
+  ) => {
+    setExcelImport(
+      (currentImport) => ({
+        ...currentImport,
+        selectedSheet: sheetName,
+      })
+    );
+  };
+
+  const cancelExcelImport = () => {
+    setExcelImport({
+      isOpen: false,
+      fileName: "",
+      workbook: null,
+      sheetNames: [],
+      selectedSheet: "",
+    });
+  };
+
+  const confirmExcelSheet = async () => {
+    const {
+      workbook,
+      selectedSheet,
+      fileName,
+    } = excelImport;
+
+    if (!workbook) {
+      const message =
+        "The Excel workbook is not loaded.";
+
+      setError(message);
+      throw new Error(message);
+    }
+
+    if (!selectedSheet) {
+      const message =
+        "Select an Excel worksheet.";
+
+      setError(message);
+      throw new Error(message);
+    }
+
+    setIsUploadingFile(true);
+    setError("");
+
+    try {
+      const parsedSheet =
+        parseExcelSheet(
+          workbook,
+          selectedSheet
+        );
+
+      const savedDataset =
+        await uploadData(
+          parsedSheet.rows,
+          parsedSheet.columns,
+          {
+            fileName,
+            fileType: "excel",
+            sheetName:
+              selectedSheet,
+          }
+        );
+
+      cancelExcelImport();
+
+      return savedDataset;
+    } catch (sheetError) {
+      console.error(
+        "Worksheet import failed:",
+        sheetError
+      );
+
+      setError(
+        sheetError.message ??
+          "Could not import the worksheet."
+      );
+
+      throw sheetError;
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  // ===================================
+  // REMOVE COMPLETELY EMPTY ROWS
+  // ===================================
+  const getRowsForSaving = () => {
+    return data.filter((row) =>
+      Object.values(row ?? {}).some(
+        (value) =>
+          String(value ?? "").trim() !==
+          ""
+      )
+    );
+  };
+
+  // ===================================
+  // SAVE DATASET
+  // ===================================
+  const saveDataset = async () => {
+    if (!id) {
+      throw new Error(
+        "No project selected."
+      );
+    }
+
+    const rowsToSave =
+      getRowsForSaving();
+
+    if (rowsToSave.length === 0) {
+      throw new Error(
+        "There is no data to save."
+      );
+    }
+
+    setIsSavingDataset(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/data/save_dataset`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+            ...getAuthHeaders(),
+          },
+
+          body: JSON.stringify({
+            project_id: id,
+            dataset_id: datasetId,
+            columns,
+            rows: rowsToSave,
+          }),
         }
-            const response = await fetch(
-            "http://localhost:5000/charts",
-                {
-                    method: "POST",
-                    headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                    project_id: id,
-                    dataset_id: datasetId,
-                    ...chart,
-                    }),
-                }
-            );
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Server Error Response:", errorText);
-                throw new Error("Server responded with an error");
-            }
-            const savedChart = await response.json();
-            setSavedChart(savedChart);
+      );
 
-            return savedChart;
+      const savedDataset =
+        await readJsonResponse(
+          response,
+          "Could not save the dataset."
+        );
 
-        } catch (err) {
-            console.error(err);
+      const savedDatasetId =
+        getReturnedDatasetId(
+          savedDataset
+        );
+
+      if (!savedDatasetId) {
+        throw new Error(
+          "The backend did not return a dataset ID."
+        );
+      }
+
+      setDatasetId(savedDatasetId);
+
+      return {
+        ...savedDataset,
+        id: savedDatasetId,
+        datasetId: savedDatasetId,
+      };
+    } catch (saveError) {
+      console.error(
+        "Dataset saving failed:",
+        saveError
+      );
+
+      setError(
+        saveError.message ??
+          "Could not save the dataset."
+      );
+
+      throw saveError;
+    } finally {
+      setIsSavingDataset(false);
+    }
+  };
+
+  // ===================================
+  // SAVE CHART
+  // ===================================
+  const saveChartToBackend = async (
+    chart
+  ) => {
+    if (!id) {
+      throw new Error(
+        "No project selected."
+      );
+    }
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error(
+        "No authentication token found."
+      );
+    }
+
+    const chartDatasetId =
+      chart?.dataset_id ??
+      datasetId;
+
+    if (!chartDatasetId) {
+      throw new Error(
+        "Save the dataset before saving the chart."
+      );
+    }
+
+    const requestBody = {
+      ...chart,
+      project_id: id,
+      dataset_id: chartDatasetId,
+    };
+
+    console.log(
+      "SENDING CHART:",
+      requestBody
+    );
+
+    try {
+      const response = await fetch(
+        `${API_URL}/charts`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(
+            requestBody
+          ),
         }
-    };
-    useEffect(() => {
-    if (!id) return;
+      );
 
-    const init = async () => {
-        await loadProject();
-        await loadChart();
-    };
+      const savedChartResponse =
+        await readJsonResponse(
+          response,
+          "Could not save the chart."
+        );
 
-    init();
-    }, [id]);
+      setSavedChart(
+        savedChartResponse
+      );
+
+      return savedChartResponse;
+    } catch (chartError) {
+      console.error(
+        "Chart saving failed:",
+        chartError
+      );
+
+      setError(
+        chartError.message ??
+          "Could not save the chart."
+      );
+
+      throw chartError;
+    }
+  };
 
   return {
     data,
     setData,
-    setColumns,
+
     columns,
+    setColumns,
+
     datasetId,
-    uploadCSV,
-    saveDataset,
     savedChart,
+
+    isLoadingProject,
+    isUploadingFile,
+    isSavingDataset,
+
+    error,
+    clearError,
+
+    handleDataFile,
+    uploadData,
+
+    excelImport,
+    selectExcelSheet,
+    confirmExcelSheet,
+    cancelExcelImport,
+
+    saveDataset,
     saveChartToBackend,
+
   };
 }
 

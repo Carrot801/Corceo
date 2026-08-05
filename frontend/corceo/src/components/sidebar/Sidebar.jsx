@@ -21,6 +21,7 @@ import AppearanceSection from "./sections/AppearanceSection";
 import TooltipSection from "./sections/TooltipSection";
 import LegendSection from "./sections/LegendSection";
 import ValueFormattingSection from "./sections/ValueFormattingSection";
+import ConditionalFormattingSection from "./sections/ConditionalFormattingSection";
 
 function Sidebar({
   settings,
@@ -183,6 +184,13 @@ function Sidebar({
         updateSetting={updateSetting}
       />
 
+      <ConditionalFormattingSection
+        {...sharedSectionProps}
+        settings={settings}
+        updateSetting={updateSetting}
+        chartConfig={chartConfig}
+      />
+
       <ChartTypeSection
         {...sharedSectionProps}
         settings={settings}
@@ -202,6 +210,7 @@ function Sidebar({
         {...sharedSectionProps}
         settings={settings}
         updateSetting={updateSetting}
+        chartConfig={chartConfig}
         handleDropTooltipField={
           handleDropTooltipField
         }

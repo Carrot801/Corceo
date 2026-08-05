@@ -12,6 +12,10 @@ import {
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
+import {
+  getConditionalColor,
+} from "../../utils/conditionalFormatting";
+
 
 function BarChartView({
   chartData,
@@ -196,7 +200,7 @@ const hasValidRange =
 const yMin =
   hasValidRange && rawYMin !== null
     ? rawYMin
-    : "auto";
+    : 0;
 
 const yMax =
   hasValidRange && rawYMax !== null
@@ -429,19 +433,22 @@ const yDomainMax =
                   ) => (
                     <Cell
                       key={`${key}-bar-cell-${rowIndex}`}
+                      fill={getConditionalColor({
+                        entry,
+                        seriesKey: key,
+                        settings,
 
-                      fill={
-                        entry.color ||
-                        generatedColors[
-                          seriesIndex %
-                            Math.max(
-                              generatedColors.length,
-                              1
-                            )
-                        ] ||
-                        "#3b82f6"
-                      }
-
+                        fallbackColor:
+                          entry.color ||
+                          generatedColors[
+                            seriesIndex %
+                              Math.max(
+                                generatedColors.length,
+                                1
+                              )
+                          ] ||
+                          "#3b82f6",
+                      })}
                       opacity={
                         selectedChartValues.length ===
                           0 ||

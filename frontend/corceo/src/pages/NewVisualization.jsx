@@ -37,7 +37,6 @@ const chartResizeRef = useRef({
     datasetId,
     savedChart,
 
-    uploadCSV,
     saveDataset,
     saveChartToBackend,
 
@@ -54,22 +53,6 @@ const chartResizeRef = useRef({
   } = useProjectData(id);
 
 
-const handleFileChange = async (event) => {
-  const file = event.target.files?.[0];
-
-  if (!file) {
-    return;
-  }
-
-  try {
-    await handleDataFile(file);
-  } catch (error) {
-    console.error("File import failed:", error);
-  } finally {
-    // Allows the same file to be selected again.
-    event.target.value = "";
-  }
-};
 
 const removeFieldFromAxis = (axis, field) => {
   setChartConfig((prev) => {
@@ -268,25 +251,41 @@ const setChartHeight = (
 
   const isMultiYChart = multiYCharts.includes(chartConfig.type);
 
-const createExportImage = async (
-  pixelRatio = 2
-) => {
-  const node = exportChartRef.current;
 
-  if (!node) {
-    return null;
-  }
-
+const waitForExportRender = async () => {
   await document.fonts?.ready;
 
   await new Promise((resolve) => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(resolve);
+      requestAnimationFrame(() => {
+        setTimeout(resolve, 150);
+      });
     });
   });
+};
 
-  const width = Math.ceil(node.scrollWidth);
-  const height = Math.ceil(node.scrollHeight);
+const createSafeFileName = (value) => {
+  const safeName = String(value || "chart")
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+    .replace(/\s+/g, " ");
+
+  return safeName || "chart";
+};
+
+const createExportImage = async (pixelRatio = 2) => {
+  const node = exportChartRef.current;
+
+  if (!node) {
+    throw new Error(
+      "The export chart element was not found."
+    );
+  }
+
+  await waitForExportRender();
+
+  const width = 1400;
+  const height = 900;
 
   return toPng(node, {
     cacheBust: true,
@@ -296,70 +295,74 @@ const createExportImage = async (
     height,
     canvasWidth: width * pixelRatio,
     canvasHeight: height * pixelRatio,
+
     style: {
       width: `${width}px`,
       height: `${height}px`,
+      minWidth: `${width}px`,
+      minHeight: `${height}px`,
+      maxWidth: "none",
       maxHeight: "none",
-      overflow: "visible",
+      overflow: "hidden",
       transform: "none",
+      backgroundColor: "#ffffff",
+    },
+
+    filter: (element) => {
+      return !element?.classList?.contains(
+        "no-export"
+      );
     },
   });
 };
 
 
-  const exportPNG = async () => {
-  const node = exportChartRef.current;
-
-  if (!node) {
-    console.error("Export chart element was not found.");
-    return;
-  }
-
+const exportPNG = async () => {
   try {
-    await document.fonts?.ready;
+    if (!chartConfig.x) {
+      throw new Error(
+        "Select a field for the X axis before exporting."
+      );
+    }
 
-    // Give Recharts time to measure the hidden 1400px version.
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(resolve);
-      });
-    });
+    if (
+      !Array.isArray(chartConfig.y) ||
+      chartConfig.y.length === 0
+    ) {
+      throw new Error(
+        "Select at least one field for the Y axis before exporting."
+      );
+    }
 
-    const width = Math.ceil(node.scrollWidth);
-    const height = Math.ceil(node.scrollHeight);
+    if (
+      !Array.isArray(chartData) ||
+      chartData.length === 0
+    ) {
+      throw new Error(
+        "There is no chart data to export."
+      );
+    }
 
-    const dataUrl = await toPng(node, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "#ffffff",
-      width,
-      height,
-      canvasWidth: width * 2,
-      canvasHeight: height * 2,
-      style: {
-        width: `${width}px`,
-        height: `${height}px`,
-        maxHeight: "none",
-        overflow: "visible",
-        transform: "none",
-      },
-
-      // Extra protection if editor-only elements ever enter the export node.
-      filter: (element) => {
-        return !element?.classList?.contains(
-          "no-export"
-        );
-      },
-    });
+    const dataUrl = await createExportImage(2);
 
     const link = document.createElement("a");
-    link.download = `${
-      settings.title?.trim() || "chart"
-    }.png`;
+
+    link.download = `${createSafeFileName(
+      settings.title
+    )}.png`;
+
     link.href = dataUrl;
+
+    document.body.appendChild(link);
     link.click();
+    link.remove();
   } catch (error) {
     console.error("Export failed:", error);
+
+    alert(
+      error.message ||
+        "The chart could not be exported."
+    );
   }
 };
 
@@ -596,31 +599,72 @@ const handleDropAxis = (axis) => (e) => {
 
   
 const isUsed = (col) =>
-  col === chartConfig.x || chartConfig.y.includes(col);
+  col === chartConfig.x ||
+  (
+    Array.isArray(chartConfig.y) &&
+    chartConfig.y.includes(col)
+  );
 
- const saveChart = async () => {
+  const validateChartBeforeSave = () => {
+    if (!chartConfig.x) {
+      throw new Error("Select a field for the X axis.");
+    }
+
+    if (
+      !Array.isArray(chartConfig.y) ||
+      chartConfig.y.length === 0
+    ) {
+      throw new Error(
+        "Select at least one field for the Y axis."
+      );
+    }
+  };
+
+  const saveChart = async () => {
   let base64Image = null;
 
   try {
-    base64Image = await createExportImage(1);
+    base64Image =
+      await createExportImage(1);
   } catch (error) {
     console.error(
-      "Failed to generate background preview image:",
+      "Could not create preview:",
       error
     );
   }
 
-  await saveDataset();
+  try {
+    const savedDataset =
+      await saveDataset();
 
-  await saveChartToBackend({
-    dataset_id: datasetId,
-    chart_type: chartConfig.type,
-    x_axis: chartConfig.x,
-    y_axis: JSON.stringify(chartConfig.y),
-    settings,
-    chart_config: chartConfig,
-    image_data: base64Image,
-  });
+    await saveChartToBackend({
+      dataset_id:
+        savedDataset.datasetId,
+
+      chart_type:
+        chartConfig.type,
+
+      x_axis:
+        chartConfig.x,
+
+      y_axis:
+        JSON.stringify(
+          chartConfig.y
+        ),
+
+      settings,
+      chart_config:
+        chartConfig,
+
+      image_data:
+        base64Image,
+    });
+  } catch (error) {
+    console.error(
+      "Save chart failed:",
+      error
+    );
+  }
 };
 const handleChartItemClick = (item) => {
   const clickedValue = item?.x;
@@ -724,29 +768,48 @@ useEffect(() => {
     })
   );
 }, [chartConfig.dateHierarchySource, columns, data.length]);
-  const publishChart = async () => {
+  
+const publishChart = async () => {
   try {
-    await saveDataset();
+    const savedDataset =
+      await saveDataset();
 
-    const saved = await saveChartToBackend({
-      dataset_id: datasetId,
-      chart_type: chartConfig.type,
-      x_axis: chartConfig.x,
-      y_axis: JSON.stringify(chartConfig.y),
+    const saved =
+      await saveChartToBackend({
+        dataset_id:
+          savedDataset.datasetId,
 
-      settings,
+        chart_type:
+          chartConfig.type,
 
-      chart_config: chartConfig,
-    });
+        x_axis:
+          chartConfig.x,
+
+        y_axis:
+          JSON.stringify(
+            chartConfig.y
+          ),
+
+        settings,
+        chart_config:
+          chartConfig,
+      });
 
     if (!saved?.id) {
-      alert("Failed to publish chart");
+      alert(
+        "Failed to publish chart."
+      );
       return;
     }
 
-    navigate(`/published/${saved.id}`);
+    navigate(
+      `/published/${saved.id}`
+    );
   } catch (error) {
-    console.error("Publish failed:", error);
+    console.error(
+      "Publish failed:",
+      error
+    );
   }
 };
 
@@ -1030,6 +1093,8 @@ useEffect(() => {
   );
 }, [chartHeight, id]);
 
+
+
   return (
     <>
     <Header/>
@@ -1165,8 +1230,7 @@ useEffect(() => {
           columns={columns}
           setColumns={setColumns}
           datasetId={datasetId}
-          uploadCSV={uploadCSV}
-          handleFileChange={handleFileChange}
+          handleDataFile={handleDataFile}
           isUploadingFile={isUploadingFile}
         />
       ) : (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function DataTable({
   data,
@@ -6,72 +6,183 @@ function DataTable({
   columns,
   setColumns,
   datasetId,
-  uploadCSV,
-  handleFileChange,
-  isUploadingFile,
+
+  // Handles raw CSV, XLS, and XLSX files.
+  handleDataFile,
+
+  isUploadingFile = false,
+
+  // Optional chart-related props.
+  setChartConfig = null,
+  enableDrag = false,
+  compactMode = false,
 }) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  // -----------------------------------
-  // CSV DROP
-  // -----------------------------------
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    setIsDraggingFile(false);
+  const fileInputRef = useRef(null);
 
-    const file = e.dataTransfer.files[0];
+  // -----------------------------------
+  // FILE VALIDATION
+  // -----------------------------------
+  const isSupportedFile = (file) => {
+    if (!file?.name) {
+      return false;
+    }
 
-    if (!file || file.type !== "text/csv") {
-      alert("Please drop a valid CSV file");
+    const extension = file.name
+      .slice(file.name.lastIndexOf("."))
+      .toLowerCase();
+
+    return [".csv", ".xls", ".xlsx"].includes(extension);
+  };
+
+  // -----------------------------------
+  // PROCESS SELECTED OR DROPPED FILE
+  // -----------------------------------
+  const processFile = async (file) => {
+    if (!file) {
       return;
     }
 
-    if (uploadCSV) {
-      await uploadCSV(file);
+    if (!isSupportedFile(file)) {
+      alert("Please select a CSV, XLS, or XLSX file.");
+      return;
+    }
+
+    if (!handleDataFile) {
+      console.error(
+        "DataTable requires a handleDataFile function."
+      );
+      return;
+    }
+
+    try {
+      await handleDataFile(file);
+    } catch (error) {
+      console.error("File import failed:", error);
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDraggingFile(true);
+  // -----------------------------------
+  // FILE INPUT
+  // -----------------------------------
+  const handleInputChange = async (event) => {
+    const file = event.target.files?.[0];
+
+    try {
+      await processFile(file);
+    } finally {
+      // Allows selecting the same file again.
+      event.target.value = "";
+    }
   };
 
-  const handleDragLeave = () => {
+  // -----------------------------------
+  // FILE DROP
+  // -----------------------------------
+  const handleDrop = async (event) => {
+    event.preventDefault();
+    setIsDraggingFile(false);
+
+    if (isUploadingFile) {
+      return;
+    }
+
+    const file = event.dataTransfer.files?.[0];
+
+    await processFile(file);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+
+    if (!isUploadingFile) {
+      setIsDraggingFile(true);
+    }
+  };
+
+  const handleDragLeave = (event) => {
+    /*
+     * Prevents flickering when moving over child elements.
+     */
+    if (
+      event.currentTarget.contains(
+        event.relatedTarget
+      )
+    ) {
+      return;
+    }
+
     setIsDraggingFile(false);
   };
 
   // -----------------------------------
   // COLUMN RENAME
   // -----------------------------------
-  const handleColumnRename = (index, value) => {
-    const oldColumn = columns[index];
+  const handleColumnRename = (
+    index,
+    newColumnName
+  ) => {
+    const oldColumnName = columns[index];
+    const trimmedName = newColumnName.trim();
 
-    if (!value || value === oldColumn) return;
+    if (
+      !trimmedName ||
+      trimmedName === oldColumnName
+    ) {
+      return;
+    }
 
-    // update columns
+    const duplicateExists = columns.some(
+      (column, columnIndex) =>
+        columnIndex !== index &&
+        column === trimmedName
+    );
+
+    if (duplicateExists) {
+      alert(
+        `A column named "${trimmedName}" already exists.`
+      );
+      return;
+    }
+
     const updatedColumns = [...columns];
-    updatedColumns[index] = value;
+    updatedColumns[index] = trimmedName;
 
-    // update data rows
     const updatedData = data.map((row) => {
-      const newRow = { ...row };
+      const updatedRow = {};
 
-      newRow[value] = newRow[oldColumn];
+      columns.forEach((column) => {
+        if (column === oldColumnName) {
+          updatedRow[trimmedName] =
+            row[oldColumnName] ?? "";
+        } else {
+          updatedRow[column] = row[column] ?? "";
+        }
+      });
 
-      delete newRow[oldColumn];
-
-      return newRow;
+      return updatedRow;
     });
 
     setColumns(updatedColumns);
     setData(updatedData);
 
-    // update chart config if needed
     if (setChartConfig) {
-      setChartConfig((prev) => ({
-        ...prev,
-        x: prev.x === oldColumn ? value : prev.x,
-        y: prev.y === oldColumn ? value : prev.y,
+      setChartConfig((previousConfig) => ({
+        ...previousConfig,
+
+        x:
+          previousConfig.x === oldColumnName
+            ? trimmedName
+            : previousConfig.x,
+
+        y: Array.isArray(previousConfig.y)
+          ? previousConfig.y.map((field) =>
+              field === oldColumnName
+                ? trimmedName
+                : field
+            )
+          : [],
       }));
     }
   };
@@ -79,15 +190,21 @@ function DataTable({
   // -----------------------------------
   // CELL EDITING
   // -----------------------------------
-  const handleCellChange = (rowIndex, column, value) => {
-    const updated = [...data];
-
-    updated[rowIndex] = {
-      ...updated[rowIndex],
-      [column]: value,
-    };
-
-    setData(updated);
+  const handleCellChange = (
+    rowIndex,
+    column,
+    value
+  ) => {
+    setData((previousData) =>
+      previousData.map((row, index) =>
+        index === rowIndex
+          ? {
+              ...row,
+              [column]: value,
+            }
+          : row
+      )
+    );
   };
 
   // -----------------------------------
@@ -96,64 +213,97 @@ function DataTable({
   const handleAddRow = () => {
     const emptyRow = {};
 
-    columns.forEach((col) => {
-      emptyRow[col] = "";
+    columns.forEach((column) => {
+      emptyRow[column] = "";
     });
 
-    setData([...data, emptyRow]);
+    setData((previousData) => [
+      ...previousData,
+      emptyRow,
+    ]);
   };
 
   // -----------------------------------
   // DELETE ROW
   // -----------------------------------
   const handleDeleteRow = (rowIndex) => {
-    const updated = data.filter((_, index) => index !== rowIndex);
-
-    setData(updated);
+    setData((previousData) =>
+      previousData.filter(
+        (_, index) => index !== rowIndex
+      )
+    );
   };
 
   // -----------------------------------
   // ADD COLUMN
   // -----------------------------------
   const handleAddColumn = () => {
-    const newColumnName = `Column ${columns.length + 1}`;
+    let columnNumber = columns.length + 1;
+    let newColumnName = `Column ${columnNumber}`;
 
-    const updatedColumns = [...columns, newColumnName];
+    while (columns.includes(newColumnName)) {
+      columnNumber += 1;
+      newColumnName = `Column ${columnNumber}`;
+    }
 
-    const updatedData = data.map((row) => ({
-      ...row,
-      [newColumnName]: "",
-    }));
+    setColumns((previousColumns) => [
+      ...previousColumns,
+      newColumnName,
+    ]);
 
-    setColumns(updatedColumns);
-    setData(updatedData);
+    setData((previousData) =>
+      previousData.map((row) => ({
+        ...row,
+        [newColumnName]: "",
+      }))
+    );
   };
 
   // -----------------------------------
   // DELETE COLUMN
   // -----------------------------------
-  const handleDeleteColumn = (columnToDelete) => {
+  const handleDeleteColumn = (
+    columnToDelete
+  ) => {
     const updatedColumns = columns.filter(
-      (col) => col !== columnToDelete
+      (column) => column !== columnToDelete
     );
 
     const updatedData = data.map((row) => {
-      const newRow = { ...row };
+      const updatedRow = { ...row };
 
-      delete newRow[columnToDelete];
+      delete updatedRow[columnToDelete];
 
-      return newRow;
+      return updatedRow;
     });
 
     setColumns(updatedColumns);
     setData(updatedData);
 
-    // remove from chart config
     if (setChartConfig) {
-      setChartConfig((prev) => ({
-        ...prev,
-        x: prev.x === columnToDelete ? null : prev.x,
-        y: prev.y === columnToDelete ? null : prev.y,
+      setChartConfig((previousConfig) => ({
+        ...previousConfig,
+
+        x:
+          previousConfig.x === columnToDelete
+            ? null
+            : previousConfig.x,
+
+        y: Array.isArray(previousConfig.y)
+          ? previousConfig.y.filter(
+              (field) =>
+                field !== columnToDelete
+            )
+          : [],
+
+        filters: Array.isArray(
+          previousConfig.filters
+        )
+          ? previousConfig.filters.filter(
+              (filter) =>
+                filter.field !== columnToDelete
+            )
+          : [],
       }));
     }
   };
@@ -161,226 +311,350 @@ function DataTable({
   // -----------------------------------
   // COLUMN DRAG
   // -----------------------------------
-  const handleDragStart = (e, col) => {
-    if (!enableDrag) return;
+  const handleColumnDragStart = (
+    event,
+    column
+  ) => {
+    if (!enableDrag) {
+      return;
+    }
 
-    e.dataTransfer.setData("col", col);
+    event.dataTransfer.setData(
+      "col",
+      column
+    );
+
+    event.dataTransfer.effectAllowed =
+      "copy";
   };
 
   // -----------------------------------
   // QUICK COLUMN SELECT
   // -----------------------------------
-  const handleColumnClick = (col) => {
-    if (!setChartConfig) return;
+  const handleColumnClick = (column) => {
+    if (!setChartConfig) {
+      return;
+    }
 
-    setChartConfig((prev) => ({
-      ...prev,
-      x: prev.x || col,
-      y: prev.x && !prev.y ? col : prev.y,
-    }));
+    setChartConfig((previousConfig) => {
+      if (!previousConfig.x) {
+        return {
+          ...previousConfig,
+          x: column,
+        };
+      }
+
+      const currentY = Array.isArray(
+        previousConfig.y
+      )
+        ? previousConfig.y
+        : [];
+
+      if (
+        previousConfig.x !== column &&
+        !currentY.includes(column)
+      ) {
+        return {
+          ...previousConfig,
+          y: [...currentY, column],
+        };
+      }
+
+      return previousConfig;
+    });
   };
+
+  // -----------------------------------
+  // FILE UPLOAD BUTTON
+  // -----------------------------------
+  const FileUploadButton = () => (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.xls,.xlsx"
+        onChange={handleInputChange}
+        disabled={isUploadingFile}
+        className="hidden"
+      />
+
+      <button
+        type="button"
+        onClick={() =>
+          fileInputRef.current?.click()
+        }
+        disabled={isUploadingFile}
+        className="
+          rounded-md
+          bg-slate-700
+          px-3
+          py-1.5
+          text-xs
+          font-medium
+          text-white
+          hover:bg-slate-800
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        "
+      >
+        {isUploadingFile
+          ? "Importing..."
+          : "Import CSV or Excel"}
+      </button>
+    </>
+  );
 
   // -----------------------------------
   // EMPTY STATE
   // -----------------------------------
-  if (!data || !Array.isArray(data) || data.length === 0) {
-      return (
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`
-            flex-1
-            flex
-            flex-col
-            items-center
-            justify-center
-            border-2
-            border-dashed
-            m-4
-            rounded-lg
-            text-slate-400
-            min-h-[300px]
-            ${isDraggingFile ? "bg-slate-100" : ""}
-          `}
-        >
-          <p>Drop CSV file here</p>
-          {!Array.isArray(data) && data && (
-            <p className="text-xs text-red-500 mt-2">
-              Failed to load data correctly from server.
-            </p>
-          )}
+  if (
+    !Array.isArray(data) ||
+    data.length === 0
+  ) {
+    return (
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`
+          m-4
+          flex
+          min-h-[300px]
+          flex-1
+          flex-col
+          items-center
+          justify-center
+          rounded-lg
+          border-2
+          border-dashed
+          transition-colors
+          ${
+            isDraggingFile
+              ? "border-blue-500 bg-blue-50"
+              : "border-slate-300 text-slate-400"
+          }
+        `}
+      >
+        <p className="text-sm font-medium">
+          Drop a CSV or Excel file here
+        </p>
+
+        <p className="mt-1 text-xs">
+          Supported formats: CSV, XLS and XLSX
+        </p>
+
+        <div className="mt-4">
+          <FileUploadButton />
         </div>
-      );
-    }
+
+        {!Array.isArray(data) && data && (
+          <p className="mt-2 text-xs text-red-500">
+            Failed to load data correctly
+            from the server.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
       className={`
-        w-full
         h-full
+        w-full
         overflow-auto
-        ${compactMode ? "text-xs" : "text-sm"}
+        ${
+          compactMode
+            ? "text-xs"
+            : "text-sm"
+        }
+        ${
+          isDraggingFile
+            ? "bg-blue-50"
+            : ""
+        }
       `}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
       {/* TOP ACTION BAR */}
-      <div className="flex items-center gap-2 p-3 border-b bg-white sticky top-0 z-20">
+      <div
+        className="
+          sticky
+          top-0
+          z-20
+          flex
+          items-center
+          gap-2
+          border-b
+          bg-white
+          p-3
+        "
+      >
+        <FileUploadButton />
 
         <button
+          type="button"
           onClick={handleAddRow}
           className="
-            px-3 py-1.5
-            bg-blue-500
-            text-white
             rounded-md
+            bg-blue-500
+            px-3
+            py-1.5
             text-xs
             font-medium
+            text-white
+            hover:bg-blue-600
           "
         >
           Add Row
         </button>
 
         <button
+          type="button"
           onClick={handleAddColumn}
           className="
-            px-3 py-1.5
-            bg-green-500
-            text-white
             rounded-md
+            bg-green-500
+            px-3
+            py-1.5
             text-xs
             font-medium
+            text-white
+            hover:bg-green-600
           "
         >
           Add Column
         </button>
 
+        {datasetId && (
+          <span className="ml-auto text-xs text-slate-400">
+            Dataset #{datasetId}
+          </span>
+        )}
       </div>
 
       {/* TABLE */}
       <table className="w-full border-collapse">
-
-        {/* HEADER */}
-        <thead className="sticky top-[52px] bg-slate-900 text-white z-10">
+        <thead className="sticky top-[53px] z-10 bg-slate-900 text-white">
           <tr>
-
-            {/* ROW NUMBER */}
-            <th className="px-3 py-2 border w-14">
+            <th className="w-14 border px-3 py-2">
               #
             </th>
 
-            {columns.map((col, index) => (
+            {columns.map((column, index) => (
               <th
-                key={col}
+                key={column}
                 draggable={enableDrag}
-                onDragStart={(e) => handleDragStart(e, col)}
+                onDragStart={(event) =>
+                  handleColumnDragStart(
+                    event,
+                    column
+                  )
+                }
                 className="
+                  min-w-[180px]
+                  border
                   px-3
                   py-2
-                  border
                   text-left
-                  min-w-[180px]
                 "
               >
                 <div className="flex items-center gap-2">
-
-                  {/* COLUMN NAME */}
                   <input
-                    value={col}
-                    onClick={() => handleColumnClick(col)}
-                    onChange={(e) =>
-                      handleColumnRename(index, e.target.value)
+                    value={column}
+                    onClick={() =>
+                      handleColumnClick(column)
+                    }
+                    onChange={(event) =>
+                      handleColumnRename(
+                        index,
+                        event.target.value
+                      )
                     }
                     className="
-                      bg-transparent
-                      outline-none
-                      font-semibold
                       w-full
                       cursor-pointer
+                      bg-transparent
+                      font-semibold
+                      outline-none
                     "
                   />
 
-                  {/* DELETE COLUMN */}
                   <button
+                    type="button"
                     onClick={() =>
-                      handleDeleteColumn(col)
+                      handleDeleteColumn(
+                        column
+                      )
                     }
                     className="
+                      text-xs
                       text-red-300
                       hover:text-red-500
-                      text-xs
                     "
+                    aria-label={`Delete ${column} column`}
                   >
                     ✕
                   </button>
-
                 </div>
               </th>
             ))}
-
           </tr>
         </thead>
 
-        {/* BODY */}
         <tbody>
           {data.map((row, rowIndex) => (
             <tr
               key={rowIndex}
               className="border-b hover:bg-slate-50"
             >
-
-              {/* ROW ACTIONS */}
-              <td className="px-2 py-1 border text-center">
-
+              <td className="border px-2 py-1 text-center">
                 <button
+                  type="button"
                   onClick={() =>
                     handleDeleteRow(rowIndex)
                   }
                   className="
+                    text-xs
                     text-red-500
                     hover:text-red-700
-                    text-xs
                   "
                 >
                   Delete
                 </button>
-
               </td>
 
-              {/* CELLS */}
-              {columns.map((col) => (
+              {columns.map((column) => (
                 <td
-                  key={col}
-                  className="px-2 py-1 border"
+                  key={`${rowIndex}-${column}`}
+                  className="border px-2 py-1"
                 >
                   <input
-                    value={row[col] ?? ""}
-                    onChange={(e) =>
+                    value={row[column] ?? ""}
+                    onChange={(event) =>
                       handleCellChange(
                         rowIndex,
-                        col,
-                        e.target.value
+                        column,
+                        event.target.value
                       )
                     }
                     className="
                       w-full
-                      outline-none
                       bg-transparent
                       px-1
+                      outline-none
                     "
                   />
                 </td>
               ))}
-
             </tr>
           ))}
         </tbody>
-
       </table>
     </div>
   );
 }
 
-export default DataTable;
+export default DataTab

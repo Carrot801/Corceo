@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  parseDataFile,
-  parseExcelSheet,
-} from "../utils/fileParser";
+import { parseDataFile, parseExcelSheet } from "../fileParser";
+
+
+
 
 const API_URL = "http://localhost:5000";
 
@@ -39,9 +39,6 @@ function useProjectData(projectId) {
       : {};
   }, []);
 
-  /**
-   * Applies rows to the local table.
-   */
   const applyRows = useCallback(
     (rows, suppliedColumns = null) => {
       if (!Array.isArray(rows)) {
@@ -274,7 +271,7 @@ function useProjectData(projectId) {
        * although /data/upload would be a clearer name.
        */
       const response = await fetch(
-        `${API_URL}/upload-csv`,
+        `${API_URL}/upload-data`,
         {
           method: "POST",
           headers: {
@@ -485,9 +482,7 @@ function useProjectData(projectId) {
     });
   };
 
-  /**
-   * Clears the visible error message.
-   */
+
   const clearError = () => {
     setError("");
   };
@@ -515,14 +510,6 @@ function useProjectData(projectId) {
     handleDataFile,
     uploadData,
     saveChartToBackend,
-
-    /*
-     * Temporary compatibility alias.
-     *
-     * Existing components using uploadCSV will continue to work.
-     * New components should use uploadData.
-     */
-    uploadCSV: uploadData,
   };
 }
 

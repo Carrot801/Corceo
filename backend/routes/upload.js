@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { uploadCSV } = require("../controllers/uploadController");
+const { uploadData } = require("../controllers/uploadController");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.post("/", uploadCSV);
+router.post("/",authMiddleware, uploadData);
 
 module.exports = router;
