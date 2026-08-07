@@ -2,7 +2,10 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  ChevronDown,
+  ListTree,
 } from "lucide-react";
+
 
 function LegendSection({
   settings,
@@ -16,28 +19,89 @@ function LegendSection({
   moveLegendField,
   removeLegendField,
 }) {
+
+const isOpen =
+  openSection === "legend";
   return (
-            <div className="app-border border-t">
-            <button
-                onClick={() => toggleSection("legend")}
-                className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
-            >
-                Legend
-                <span
-                className={`transition-transform ${
-                    openSection === "legend" ? "rotate-180" : ""
-                }`}
-                >
-                ^
-                </span>
-            </button>
+            <div className="app-border border-b">
+           <button
+  type="button"
+  onClick={() =>
+    toggleSection("legend")
+  }
+  aria-expanded={isOpen}
+  className={`
+    app-surface-secondary
+    flex w-full items-center
+    justify-between gap-3
+    px-4 py-3
+    text-left
+    transition-colors
+    hover:bg-[rgb(var(--color-surface-hover))]
+    ${
+      isOpen
+        ? "bg-[rgb(var(--color-surface-hover))]"
+        : ""
+    }
+  `}
+>
+  <div className="flex min-w-0 items-center gap-3">
+    <div
+      className={`
+        flex h-8 w-8 shrink-0
+        items-center justify-center
+        rounded-lg
+        transition-colors
+        ${
+          isOpen
+            ? "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]"
+            : "app-surface app-text-muted"
+        }
+      `}
+    >
+      <ListTree size={16} />
+    </div>
 
-            {openSection === "legend" && (
-                <div className="px-4 pb-4 pt-3 space-y-4">
+    <div className="min-w-0">
+      <p className="app-text text-xs font-bold">
+        Legend
+      </p>
 
-                <label className="app-text-secondary flex items-center gap-2 text-xs font-semibold">
-      <input
+      <p className="app-text-muted mt-0.5 truncate text-[10px]">
+        Position, fields and visual layout
+      </p>
+    </div>
+  </div>
+
+  <ChevronDown
+    size={16}
+    className={`
+      app-text-muted shrink-0
+      transition-transform
+      duration-200
+      ${
+        isOpen
+          ? "rotate-180"
+          : ""
+      }
+    `}
+  />
+</button>
+
+            {isOpen && (
+  <div
+    className="
+      app-surface
+      space-y-4
+      border-t
+      border-[rgb(var(--color-border))]
+      px-4 pb-5 pt-4
+    "
+  >
+<label className="app-surface-secondary app-border app-text-secondary flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-xs font-semibold">
+          <input
         type="checkbox"
+        className="h-4 w-4 cursor-pointer accent-[rgb(var(--color-primary))]"
         checked={settings.showLegend}
         onChange={(e) =>
           updateSetting("showLegend", e.target.checked)
@@ -85,17 +149,22 @@ function LegendSection({
                         Alignment
                         </label>
 
-                        <div className="flex gap-1 mt-1">
+                        <div className="app-surface-secondary app-border mt-2 flex rounded-xl border p-1">
 
                             <button
                                 onClick={() => updateSetting("legendAlign", "start")}
                                 className={`
-                                flex w-10 h-9 items-center justify-center
-                                border rounded-md p-2 transition 
+                                flex-1
+                                h-9
+                                rounded-lg
+                                flex
+                                items-center
+                                justify-center
+                                transition-all
                                 ${
-                                    settings.legendAlign === "start"
-                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                                settings.headerAlign === "left"
+                                    ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+                                    : "app-text-muted hover:text-[rgb(var(--color-text))]"
                                 }
                                 `}
                             >
@@ -104,15 +173,20 @@ function LegendSection({
 
                             <button
                                 onClick={() => updateSetting("legendAlign", "center")}
-                                className={`
-                                flex w-10 h-9 items-center justify-center
-                                border rounded-md p-2 transition
-                                ${
-                                    settings.legendAlign === "center"
-                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
-                                }
-                                `}
+                               className={`
+flex-1
+h-9
+rounded-lg
+flex
+items-center
+justify-center
+transition-all
+${
+  settings.headerAlign === "center"
+    ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+    : "app-text-muted hover:text-[rgb(var(--color-text))]"
+}
+`}
                             >
                                 <AlignCenter size={16} />
                             </button>
@@ -120,14 +194,19 @@ function LegendSection({
                             <button
                                 onClick={() => updateSetting("legendAlign", "end")}
                                 className={`
-                                flex w-10 h-9 items-center justify-center
-                                border rounded-md p-2 transition
-                                ${
-                                    settings.legendAlign === "end"
-                                    ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                                    : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
-                                }
-                                `}
+flex-1
+h-9
+rounded-lg
+flex
+items-center
+justify-center
+transition-all
+${
+  settings.headerAlign === "right"
+    ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+    : "app-text-muted hover:text-[rgb(var(--color-text))]"
+}
+`}
                             >
                                 <AlignRight size={16} />
                             </button>

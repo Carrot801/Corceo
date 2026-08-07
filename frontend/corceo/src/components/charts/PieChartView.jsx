@@ -95,21 +95,21 @@ function PieChartView({
     } = props;
 
     const fontSize =
-      Number(
-        settings.labelSize ??
-          12,
-      );
+    Number(
+      appearance.labelSize ??
+        12,
+    );
 
     let labelText = "";
 
     if (
-      settings.labelType ===
+      appearance.labelType ===
       "name"
     ) {
       labelText =
         payload.x ?? "";
     } else if (
-      settings.labelType ===
+      appearance.labelType ===
       "percentage"
     ) {
       const percentage =

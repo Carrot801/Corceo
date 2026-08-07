@@ -627,6 +627,140 @@ function ChartAppearanceSettings({
               )
             }
           />
+          <div className="app-border space-y-4 border-t pt-4">
+  <p className="app-text text-xs font-bold">
+    Slice labels
+  </p>
+
+  <SettingToggle
+    label="Show labels"
+    checked={
+      appearance.showLabels ??
+      true
+    }
+    onChange={(value) =>
+      updateAppearance(
+        "showLabels",
+        value,
+      )
+    }
+  />
+
+  {appearance.showLabels !== false && (
+    <>
+      <SettingSelect
+        label="Label content"
+        value={
+          appearance.labelType ??
+          "percentage"
+        }
+        options={[
+          {
+            value: "name",
+            label: "Category name",
+          },
+          {
+            value: "value",
+            label: "Value",
+          },
+          {
+            value: "percentage",
+            label: "Percentage",
+          },
+        ]}
+        onChange={(value) =>
+          updateAppearance(
+            "labelType",
+            value,
+          )
+        }
+      />
+
+      <SettingSelect
+        label="Label position"
+        value={
+          appearance.labelPosition ??
+          "inside"
+        }
+        options={[
+          {
+            value: "inside",
+            label: "Inside slices",
+          },
+          {
+            value: "outside",
+            label: "Outside slices",
+          },
+        ]}
+        onChange={(value) =>
+          updateAppearance(
+            "labelPosition",
+            value,
+          )
+        }
+      />
+
+      <SettingRange
+        label="Label size"
+        min={8}
+        max={24}
+        value={
+          appearance.labelSize ??
+          12
+        }
+        unit="px"
+        onChange={(value) =>
+          updateAppearance(
+            "labelSize",
+            value,
+          )
+        }
+      />
+
+      <SettingColor
+        label="Label color"
+        value={
+          appearance.labelColor ??
+          (
+            appearance.labelPosition ===
+            "outside"
+              ? "#334155"
+              : "#ffffff"
+          )
+        }
+        fallback={
+          appearance.labelPosition ===
+          "outside"
+            ? "#334155"
+            : "#ffffff"
+        }
+        onChange={(value) =>
+          updateAppearance(
+            "labelColor",
+            value,
+          )
+        }
+      />
+
+      <SettingRange
+        label="Label weight"
+        min={400}
+        max={800}
+        step={100}
+        value={
+          appearance.labelWeight ??
+          600
+        }
+        onChange={(value) =>
+          updateAppearance(
+            "labelWeight",
+            value,
+          )
+        }
+      />
+    </>
+  )}
+</div>
 
           <SettingToggle
             label="Show slice borders"

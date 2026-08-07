@@ -1,4 +1,10 @@
+import {
+  ChevronDown,
+  Hash,
+} from "lucide-react";
+
 import { formatValue } from "../../../utils/formatters";
+
 
 function ValueFormattingSection({
   settings,
@@ -6,36 +12,96 @@ function ValueFormattingSection({
   openSection,
   toggleSection,
 }) {
+  const isOpen =
+  openSection === "valueFormatting";
   return (
-    <div className="app-border border-t">
+    <div className="app-border border-b">
       <button
-        type="button"
-        onClick={() => toggleSection("valueFormatting")}
-        className="app-surface-secondary app-text flex w-full items-center justify-between p-4 text-xs font-bold transition-colors hover:bg-[rgb(var(--color-surface-hover))]"
-      >
+  type="button"
+  onClick={() =>
+    toggleSection(
+      "valueFormatting",
+    )
+  }
+  aria-expanded={isOpen}
+  className={`
+    app-surface-secondary
+    flex w-full items-center
+    justify-between gap-3
+    px-4 py-3
+    text-left
+    transition-colors
+    hover:bg-[rgb(var(--color-surface-hover))]
+    ${
+      isOpen
+        ? "bg-[rgb(var(--color-surface-hover))]"
+        : ""
+    }
+  `}
+>
+  <div className="flex min-w-0 items-center gap-3">
+    <div
+      className={`
+        flex h-8 w-8 shrink-0
+        items-center justify-center
+        rounded-lg
+        transition-colors
+        ${
+          isOpen
+            ? "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]"
+            : "app-surface app-text-muted"
+        }
+      `}
+    >
+      <Hash size={16} />
+    </div>
+
+    <div className="min-w-0">
+      <p className="app-text text-xs font-bold">
         Value Formatting
+      </p>
 
-        <span
-          className={`transition-transform ${
-            openSection === "valueFormatting"
-              ? "rotate-180"
-              : ""
-          }`}
-        >
-          ^
-        </span>
-      </button>
+      <p className="app-text-muted mt-0.5 truncate text-[10px]">
+        Numbers, currency and percentages
+      </p>
+    </div>
+  </div>
 
-      {openSection === "valueFormatting" && (
-        <div className="space-y-4 p-4">
-          <p className="app-text-muted text-[11px]">
-            These settings apply to axis values, labels, and tooltips that use the
-            chart format.
-          </p>
+  <ChevronDown
+    size={16}
+    className={`
+      app-text-muted shrink-0
+      transition-transform
+      duration-200
+      ${
+        isOpen
+          ? "rotate-180"
+          : ""
+      }
+    `}
+  />
+</button>
+
+      {isOpen && (
+  <div
+    className="
+      app-surface
+      space-y-4
+      border-t
+      border-[rgb(var(--color-border))]
+      px-4 pb-5 pt-4
+    "
+  >
+          <div className="app-surface-secondary app-border rounded-lg border p-3">
+  <p className="app-text-muted text-[11px] leading-4">
+    These settings apply to axis values, labels,
+    and tooltips that use the chart format.
+  </p>
+</div>
 
           {/* Number format */}
           <div>
-            <label className="app-text-secondary mb-1 block text-xs font-medium">
+            <label className="app-text-muted mb-1.5 block text-[11px] font-bold uppercase tracking-wider">
               Number Format
             </label>
 
@@ -147,6 +213,7 @@ function ValueFormattingSection({
                 settings.useThousandsSeparator ??
                 true
               }
+              className="h-4 w-4 cursor-pointer accent-[rgb(var(--color-primary))]"
               onChange={(e) =>
                 updateSetting(
                   "useThousandsSeparator",
@@ -212,10 +279,10 @@ function ValueFormattingSection({
           </div>
 
           {/* Preview */}
-          <div className="app-surface-secondary app-border rounded-lg border p-3">
-            <p className="app-text-muted mb-1 text-[10px] font-bold uppercase">
-              Preview
-            </p>
+          <div className="app-surface-secondary app-border rounded-xl border p-3">
+            <p className="app-text-muted mb-1.5 text-[10px] font-bold uppercase tracking-wider">
+  Preview
+</p>
 
             <p className="app-text text-sm font-semibold">
               {formatValue(

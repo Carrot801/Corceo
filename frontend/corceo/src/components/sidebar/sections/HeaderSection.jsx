@@ -2,6 +2,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Type,
+  ChevronDown,
 } from "lucide-react";
 
 function HeaderSection({
@@ -10,28 +12,84 @@ function HeaderSection({
   openSection,
   toggleSection,
 }) {
+const isOpen =
+  openSection === "header";
   return (
     <div className="app-border border-b">
 
 
     {/* SECTION BUTTON */}
     <button
-        onClick={() => toggleSection("header")}
-        className="app-surface-secondary app-text w-full p-4 flex justify-between items-center text-xs font-bold hover:bg-[rgb(var(--color-surface-hover))] transition-colors"
+  type="button"
+  onClick={() => toggleSection("header")}
+  aria-expanded={isOpen}
+  className={`
+    app-surface-secondary
+    flex w-full items-center
+    justify-between gap-3
+    px-4 py-3
+    text-left
+    transition-colors
+    hover:bg-[rgb(var(--color-surface-hover))]
+    ${
+      isOpen
+        ? "bg-[rgb(var(--color-surface-hover))]"
+        : ""
+    }
+  `}
+>
+  <div className="flex items-center gap-3">
+    <div
+      className={`
+        flex h-8 w-8
+        items-center justify-center
+        rounded-lg
+        transition-colors
+        ${
+          isOpen
+            ? "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]"
+            : "app-surface app-text-muted"
+        }
+      `}
     >
+      <Type size={16} />
+    </div>
+
+    <div>
+      <p className="app-text text-xs font-bold">
         Header
-        <span
-        className={`transition-transform ${
-            openSection === "header" ? "rotate-180" : ""
-        }`}
-        >
-        ^
-        </span>
-    </button>
+      </p>
+
+      <p className="app-text-muted mt-0.5 text-[10px]">
+        Title, subtitle and description
+      </p>
+    </div>
+  </div>
+
+  <ChevronDown
+    size={16}
+    className={`
+      app-text-muted
+      transition-transform
+      duration-200
+      ${isOpen ? "rotate-180" : ""}
+    `}
+  />
+</button>
 
     {/* CONTENT */}
-    {openSection === "header" && (
-        <div className="p-4 space-y-4">
+    {isOpen && (
+    <div
+        className="
+        app-surface
+        border-t
+        border-[rgb(var(--color-border))]
+        px-4
+        pt-4
+        pb-5
+        space-y-5
+        "
+    >
 
             {/* ALIGNMENT */}
             <div>
@@ -39,17 +97,22 @@ function HeaderSection({
                 Alignment
                 </label>
 
-                <div className="flex gap-1 mt-1">
+                <div className="app-surface-secondary app-border mt-2 flex rounded-xl border p-1">
 
                     <button
                         onClick={() => updateSetting("headerAlign", "left")}
                         className={`
-                        flex w-10 h-9 items-center justify-center
-                        border rounded-md p-2 transition 
+                        flex-1
+                        h-9
+                        rounded-lg
+                        flex
+                        items-center
+                        justify-center
+                        transition-all
                         ${
-                            settings.headerAlign === "left"
-                            ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                            : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                        settings.headerAlign === "left"
+                            ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
                         }
                         `}
                     >
@@ -58,13 +121,18 @@ function HeaderSection({
 
                     <button
                         onClick={() => updateSetting("headerAlign", "center")}
-                        className={`
-                        flex w-10 h-9 items-center justify-center
-                        border rounded-md p-2 transition
+                       className={`
+                        flex-1
+                        h-9
+                        rounded-lg
+                        flex
+                        items-center
+                        justify-center
+                        transition-all
                         ${
-                            settings.headerAlign === "center"
-                            ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                            : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                        settings.headerAlign === "center"
+                            ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
                         }
                         `}
                     >
@@ -74,12 +142,17 @@ function HeaderSection({
                     <button
                         onClick={() => updateSetting("headerAlign", "right")}
                         className={`
-                        flex w-10 h-9 items-center justify-center
-                        border rounded-md p-2 transition
+                        flex-1
+                        h-9
+                        rounded-lg
+                        flex
+                        items-center
+                        justify-center
+                        transition-all
                         ${
-                            settings.headerAlign === "right"
-                            ? "bg-[rgb(var(--color-primary-soft))] border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))]"
-                            : "app-surface app-border app-text-muted hover:text-[rgb(var(--color-text))]"
+                        settings.headerAlign === "right"
+                            ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
+                            : "app-text-muted hover:text-[rgb(var(--color-text))]"
                         }
                         `}
                     >
@@ -100,7 +173,7 @@ function HeaderSection({
                 onChange={(e) =>
                     updateSetting("title", e.target.value)
                 }
-                className="app-input w-full mt-1 p-2 text-sm rounded-md"
+                className="app-input mt-2 w-full rounded-lg px-3 py-2 text-sm"
                 />
             </div>
 
@@ -115,7 +188,7 @@ function HeaderSection({
                 onChange={(e) =>
                     updateSetting("subtitle", e.target.value)
                 }
-                className="app-input w-full mt-1 p-2 text-sm rounded-md"
+                className="app-input mt-2 w-full rounded-lg px-3 py-2 text-sm"
                 />
             </div>
 

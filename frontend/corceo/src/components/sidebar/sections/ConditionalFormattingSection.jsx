@@ -1,6 +1,8 @@
 import {
   Plus,
   Trash2,
+  ChevronDown,
+  PaintBucket,
 } from "lucide-react";
 
 import SettingToggle from "../SettingToggle";
@@ -141,41 +143,82 @@ function ConditionalFormattingSection({
 
   return (
     <div className="app-border border-b">
-      <button
-        type="button"
-        onClick={() =>
-          toggleSection(
-            "conditionalFormatting",
-          )
+    <button
+      type="button"
+      onClick={() =>
+        toggleSection(
+          "conditionalFormatting",
+        )
+      }
+      aria-expanded={isOpen}
+      className={`
+        app-surface-secondary
+        flex w-full items-center
+        justify-between gap-3
+        px-4 py-3
+        text-left
+        transition-colors
+        hover:bg-[rgb(var(--color-surface-hover))]
+        ${
+          isOpen
+            ? "bg-[rgb(var(--color-surface-hover))]"
+            : ""
         }
-        className="
-          app-surface-secondary
-          app-text
-          flex w-full
-          items-center
-          justify-between
-          p-4
-          text-xs
-          font-bold
-          transition-colors
-          hover:bg-[rgb(var(--color-surface-hover))]
-        "
-      >
-        Conditional Formatting
+      `}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className={`
+            flex h-8 w-8 shrink-0
+            items-center justify-center
+            rounded-lg
+            transition-colors
+            ${
+              isOpen
+                ? "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]"
+                : "app-surface app-text-muted"
+            }
+          `}
+        >
+          <PaintBucket size={16} />
+        </div>
 
-        <span
-          className={`transition-transform ${
+        <div className="min-w-0">
+          <p className="app-text text-xs font-bold">
+            Conditional Formatting
+          </p>
+
+          <p className="app-text-muted mt-0.5 truncate text-[10px]">
+            Color values using custom rules
+          </p>
+        </div>
+      </div>
+
+      <ChevronDown
+        size={16}
+        className={`
+          app-text-muted shrink-0
+          transition-transform
+          duration-200
+          ${
             isOpen
               ? "rotate-180"
               : ""
-          }`}
-        >
-          ^
-        </span>
-      </button>
+          }
+        `}
+      />
+    </button>
 
       {isOpen && (
-        <div className="space-y-4 p-4">
+        <div
+          className="
+            app-surface
+            space-y-4
+            border-t
+            border-[rgb(var(--color-border))]
+            px-4 pb-5 pt-4
+          "
+        >
           <SettingToggle
             label="Enable conditional formatting"
             checked={
