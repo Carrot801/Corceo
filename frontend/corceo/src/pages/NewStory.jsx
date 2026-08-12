@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -11,6 +17,7 @@ import StoryMainCanvas from "../components/story/StoryMainCanvas";
 import StoryAnnotationsSidebar from "../components/story/StoryAnnotationsSidebar";
 import StoryExportSlides from "../components/story/StoryExportSlides";
 import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal";
+import useStoryPersistence from "../hooks/story/useStoryPersistence";
 
 import { apiRequest } from "../api/client";
 export const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
@@ -51,18 +58,25 @@ function NewStory() {
   const SLIDE_HEIGHT = 720;
   const isSlideActionRef = useRef(false);
 
-  const createInitialStoryState = () => ({
-  storyName: "Untitled Story",
+const createInitialStoryState =
+  useCallback(
+    () => ({
+      storyName:
+        "Untitled Story",
 
-  slides: [
-    {
-      id: `temp-${crypto.randomUUID()}`,
-      content: [],
-      description: "",
-      annotations: [],
-    },
-  ],
-});
+      slides: [
+        {
+          id:
+            `temp-${crypto.randomUUID()}`,
+
+          content: [],
+          description: "",
+          annotations: [],
+        },
+      ],
+    }),
+    [],
+  );
   useEffect(() => {
     console.log("URL Param storyId is:", storyId);
   }, [storyId]);
@@ -180,10 +194,6 @@ const {
   const chartInteractionRef = useRef(null);
 
   const currentSlide = slides[activeSlideIndex] || { content: [], annotations: [], description: "" };
-
-  const hasLoadedStoryRef = useRef(false);
-  const autosaveTimerRef = useRef(null);
-
 
   const storyStateRef =
   useRef(storyHistoryState);
@@ -416,7 +426,27 @@ const makeStoryPreview = async () => {
     setIsExporting(false);
   }
 };
+const {
+  saveStory,
+  publishStory,
+  reloadSavedStory,
+  normalizeStorySlides,
+} = useStoryPersistence({
+  storyId,
+  storyName,
+  slides,
 
+  setStoryHistoryState,
+  resetStoryHistory,
+
+  createInitialStoryState,
+
+  makeStoryPreview,
+
+  isSlideActionRef,
+
+  navigate,
+});
 
   const addSlide = () => {
     const newSlide = {
@@ -436,91 +466,6 @@ const makeStoryPreview = async () => {
     setSelectedChartId(null);
   };
 
-
-const normalizeStorySlides = (storyData) => {
-  return (storyData.slides || []).map((slide) => ({
-    ...slide,
-
-    id: slide.id,
-
-    description: slide.description || "",
-
-    annotations: slide.annotations || [],
-
-    content: (slide.content || []).map((item, index) => ({
-      ...item,
-
-      /*
-       * Keep a stable UI ID for chart interactions.
-       * The backend currently returns chart items using a generated ID.
-       */
-      id:
-        item.id ||
-        `chart-instance-${slide.id}-${item.chartId}-${index}`,
-
-        chartId:
-          item.chartId ??
-          item.chart_id,
-
-imageUrl:
-  item.imageUrl ??
-  item.image_data ??
-  item.chart_image_data ??
-  item.image_url ??
-  item.chart_image_url ??
-  null,
-
-        name: item.name || "Chart",
-        type: item.type || "chart",
-
-      x: Number(item.x ?? 0),
-      y: Number(item.y ?? 0),
-      width: Number(item.width ?? 100),
-      height: Number(item.height ?? 100),
-      zIndex: Number(
-        item.zIndex ??
-        item.z_index ??
-        index + 1,
-      ),
-    })),
-  }));
-};
-
-
-
-const reloadSavedStory = async (
-  savedStoryId,
-) => {
-  const storyData = await apiRequest(
-    `/stories/${savedStoryId}`,
-  );
-
-
-setStoryHistoryState(
-  (current) => ({
-    ...current,
-
-    storyName:
-      storyData.name ||
-      current.storyName,
-
-    slides:
-      normalizeStorySlides(
-        storyData,
-      ),
-  }),
-  {
-    record: false,
-  },
-);
-
-  return storyData;
-};
-
-
-
-
-
     const duplicateSlide = async (index) => {
   const sourceSlide = slides[index];
 
@@ -535,14 +480,6 @@ setStoryHistoryState(
   try {
 
     const actualStoryId = await saveStory();
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error(
-        "No authentication token found",
-      );
-    }
 const storyData = await apiRequest(
   `/stories/${actualStoryId}`,
 );
@@ -787,83 +724,6 @@ const updateChartItem = (
       ),
     options,
   );
-};
-
-const saveStory = async () => {
-  const isNew =
-    storyId === "new" ||
-    !storyId ||
-    storyId ===
-      "undefined";
-
-  const path = isNew
-    ? "/stories"
-    : `/stories/${storyId}`;
-
-  try {
-    isSlideActionRef.current =
-      true;
-
-    const image_url =
-      await makeStoryPreview();
-
-    const result =
-      await apiRequest(
-        path,
-        {
-          method: isNew
-            ? "POST"
-            : "PUT",
-
-          body: JSON.stringify({
-            name: storyName,
-            slides: cleanSlides,
-            image_url,
-          }),
-        },
-      );
-
-    const actualStoryId =
-      isNew
-        ? result.id
-        : storyId;
-
-    if (!actualStoryId) {
-      throw new Error(
-        "The backend did not return a story ID.",
-      );
-    }
-
-    await reloadSavedStory(
-      actualStoryId,
-    );
-
-    hasLoadedStoryRef.current =
-      true;
-
-    if (isNew) {
-      navigate(
-        `/stories/${actualStoryId}`,
-        {
-          replace: true,
-        },
-      );
-    }
-
-    return actualStoryId;
-  } catch (error) {
-    console.error(
-      "Save story failed:",
-      error,
-    );
-
-    throw error;
-  } finally {
-    setTimeout(() => {
-      isSlideActionRef.current =
-        false;
-    }, 300);
-  }
 };
 
 
@@ -1283,116 +1143,6 @@ setShowPicker(false);
   }
 };
 
-useEffect(() => {
-  if (
-    !storyId ||
-    storyId === "new" ||
-    storyId === "undefined"
-  ) {
-    return;
-  }
-
-  let cancelled = false;
-
-  const loadStory = async () => {
-    try {
-      const data = await apiRequest(
-        `/stories/${storyId}`,
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      hasLoadedStoryRef.current = true;
-
-      resetStoryHistory({
-        storyName:
-          data.name ||
-          "Untitled Story",
-
-        slides:
-          data.slides?.length
-            ? normalizeStorySlides(data)
-            : createInitialStoryState().slides,
-      });
-    } catch (err) {
-      if (!cancelled) {
-        console.error(
-          "Failed to load story:",
-          err,
-        );
-      }
-    }
-  };
-
-  loadStory();
-
-  return () => {
-    cancelled = true;
-  };
-}, [
-  storyId,
-  resetStoryHistory,
-]);
-
-
-  useEffect(() => {
-  if (!hasLoadedStoryRef.current) return;
-  if (storyId === "new" || !storyId) return;
-  if (isSlideActionRef.current) return;
-
-  clearTimeout(autosaveTimerRef.current);
-
-  autosaveTimerRef.current = setTimeout(() => {
-    saveStory();
-  }, 1200);
-
-  return () => clearTimeout(autosaveTimerRef.current);
-}, [storyName, slides]);
-const cleanSlides = slides.map((slide) => {
-  const isTemp = String(slide.id).startsWith("temp-");
-
-  return {
-    ...slide,
-    id: isTemp ? undefined : slide.id,
-
-    content: (slide.content || []).map((item, index) => ({
-      id: item.id,
-      type: item.type || "chart",
-      chartId: item.chartId,
-      name: item.name || "Chart",
-
-      imageUrl: item.imageUrl || null,
-
-      x: Number(item.x ?? 0),
-      y: Number(item.y ?? 0),
-      width: Number(item.width ?? 100),
-      height: Number(item.height ?? 100),
-      zIndex: Number(item.zIndex ?? index + 1),
-    })),
-
-    annotations: slide.annotations || [],
-  };
-});
-
-
-const result = await apiRequest(
-  path,
-  {
-    method:
-      isNew
-        ? "POST"
-        : "PUT",
-
-    body: JSON.stringify({
-      name: storyName,
-      slides: cleanSlides,
-      image_url,
-    }),
-  },
-);
-
   const addAnnotation = () => {
     const newId = `anno-${Date.now()}`;
     const count = (currentSlide.annotations || []).length + 1;
@@ -1453,26 +1203,17 @@ const result = await apiRequest(
     dragContext.current;
     
   context.hasMoved = true;
-  let percentageX =
-    ((event.clientX - rect.left) /
-      rect.width) *
-    100;
+const deltaX =
+  ((event.clientX -
+    context.startX) /
+    rect.width) *
+  100;
 
-  let percentageY =
-    ((event.clientY - rect.top) /
-      rect.height) *
-    100;
-
-  percentageX = Math.max(
-    0,
-    Math.min(100, percentageX),
-  );
-
-  percentageY = Math.max(
-    0,
-    Math.min(100, percentageY),
-  );
-
+const deltaY =
+  ((event.clientY -
+    context.startY) /
+    rect.height) *
+  100;
   setSlidesDuringDrag(
   (previousSlides) =>
     previousSlides.map(
@@ -1502,21 +1243,53 @@ const result = await apiRequest(
             ) {
               return {
                 ...annotation,
-                x: percentageX,
-                y: percentageY,
+
+                x: Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    context.startAnnoX +
+                      deltaX ,
+                  ),
+                ),
+
+                y: Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    context.startAnnoY +
+                      deltaY,
+                  ),
+                ),
               };
             }
 
             if (
-              context.type ===
-              "label"
-            ) {
-              return {
-                ...annotation,
-                textX: percentageX,
-                textY: percentageY,
-              };
-            }
+  context.type ===
+  "label"
+) {
+  return {
+    ...annotation,
+
+    textX: Math.max(
+      0,
+      Math.min(
+        100,
+        context.startTextX +
+          deltaX ,
+      ),
+    ),
+
+    textY: Math.max(
+      0,
+      Math.min(
+        100,
+        context.startTextY +
+          deltaY,
+      ),
+    ),
+  };
+}
 
             if (
               context.type ===
@@ -1582,29 +1355,7 @@ const result = await apiRequest(
   );
 };
 
-useEffect(() => {
-  return () => {
-    document.removeEventListener(
-      "mousemove",
-      handleChartInteractionMove,
-    );
 
-    document.removeEventListener(
-      "mouseup",
-      stopChartInteraction,
-    );
-
-    document.removeEventListener(
-      "mousemove",
-      handleDragMove,
-    );
-
-    document.removeEventListener(
-      "mouseup",
-      handleDragEnd,
-    );
-  };
-}, []);
 
 const handleDragStart = (
   event,
@@ -1618,18 +1369,31 @@ const handleDragStart = (
   setSelectedAnnoId(annoId);
   setSelectedChartId(null);
 
-  dragContext.current = {
-    type,
-    annoId,
+dragContext.current = {
+  type,
+  annoId,
 
-    startX: event.clientX,
-    startY: event.clientY,
+  startX: event.clientX,
+  startY: event.clientY,
 
-    startWidth:
-      currentAnno?.width ?? 15,
+  startAnnoX:
+    currentAnno?.x ?? 0,
 
-    startHeight:
-      currentAnno?.height ?? 15,
+  startAnnoY:
+    currentAnno?.y ?? 0,
+
+  startTextX:
+    currentAnno?.textX ?? 0,
+
+  startTextY:
+    currentAnno?.textY ?? 0,
+
+  startWidth:
+    currentAnno?.width ?? 15,
+
+  startHeight:
+    currentAnno?.height ?? 15,
+
 
     startingStoryState:
       structuredClone(
@@ -1655,36 +1419,7 @@ const handleDragStart = (
   );
 };
 
-const publishStory = async () => {
-  try {
 
-    const actualStoryId = await saveStory();
-
-    if (!actualStoryId) {
-      throw new Error(
-        "The story could not be saved before publishing",
-      );
-    }
-
-    await apiRequest(
-      `/stories/${actualStoryId}/publish`,
-      {
-        method: "PUT",
-      },
-    );
-
-   
-
-    navigate(
-      `/publishedStory/${actualStoryId}`,
-    );
-  } catch (error) {
-    console.error(
-      "Publish story error:",
-      error,
-    );
-  }
-};
 
 const handleDragEnd = () => {
   const context =
@@ -1705,13 +1440,6 @@ const handleDragEnd = () => {
     context?.startingStoryState &&
     context?.latestStoryState
   ) {
-    /*
-     * The annotation is already visually located
-     * at latestStoryState because mousemove updated it.
-     *
-     * Do not set the state again here.
-     * Only register the complete drag in history.
-     */
     commitStoryHistory(
       context.startingStoryState,
       context.latestStoryState,
@@ -1729,6 +1457,33 @@ const handleDragEnd = () => {
     hasMoved: false,
   };
 };
+
+useEffect(() => {
+  return () => {
+    document.removeEventListener(
+      "mousemove",
+      handleChartInteractionMove,
+    );
+
+    document.removeEventListener(
+      "mouseup",
+      stopChartInteraction,
+    );
+
+    document.removeEventListener(
+      "mousemove",
+      handleDragMove,
+    );
+
+    document.removeEventListener(
+      "mouseup",
+      handleDragEnd,
+    );
+  };
+}, []);
+
+
+
 
   useEffect(() => {
   const handleHistoryShortcut = (

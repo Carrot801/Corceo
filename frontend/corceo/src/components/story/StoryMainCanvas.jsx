@@ -284,7 +284,7 @@ function StoryMainCanvas({
                           {/* 1. If it's a regular standalone Dot handle */}
                           {anno.markerType === "dot" && (
                             <div 
-                              onMouseDown={(e) => handleDragStart(e, "target", anno.id)}
+                              onMouseDown={(e) => handleDragStart(e, "target", anno.id, anno)}
                               onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
                               className={`w-full h-full rounded-full cursor-move shadow-md border flex items-center justify-center text-[9px] font-bold text-white transition-transform ${
                                 isSelected ? 'ring-4 ring-blue-500/20 border-blue-600' : 'border-white hover:scale-110'
@@ -297,7 +297,7 @@ function StoryMainCanvas({
                           {/* 2. If it's an expandable visual Circle Ring */}
                           {anno.markerType === "circle" && (
                             <div 
-                              onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id) }}
+                              onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id, anno) }}
                               onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
                               className={`w-full h-full border-2 border-dashed rounded-full cursor-move relative transition-all ${
                                 isSelected ? 'border-solid border-blue-500 shadow-xs' : 'hover:border-gray-400'
@@ -333,7 +333,7 @@ function StoryMainCanvas({
 
                       {/* Floating Content Label Text Box */}
                       <div 
-                        onMouseDown={(e) => handleDragStart(e, "label", anno.id)}
+                        onMouseDown={(e) => handleDragStart(e, "label", anno.id, anno)}
                         onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
                         className={`absolute p-2 pointer-events-auto cursor-move shadow-xs select-text rounded border border-transparent transition-all ${
                           isSelected ? 'ring-2 ring-blue-500 shadow-lg rounded-lg z-50 bg-white border-blue-100' : ''
