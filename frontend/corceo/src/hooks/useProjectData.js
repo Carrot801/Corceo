@@ -6,8 +6,7 @@ import {
 
 import { parseDataFile, parseExcelSheet } from "../hooks/fileParser";
 
-const API_URL = "http://localhost:5000";
-
+import { apiRequest } from "../api/client";
 const DEFAULT_COLUMNS = [
   "A",
   "B",
@@ -176,162 +175,147 @@ function useProjectData(id) {
     return responseData;
   };
 
-  const loadProject = useCallback(
-    async (signal) => {
-      const datasetResponse = await fetch(
-        `${API_URL}/data/datasets?project_id=${id}`,
-        {
-          headers: getAuthHeaders(),
-          signal,
-        }
+const loadProject = useCallback(
+  async (signal) => {
+    const dataset = await apiRequest(
+      `/data/datasets?project_id=${id}`,
+      {
+        signal,
+      },
+    );
+
+    if (!dataset?.id) {
+      resetEmptySheet();
+      return;
+    }
+
+    setDatasetId(dataset.id);
+
+    const rows = await apiRequest(
+      `/data/rows?dataset_id=${dataset.id}`,
+      {
+        signal,
+      },
+    );
+
+    if (
+      !Array.isArray(rows) ||
+      rows.length === 0
+    ) {
+      setColumns(DEFAULT_COLUMNS);
+      setData(
+        createEmptyRows(
+          DEFAULT_COLUMNS,
+        ),
       );
+      return;
+    }
 
-      if (datasetResponse.status === 404) {
-        resetEmptySheet();
-        return;
-      }
-
-      const dataset = await readJsonResponse(
-        datasetResponse,
-        "Could not load the project dataset."
-      );
-
-      if (!dataset?.id) {
-        resetEmptySheet();
-        return;
-      }
-
-      setDatasetId(dataset.id);
-
-      const rowsResponse = await fetch(
-        `${API_URL}/data/rows?dataset_id=${dataset.id}`,
-        {
-          headers: getAuthHeaders(),
-          signal,
-        }
-      );
-
-      const rows = await readJsonResponse(
-        rowsResponse,
-        "Could not load dataset rows."
-      );
-
-      if (
-        !Array.isArray(rows) ||
-        rows.length === 0
-      ) {
-        setColumns(DEFAULT_COLUMNS);
-        setData(createEmptyRows(DEFAULT_COLUMNS));
-        return;
-      }
-
-      applyRows(
-        rows,
-        Object.keys(rows[0]),
-        true
-      );
-    },
-    [
-      id,
-      getAuthHeaders,
-      resetEmptySheet,
-      applyRows,
-    ]
-  );
-
+    applyRows(
+      rows,
+      Object.keys(rows[0]),
+      true,
+    );
+  },
+  [
+    id,
+    resetEmptySheet,
+    applyRows,
+  ],
+);
   // ===================================
   // LOAD CHART
   // ===================================
   const loadChart = useCallback(
-    async (signal) => {
-      const response = await fetch(
-        `${API_URL}/charts?project_id=${id}`,
-        {
-          headers: getAuthHeaders(),
-          signal,
-        }
-      );
+  async (signal) => {
+    const chart = await apiRequest(
+      `/charts?project_id=${id}`,
+      {
+        signal,
+      },
+    );
 
-      if (response.status === 404) {
-        setSavedChart(null);
-        return;
-      }
+    if (
+      !chart ||
+      typeof chart !== "object" ||
+      Object.keys(chart).length === 0
+    ) {
+      setSavedChart(null);
+      return;
+    }
 
-      const chart = await readJsonResponse(
-        response,
-        "Could not load the saved chart."
-      );
-
-      if (
-        !chart ||
-        typeof chart !== "object" ||
-        Object.keys(chart).length === 0
-      ) {
-        setSavedChart(null);
-        return;
-      }
-
-      setSavedChart(chart);
-    },
-    [id, getAuthHeaders]
-  );
+    setSavedChart(chart);
+  },
+  [id],
+);
 
   // ===================================
   // INITIAL LOAD
   // ===================================
   useEffect(() => {
-    if (!id) {
-      resetEmptySheet();
-      setSavedChart(null);
-      return;
-    }
+  if (!id) {
+    resetEmptySheet();
+    setSavedChart(null);
+    return;
+  }
 
-    const controller =
-      new AbortController();
+  const controller =
+    new AbortController();
 
-    const initializeProject = async () => {
+  const initializeProject =
+    async () => {
       setIsLoadingProject(true);
       setError("");
 
       try {
         await Promise.all([
-          loadProject(controller.signal),
-          loadChart(controller.signal),
+          loadProject(
+            controller.signal,
+          ),
+          loadChart(
+            controller.signal,
+          ),
         ]);
       } catch (loadError) {
         if (
-          loadError.name === "AbortError"
+          loadError.name ===
+          "AbortError"
         ) {
           return;
         }
 
         console.error(
           "Project loading failed:",
-          loadError
+          loadError,
         );
 
         setError(
           loadError.message ??
-            "Could not load the project."
+            "Could not load the project.",
         );
       } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingProject(false);
+        if (
+          !controller.signal
+            .aborted
+        ) {
+          setIsLoadingProject(
+            false,
+          );
         }
       }
     };
 
-    initializeProject();
+  initializeProject();
 
-    return () => {
-      controller.abort();
-    };
-  }, [
-    id,
-    loadProject,
-    loadChart,
-    resetEmptySheet,
-  ]);
+  return () => {
+    controller.abort();
+  };
+}, [
+  id,
+  loadProject,
+  loadChart,
+  resetEmptySheet,
+]);
 
   // ===================================
   // UPLOAD PARSED ROWS
@@ -366,95 +350,8 @@ const uploadData = async (
     sheet_name: metadata.sheetName ?? null,
   };
 
-  console.log("UPLOAD DATA REQUEST:", requestBody);
 
-  try {
-    const response = await fetch(
-      `${API_URL}/upload-data`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    const responseText = await response.text();
-
-    console.log(
-      "UPLOAD DATA STATUS:",
-      response.status
-    );
-
-    console.log(
-      "UPLOAD DATA RESPONSE:",
-      responseText
-    );
-
-    let savedDataset = null;
-
-    if (responseText) {
-      try {
-        savedDataset = JSON.parse(responseText);
-      } catch {
-        throw new Error(
-          `The backend returned invalid JSON: ${responseText}`
-        );
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        savedDataset?.message ??
-          savedDataset?.error ??
-          `Upload failed with status ${response.status}.`
-      );
-    }
-
-    const newDatasetId =
-      getReturnedDatasetId(savedDataset);
-
-    if (!newDatasetId) {
-      console.error(
-        "Unexpected backend response:",
-        savedDataset
-      );
-
-      throw new Error(
-        "Upload succeeded, but the backend did not return a dataset ID."
-      );
-    }
-
-    setDatasetId(newDatasetId);
-
-    applyRows(
-      rows,
-      columnsToUpload,
-      true
-    );
-
-    return {
-      ...savedDataset,
-      id: newDatasetId,
-      datasetId: newDatasetId,
-    };
-  } catch (uploadError) {
-    console.error(
-      "Dataset upload failed:",
-      uploadError
-    );
-
-    setError(
-      uploadError.message ??
-        "Could not upload the dataset."
-    );
-
-    throw uploadError;
-  }
+2
 };
 
   // ===================================
@@ -648,66 +545,56 @@ const uploadData = async (
     setIsSavingDataset(true);
     setError("");
 
-    try {
-      const response = await fetch(
-        `${API_URL}/data/save_dataset`,
-        {
-          method: "POST",
+   try {
+  const savedDataset = await apiRequest(
+    "/data/save_dataset",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        project_id: id,
+        dataset_id: datasetId,
+        columns,
+        rows: rowsToSave,
+      }),
+    },
+  );
 
-          headers: {
-            "Content-Type":
-              "application/json",
-            ...getAuthHeaders(),
-          },
+  const savedDatasetId =
+    getReturnedDatasetId(
+      savedDataset,
+    );
 
-          body: JSON.stringify({
-            project_id: id,
-            dataset_id: datasetId,
-            columns,
-            rows: rowsToSave,
-          }),
-        }
-      );
+  if (!savedDatasetId) {
+    throw new Error(
+      "The backend did not return a dataset ID.",
+    );
+  }
 
-      const savedDataset =
-        await readJsonResponse(
-          response,
-          "Could not save the dataset."
-        );
+  setDatasetId(
+    savedDatasetId,
+  );
 
-      const savedDatasetId =
-        getReturnedDatasetId(
-          savedDataset
-        );
+  return {
+    ...savedDataset,
+    id: savedDatasetId,
+    datasetId:
+      savedDatasetId,
+  };
+} catch (saveError) {
+  console.error(
+    "Dataset saving failed:",
+    saveError,
+  );
 
-      if (!savedDatasetId) {
-        throw new Error(
-          "The backend did not return a dataset ID."
-        );
-      }
+  setError(
+    saveError.message ??
+      "Could not save the dataset.",
+  );
 
-      setDatasetId(savedDatasetId);
-
-      return {
-        ...savedDataset,
-        id: savedDatasetId,
-        datasetId: savedDatasetId,
-      };
-    } catch (saveError) {
-      console.error(
-        "Dataset saving failed:",
-        saveError
-      );
-
-      setError(
-        saveError.message ??
-          "Could not save the dataset."
-      );
-
-      throw saveError;
-    } finally {
-      setIsSavingDataset(false);
-    }
+  throw saveError;
+} finally {
+  setIsSavingDataset(false);
+}
   };
 
   // ===================================
@@ -752,50 +639,36 @@ const uploadData = async (
       requestBody
     );
 
-    try {
-      const response = await fetch(
-        `${API_URL}/charts`,
-        {
-          method: "POST",
+try {
+  const savedChartResponse =
+    await apiRequest(
+      "/charts",
+      {
+        method: "POST",
+        body: JSON.stringify(
+          requestBody,
+        ),
+      },
+    );
 
-          headers: {
-            "Content-Type":
-              "application/json",
+  setSavedChart(
+    savedChartResponse,
+  );
 
-            Authorization:
-              `Bearer ${token}`,
-          },
+  return savedChartResponse;
+} catch (chartError) {
+  console.error(
+    "Chart saving failed:",
+    chartError,
+  );
 
-          body: JSON.stringify(
-            requestBody
-          ),
-        }
-      );
+  setError(
+    chartError.message ??
+      "Could not save the chart.",
+  );
 
-      const savedChartResponse =
-        await readJsonResponse(
-          response,
-          "Could not save the chart."
-        );
-
-      setSavedChart(
-        savedChartResponse
-      );
-
-      return savedChartResponse;
-    } catch (chartError) {
-      console.error(
-        "Chart saving failed:",
-        chartError
-      );
-
-      setError(
-        chartError.message ??
-          "Could not save the chart."
-      );
-
-      throw chartError;
-    }
+  throw chartError;
+}
   };
 
   return {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-
+import { apiRequest } from "../api/client";
 function AccountSettings() {
   const navigate = useNavigate();
 
@@ -45,12 +45,17 @@ function AccountSettings() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const data = await request("http://localhost:5000/users/me");
+        const data = await apiRequest(
+          "/users/me"
+        );
 
         setProfile({
-          full_name: data.full_name || "",
-          username: data.username || "",
-          email: data.email || "",
+          full_name:
+            data.full_name ?? "",
+          username:
+            data.username ?? "",
+          email:
+            data.email ?? "",
         });
       } catch (err) {
         setError(err.message);
@@ -68,16 +73,27 @@ function AccountSettings() {
     setError("");
 
     try {
-      const updatedUser = await request(
-        "http://localhost:5000/users/me",
-        {
-          method: "PUT",
-          body: JSON.stringify(profile),
-        }
+      const updatedUser =
+        await apiRequest(
+          "/users/me",
+          {
+            method: "PUT",
+            body: JSON.stringify(
+              profile,
+            ),
+          },
+        );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(
+          updatedUser,
+        ),
       );
 
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setMessage("Profile updated successfully.");
+      setMessage(
+        "Profile updated successfully.",
+      );
     } catch (err) {
       setError(err.message);
     }
@@ -92,26 +108,32 @@ function AccountSettings() {
       setError("New passwords do not match.");
       return;
     }
+try {
+  await apiRequest(
+    "/users/me/password",
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        currentPassword:
+          passwords.currentPassword,
+        newPassword:
+          passwords.newPassword,
+      }),
+    },
+  );
 
-    try {
-      await request("http://localhost:5000/users/me/password", {
-        method: "PUT",
-        body: JSON.stringify({
-          currentPassword: passwords.currentPassword,
-          newPassword: passwords.newPassword,
-        }),
-      });
+  setPasswords({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
-      setPasswords({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-
-      setMessage("Password changed successfully.");
-    } catch (err) {
-      setError(err.message);
-    }
+  setMessage(
+    "Password changed successfully.",
+  );
+} catch (err) {
+  setError(err.message);
+}
   };
 
   const logout = () => {
@@ -131,12 +153,20 @@ function AccountSettings() {
     setError("");
 
     try {
-      await request("http://localhost:5000/users/me", {
-        method: "DELETE",
-      });
+      await apiRequest(
+        "/users/me",
+        {
+          method: "DELETE",
+        },
+      );
 
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      localStorage.removeItem(
+        "token",
+      );
+
+      localStorage.removeItem(
+        "user",
+      );
 
       navigate("/register");
     } catch (err) {

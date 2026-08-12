@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import ChartPreview from "../components/charts/ChartPreview";
 import useChartData from "../hooks/useChartData";
 import { defaultChartConfig,defaultChartSettings } from "../components/config/chartDefaults";
-
+import { apiRequest } from "../api/client";
 
 function safeParse(value, fallback = {}) {
   if (!value) return fallback;
@@ -193,47 +193,16 @@ const preparedRows = useMemo(() => {
         setLoading(true);
         setLoadError("");
 
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-          throw new Error("No authentication token found.");
-        }
-
-        const chartResponse = await fetch(
-          `http://localhost:5000/charts/${chartId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        const chartResult = await apiRequest(
+          `/charts/${chartId}`,
         );
 
-        if (!chartResponse.ok) {
-          throw new Error(
-            `Failed to load chart: ${chartResponse.status}`,
-          );
-        }
-
-        const chartResult = await chartResponse.json();
-
+     
         setChart(chartResult);
 
-        const rowsResponse = await fetch(
-          `http://localhost:5000/data/rows?dataset_id=${chartResult.dataset_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        const datasetRows = await apiRequest(
+          `/data/rows?dataset_id=${chartResult.dataset_id}`,
         );
-
-        if (!rowsResponse.ok) {
-          throw new Error(
-            `Failed to load chart data: ${rowsResponse.status}`,
-          );
-        }
-
-        const datasetRows = await rowsResponse.json();
 
         const rowsArray = Array.isArray(datasetRows)
           ? datasetRows

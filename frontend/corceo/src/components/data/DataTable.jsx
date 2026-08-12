@@ -1,5 +1,6 @@
 import DropUpload from "./DropUpload";
 import { useState,useEffect } from "react";
+import { apiRequest } from "../../api/client";
 function DataTable({
   data,
   setData,
@@ -40,31 +41,21 @@ const addColumn = () => {
 
   setNewColumnCreated(true);
 };
+
+
 const createColumn = async (columnName) => {
-  const response = await fetch(
-    "http://localhost:5000/data/columns/add",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      },
-      body: JSON.stringify({
-        dataset_id: datasetId,
-        columnName,
-        defaultValue: "",
-      }),
-    }
-  );
+  return apiRequest("/data/columns/add", {
+    method: "POST",
+    body: JSON.stringify({
+      dataset_id: datasetId,
+      columnName,
+      defaultValue: "",
+    }),
+  });
+};
 
-  const result = await response.json();
 
-  if (!response.ok) {
-    throw new Error(result.error);
-  }
-
-  return result;
-};const renameColumn = async (oldName, newName) => {
+const renameColumn = async (oldName, newName) => {
   newName = newName.trim();
 
   if (!newName) {
@@ -102,46 +93,40 @@ const createColumn = async (columnName) => {
       );
 
       setNewColumnCreated(false);
-    } else {
-      const response = await fetch(
-        "http://localhost:5000/data/columns/rename",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          },
-          body: JSON.stringify({
-            dataset_id: datasetId,
-            oldName,
-            newName,
-          }),
-        }
-      );
+    }else {
+  await apiRequest(
+    "/data/columns/rename",
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        dataset_id: datasetId,
+        oldName,
+        newName,
+      }),
+    },
+  );
 
-      const result = await response.json();
+  const updated = data.map((row) => {
+    const newRow = { ...row };
 
-      if (!response.ok) {
-        throw new Error(result.error);
-      }
+    newRow[newName] =
+      newRow[oldName];
 
-      const updated = data.map(row => {
-        const newRow = { ...row };
+    delete newRow[oldName];
 
-        newRow[newName] = newRow[oldName];
-        delete newRow[oldName];
+    return newRow;
+  });
 
-        return newRow;
-      });
+  setData(updated);
 
-      setData(updated);
-
-      setColumns(prev =>
-        prev.map(col =>
-          col === oldName ? newName : col
-        )
-      );
-    }
+  setColumns((prev) =>
+    prev.map((col) =>
+      col === oldName
+        ? newName
+        : col,
+    ),
+  );
+}
 
     setColumnError("");
     setEditingColumn(null);
@@ -151,41 +136,48 @@ const createColumn = async (columnName) => {
     setColumnError(err.message);
   }
 };
-
-const deleteColumn = async(columnName) => {
-  try{
-    await fetch(
-      "http://localhost:5000/data/columns/delete",
+const deleteColumn = async (columnName) => {
+  try {
+    await apiRequest(
+      "/data/columns/delete",
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
         body: JSON.stringify({
           dataset_id: datasetId,
           columnName,
         }),
-      }
+      },
     );
-  } catch(err) {
-    console.error(err);
-    return;
+
+    setData((previous) =>
+      previous.map((row) => {
+        const nextRow = {
+          ...row,
+        };
+
+        delete nextRow[
+          columnName
+        ];
+
+        return nextRow;
+      }),
+    );
+
+    setColumns((previous) =>
+      previous.filter(
+        (column) =>
+          column !==
+          columnName,
+      ),
+    );
+
+    setSelectedColumn(null);
+  } catch (err) {
+    console.error(
+      "Failed to delete column:",
+      err,
+    );
   }
-    
-  const updated = data.map(row => {
-    const newRow = { ...row };
-    delete newRow[columnName];
-    return newRow;
-  });
-
-  setData(updated);
-
-  setColumns(prev =>
-    prev.filter(col => col !== columnName)
-  );
-
-  setSelectedColumn(null);
 };
 
   const handleCellChange = (

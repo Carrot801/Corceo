@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Header from "./Header";
 import AuthRequiredModal from "../components/AuthRequiredModal";
+import {
+  apiRequest,
+} from "../api/client";
 
 function BasePage() {
   const [addingFolder, setAddingFolder] = useState(false);
@@ -29,13 +32,10 @@ function BasePage() {
 });
 const createProject = async () => {
   try {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch("http://localhost:5000/projects", {
+    const res = await apiRequest("/projects", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         name: "New Project",
@@ -50,10 +50,7 @@ const createProject = async () => {
       return;
     }
 
-    console.log("Created project:", newProject);
-
     setProjects((prev) => [...prev, newProject]);
-
     navigate(`/projects/new/${newProject.id}`);
   } catch (err) {
     console.error("Failed to create project:", err);
@@ -73,98 +70,85 @@ const requireAuth = (destination) => {
 
 
 const loadTreeItemsForFolder = async (folderId) => {
-  const token = localStorage.getItem("token");
+  try {
+    let projectPath = "/projects";
+    let storyPath = "/stories";
 
-  let projectUrl = "http://localhost:5000/projects";
-  let storyUrl = "http://localhost:5000/stories";
+    if (folderId !== null && folderId !== undefined) {
+      const query = `?folder_id=${encodeURIComponent(folderId)}`;
 
-  if (folderId !== null && folderId !== undefined) {
-    projectUrl += `?folder_id=${folderId}`;
-    storyUrl += `?folder_id=${folderId}`;
+      projectPath += query;
+      storyPath += query;
+    }
+
+    const [projectData, storyData] = await Promise.all([
+      apiRequest(projectPath),
+      apiRequest(storyPath),
+    ]);
+
+    setTreeProjects((previous) =>
+      sortProjects([
+        ...previous.filter(
+          (project) =>
+            project.folder_id !== folderId,
+        ),
+        ...projectData,
+      ]),
+    );
+
+    setTreeStories((previous) => [
+      ...previous.filter(
+        (story) =>
+          story.folder_id !== folderId,
+      ),
+      ...storyData,
+    ]);
+  } catch (err) {
+    console.error(
+      "Failed to load folder tree items:",
+      err,
+    );
   }
-
-  const [projectRes, storyRes] = await Promise.all([
-    fetch(projectUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-    fetch(storyUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  ]);
-
-  const projectData = await projectRes.json();
-  const storyData = await storyRes.json();
-
-  setTreeProjects((previous) =>
-  sortProjects([
-    ...previous.filter(
-      (project) =>
-        project.folder_id !==
-        folderId,
-    ),
-
-    ...projectData,
-  ]),
-);
-
-  setTreeStories(prev => [
-    ...prev.filter(s => s.folder_id !== folderId),
-    ...storyData,
-  ]);
 };
-  const getFolders = async () => {
-    const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:5000/folders", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await res.json();
+  const getFolders = async () => {
+    const data =
+    await apiRequest(
+      "/folders",
+    );
     setFolders(data);
     await loadTreeItemsForFolder(null);
   };
   
 const createFolder = async () => {
-
   if (!folderName.trim()) return;
 
-  const token = localStorage.getItem("token");
+  try {
+    await apiRequest("/folders", {
+      method: "POST",
+      body: JSON.stringify({
+        name: folderName,
+        parent_id: activeFolder || null,
+      }),
+    });
 
-  await fetch("http://localhost:5000/folders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      name: folderName,
-      parent_id: activeFolder || null,
-    })
-  });
-  await getFolders();
-  setFolderName("");
-  setAddingFolder(false);
+    await getFolders();
+    setFolderName("");
+    setAddingFolder(false);
+  } catch (err) {
+    console.error("Failed to create folder:", err);
+  }
 };
+
   const getProjects = async (folderId) => {
     try {
-      let url = "http://localhost:5000/projects";
+      let path = "/projects";
 
       if (folderId !== null && folderId !== undefined) {
-        url += `?folder_id=${folderId}`;
+        path += `?folder_id=${folderId}`;
       }
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
+      const data = await apiRequest(path);
 
       setProjects(data);
     } catch (err) {
@@ -173,29 +157,22 @@ const createFolder = async () => {
   };
    const getStories = async (folderId) => {
     try {
-      let url = "http://localhost:5000/stories";
 
+      let path = "/stories";
       if (folderId !== null && folderId !== undefined) {
-        url += `?folder_id=${folderId}`;
+        path += `?folder_id=${folderId}`;
       }
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
+      const data = await apiRequest(path);
 
       setStories(data);
     } catch (err) {
       console.error("getStories failed:", err);
     }
   };
+
   const toggleFolder = (id) => {
     setOpenFolders(prev => ({
       ...prev,
@@ -362,19 +339,17 @@ useEffect(() => {
 
 
 const searchItems = async (value) => {
-  const res = await fetch(
-    `http://localhost:5000/search?q=${encodeURIComponent(value)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }
-  );
+  try {
+    const data = await apiRequest(
+      `/search?q=${encodeURIComponent(value)}`
+    );
 
-  const data = await res.json();
-
-  setSearchResults(data);
+    setSearchResults(data);
+  } catch (err) {
+    console.error("Search failed:", err);
+  }
 };
+
 
 useEffect(() => {
   getProjects(activeFolder);
@@ -382,22 +357,31 @@ useEffect(() => {
 }, [activeFolder]);
 
 const createFolderWithParent = async (parentId) => {
-  const token = localStorage.getItem("token");
   if (!folderName.trim()) return;
 
-  await fetch("http://localhost:5000/folders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ name: folderName, parent_id: parentId })
-  });
-  
-  await getFolders();
-  setFolderName("");
-  setContextMenu({ visible: false, x: 0, y: 0, folderId: null });
+  try {
+    await apiRequest("/folders", {
+      method: "POST",
+      body: JSON.stringify({
+        name: folderName,
+        parent_id: parentId,
+      }),
+    });
+
+    await getFolders();
+
+    setFolderName("");
+    setContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      folderId: null,
+    });
+  } catch (err) {
+    console.error("Create folder failed:", err);
+  }
 };
+
 useEffect(() => {
   const timeout = setTimeout(() => {
     if (search.trim()) {
@@ -410,46 +394,29 @@ useEffect(() => {
 const navigate = useNavigate();
   
 
-  const renameProject = async (projectId) => {
-    if (!newProjectName.trim()) return;
+const renameProject = async (projectId) => {
+  if (!newProjectName.trim()) return;
 
-    try {
-      const res = await fetch(
-        `http://localhost:5000/projects/${projectId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            name: newProjectName,
-          }),
-        }
-      );
+  try {
+    const data = await apiRequest(`/projects/${projectId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: newProjectName,
+      }),
+    });
 
-      const text = await res.text();
-      console.log("Server response:", text);
-      let data;
-      try{
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error("Failed to parse JSON:", err);
-        return;
-      }
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId ? data : project
+      )
+    );
 
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.id === projectId ? data : p
-        )
-      );
-
-      setRenamingProject(null);
-      setNewProjectName("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    setRenamingProject(null);
+    setNewProjectName("");
+  } catch (err) {
+    console.error("Failed to rename project:", err);
+  }
+};
 const duplicateProject = async (projectId) => {
   try {
     if (!projectId) {
@@ -457,27 +424,11 @@ const duplicateProject = async (projectId) => {
       return;
     }
 
-    const res = await fetch(
-      `http://localhost:5000/projects/duplicate/${projectId}`,
+    const data = await apiRequest(`/projects/duplicate/${projectId}`, 
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       }
     );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error("Duplicate project failed:", data);
-      return;
-    }
-
-    if (!data?.id) {
-      console.error("Duplicate response has no project ID:", data);
-      return;
-    }
 
     setProjects((prev) => [data, ...prev]);
     setTreeProjects((prev) => [data, ...prev]);
@@ -487,48 +438,30 @@ const duplicateProject = async (projectId) => {
   }
 };
   
-  const deleteProject = async (projectId) => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/projects/${projectId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+const deleteProject = async (projectId) => {
+  try {
+    await apiRequest(`/projects/${projectId}`, {
+      method: "DELETE",
+    });
 
-      const data = await res.json();
+    setProjects((prev) =>
+      prev.filter((project) => project.id !== projectId)
+    );
+  } catch (err) {
+    console.error("Failed to delete project:", err);
+  }
+};
 
-      if (!res.ok) {
-        console.error("Delete failed:", data);
-        return;
-      }
-
-      setProjects((prev) =>
-        prev.filter((p) => p.id !== projectId)
-      );
-
-    } catch (err) {
-      console.error("Network error:", err);
-    }
-  };
   const createStory = async () => {
   try {
-    const res = await fetch("http://localhost:5000/stories", {
+    const data = await apiRequest("/stories", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
       body: JSON.stringify({ 
         name: "Untitled Story",
         slides: [],
       folder_id: activeFolder ?? null,
      }),
     });
-    const data = await res.json();
 
 
     if (data.id) {
@@ -542,24 +475,13 @@ const duplicateProject = async (projectId) => {
     console.error("Failed to initialize story:", err);
   }
 };
+
 const duplicateStory = async (storyId) => {
   try {
-    const res = await fetch(
-      `http://localhost:5000/stories/duplicate/${storyId}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+    const duplicated = await apiRequest(`/stories/duplicate/${storyId}`, {
+      method: "POST",
+    });
 
-    const duplicated = await res.json();
-
-    if (!res.ok) {
-      console.error("Duplicate story failed:", duplicated);
-      return;
-    }
 
     setStories((prev) => [...prev, duplicated]);
     setTreeStories((prev) => [...prev, duplicated]);
@@ -634,43 +556,16 @@ const toggleProjectFavorite = async (
   }));
 
   try {
-    const token =
-      localStorage.getItem("token");
+  const updatedProject = await apiRequest(
+    `/projects/${project.id}/favorite`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        is_favorite: nextFavorite,
+      }),
+    },
+  );
 
-    const response = await fetch(
-      `http://localhost:5000/projects/${project.id}/favorite`,
-      {
-        method: "PATCH",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          Authorization:
-            `Bearer ${token}`,
-        },
-
-        body: JSON.stringify({
-          is_favorite:
-            nextFavorite,
-        }),
-      },
-    );
-
-    const updatedProject =
-      await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        updatedProject.error ||
-          "Failed to update favorite",
-      );
-    }
-
-    /*
-     * Replace optimistic data with
-     * the canonical backend response.
-     */
     const applyServerProject = (
       projectList,
     ) =>
@@ -703,10 +598,6 @@ const toggleProjectFavorite = async (
       "Favorite update failed:",
       error,
     );
-
-    /*
-     * Roll back the optimistic update.
-     */
     setProjects((previous) =>
       updateLocalProject(
         previous,
@@ -743,28 +634,21 @@ const toggleProjectFavorite = async (
 
 const deleteStory = async (storyId) => {
   try {
-    const res = await fetch(`http://localhost:5000/stories/${storyId}`, {
+    await apiRequest(`/stories/${storyId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
     });
 
-    const data = await res.json();
+    setStories((prev) =>
+      prev.filter((story) => story.id !== storyId)
+    );
 
-    if (!res.ok) {
-      console.error("Delete story failed:", data);
-      return;
-    }
-
-    setStories((prev) => prev.filter((s) => s.id !== storyId));
-    setTreeStories((prev) => prev.filter((s) => s.id !== storyId));
+    setTreeStories((prev) =>
+      prev.filter((story) => story.id !== storyId)
+    );
   } catch (err) {
-    console.error(err);
+    console.error("Failed to delete story:", err);
   }
 };
-
-    // Determine what to display
     const isSearching = search.trim().length > 0;
     const projectSource =
       isSearching
@@ -1166,7 +1050,12 @@ const deleteStory = async (storyId) => {
           <div
             className="app-card fixed border shadow-xl rounded-lg p-3 z-50 w-48 "
             style={{ top: contextMenu.y, left: contextMenu.x }}
-            onMouseLeave={() => setContextMenu({ ...contextMenu, visible: false })}
+            onMouseLeave={() =>
+              setContextMenu((prev) => ({
+                ...prev,
+                visible: false,
+              }))
+            }
           >
             <div className="text-xs font-bold mb-2 app-text uppercase">New Item</div>
             <input

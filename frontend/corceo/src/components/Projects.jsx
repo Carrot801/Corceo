@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
+import {
+  apiRequest,
+} from "../api/client";
 
 function Projects() {
 
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/projects")
-      .then(res => res.json())
-      .then(data => setProjects(data));
+    const loadProjects = async () => {
+      try {
+        const data = await apiRequest("/projects");
+        setProjects(data);
+      } catch (err) {
+        console.error("Failed to load projects:", err);
+      }
+    };
+
+    loadProjects();
   }, []);
 
   return (

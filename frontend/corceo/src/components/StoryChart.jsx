@@ -1,21 +1,22 @@
-import { useEffect, useState,useRef, } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import ChartPreview from "../components/charts/ChartPreview";
 import useChartData from "../hooks/useChartData";
-
+import { apiRequest } from "../api/client";
 
 function StoryChartScaler({
   children,
 }) {
-  const containerRef = useRef(null);
+  const containerRef =
+    useRef(null);
 
   const [scale, setScale] =
     useState(1);
 
-  /*
-   * This is the logical size of the chart.
-   * Keep it close to the size used by your
-   * visualization preview/export.
-   */
   const CHART_WIDTH = 1200;
   const CHART_HEIGHT = 760;
 
@@ -36,10 +37,13 @@ function StoryChartScaler({
         return;
       }
 
-      const nextScale = Math.min(
-        rect.width / CHART_WIDTH,
-        rect.height / CHART_HEIGHT
-      );
+      const nextScale =
+        Math.min(
+          rect.width /
+            CHART_WIDTH,
+          rect.height /
+            CHART_HEIGHT,
+        );
 
       setScale(nextScale);
     };
@@ -48,13 +52,14 @@ function StoryChartScaler({
 
     const observer =
       new ResizeObserver(
-        updateScale
+        updateScale,
       );
 
     observer.observe(element);
 
-    return () =>
+    return () => {
       observer.disconnect();
+    };
   }, []);
 
   return (
@@ -76,7 +81,8 @@ function StoryChartScaler({
             scale(${scale})
           `,
 
-          transformOrigin: "center",
+          transformOrigin:
+            "center",
         }}
       >
         {children}
@@ -85,129 +91,216 @@ function StoryChartScaler({
   );
 }
 
+function StoryChart({
+  chartId,
+  storyMode = false,
+}) {
+  const [chart, setChart] =
+    useState(null);
 
+  const [rows, setRows] =
+    useState([]);
 
-function StoryChart({ chartId, storyMode = false }) {
-  const [chart, setChart] = useState(null);
-  const [rows, setRows] = useState([]);
+  const [loading, setLoading] =
+    useState(true);
 
+  const [error, setError] =
+    useState(null);
 
-  const loadChart = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        console.error("No token found in localStorage");
-        return;
-      }
-      const chartRes = await fetch(
-        `http://localhost:5000/charts/${chartId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      const chartData = await chartRes.json();
-      console.log("Chart DatDDDDDDDDDDDa:", chartData);
-
-      setChart(chartData);
-
-      const rowsRes = await fetch(
-          `http://localhost:5000/data/rows?dataset_id=${chartData.dataset_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-      );
-
-      const datasetRows = await rowsRes.json();
-
-
-      const rowsArray =
-        Array.isArray(datasetRows)
-          ? datasetRows
-          : Array.isArray(datasetRows?.rows)
-          ? datasetRows.rows
-          : [];
-
-      setRows(
-        rowsArray.map(r => r?.data ?? r)
-      );
-
-    } catch (err) {
-      console.error(err);
-    }
-  };
-    
-  
   useEffect(() => {
+    if (!chartId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadChart = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const chartData =
+          await apiRequest(
+            `/charts/${chartId}`,
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        setChart(chartData);
+
+        if (
+          !chartData?.dataset_id
+        ) {
+          setRows([]);
+          return;
+        }
+
+        const datasetRows =
+          await apiRequest(
+            `/data/rows?dataset_id=${encodeURIComponent(
+              chartData.dataset_id,
+            )}`,
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        const rowsArray =
+          Array.isArray(
+            datasetRows,
+          )
+            ? datasetRows
+            : Array.isArray(
+                  datasetRows?.rows,
+                )
+              ? datasetRows.rows
+              : [];
+
+        setRows(
+          rowsArray.map(
+            (row) =>
+              row?.data ?? row,
+          ),
+        );
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Failed to load story chart:",
+          err,
+        );
+
+        setError(
+          err.message ||
+            "Failed to load chart.",
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
     loadChart();
+
+    return () => {
+      cancelled = true;
+    };
   }, [chartId]);
 
-  
-const parsedSettings =
-  typeof chart?.settings === "string"
-    ? JSON.parse(chart.settings)
-    : chart?.settings || {};
+  const parseJsonValue = (
+    value,
+    fallback,
+  ) => {
+    if (value == null) {
+      return fallback;
+    }
 
-const savedConfig =
-  typeof chart?.chart_config === "string"
-    ? JSON.parse(chart.chart_config)
-    : chart?.chart_config || {};
+    if (
+      typeof value !==
+      "string"
+    ) {
+      return value;
+    }
 
-const parsedY = chart?.y_axis
-  ? typeof chart.y_axis === "string"
-    ? JSON.parse(chart.y_axis)
-    : chart.y_axis
-  : [];
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
 
-const chartConfig = {
-  ...savedConfig,
+  const parsedSettings =
+    parseJsonValue(
+      chart?.settings,
+      {},
+    );
 
-  
-  x: savedConfig.x || chart?.x_axis || null,
+  const savedConfig =
+    parseJsonValue(
+      chart?.chart_config,
+      {},
+    );
 
-  y:
-    savedConfig.y ||
-    (Array.isArray(parsedY)
-      ? parsedY
-      : parsedY
-        ? [parsedY]
-        : []),
+  const parsedY =
+    parseJsonValue(
+      chart?.y_axis,
+      [],
+    );
 
-  type:
-    savedConfig.type ||
-    chart?.chart_type ||
-    "bar",
+  const chartConfig = {
+    ...savedConfig,
 
-  aggregation:
-    savedConfig.aggregation ||
-    parsedSettings.aggregation ||
-    "none",
+    x:
+      savedConfig.x ||
+      chart?.x_axis ||
+      null,
 
-  sort:
-    savedConfig.sort ||
-    parsedSettings.sort ||
-    "none",
+    y:
+      savedConfig.y ||
+      (Array.isArray(parsedY)
+        ? parsedY
+        : parsedY
+          ? [parsedY]
+          : []),
 
-  appearance: {
-    ...(savedConfig.appearance || {}),
-  },
+    type:
+      savedConfig.type ||
+      chart?.chart_type ||
+      "bar",
 
-  limit: savedConfig.limit || null,
-  sortBy: savedConfig.sortBy || null,
-  timeGroupBy: savedConfig.timeGroupBy || "none",
-  groupSmallCategories:
-    savedConfig.groupSmallCategories || false,
-  filterField: savedConfig.filterField || null,
-  xHierarchy: savedConfig.xHierarchy || [],
-  dateHierarchySource:
-    savedConfig.dateHierarchySource || null,
-};
+    aggregation:
+      savedConfig.aggregation ||
+      parsedSettings.aggregation ||
+      "none",
 
+    sort:
+      savedConfig.sort ||
+      parsedSettings.sort ||
+      "none",
+
+    appearance: {
+      ...(
+        savedConfig.appearance ||
+        {}
+      ),
+    },
+
+    limit:
+      savedConfig.limit ??
+      null,
+
+    sortBy:
+      savedConfig.sortBy ??
+      null,
+
+    timeGroupBy:
+      savedConfig.timeGroupBy ??
+      "none",
+
+    groupSmallCategories:
+      savedConfig
+        .groupSmallCategories ??
+      false,
+
+    filterField:
+      savedConfig.filterField ??
+      null,
+
+    xHierarchy:
+      savedConfig.xHierarchy ??
+      [],
+
+    dateHierarchySource:
+      savedConfig
+        .dateHierarchySource ??
+      null,
+  };
 
   const {
     chartData,
@@ -216,50 +309,71 @@ const chartConfig = {
   } = useChartData({
     data: rows,
     chartConfig,
-    settings: parsedSettings,
+    settings:
+      parsedSettings,
   });
 
+  if (loading) {
+    return (
+      <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
+        Loading chart...
+      </div>
+    );
+  }
 
-if (!chart) {
-  return (
-    <div className="flex h-full items-center justify-center">
-      Loading...
-    </div>
-  );
-}
+  if (error) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-4">
+        <p className="text-sm text-[rgb(var(--color-danger))]">
+          {error}
+        </p>
+      </div>
+    );
+  }
 
-if (storyMode) {
-  return (
-    <div className="relative h-full w-full overflow-hidden">
-      <StoryChartScaler>
-        <ChartPreview
-          chartData={chartData}
-          chartConfig={chartConfig}
-          generatedColors={generatedColors}
-          visibleYKeys={visibleYKeys}
-          rawData={rows}
-          settings={{
-            ...parsedSettings,
-          }}
-        />
-      </StoryChartScaler>
-    </div>
-  );
-}
+  if (!chart) {
+    return (
+      <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
+        Chart not found.
+      </div>
+    );
+  }
 
-return (
-  <div className="h-full min-h-0 w-full">
+  const preview = (
     <ChartPreview
-      chartData={chartData}
-      chartConfig={chartConfig}
-      generatedColors={generatedColors}
-      visibleYKeys={visibleYKeys}
+      chartData={
+        chartData
+      }
+      chartConfig={
+        chartConfig
+      }
+      generatedColors={
+        generatedColors
+      }
+      visibleYKeys={
+        visibleYKeys
+      }
       rawData={rows}
       settings={{
         ...parsedSettings,
       }}
     />
-  </div>
+  );
+
+  if (storyMode) {
+    return (
+      <div className="relative h-full w-full overflow-hidden">
+        <StoryChartScaler>
+          {preview}
+        </StoryChartScaler>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full min-h-0 w-full">
+      {preview}
+    </div>
   );
 }
 

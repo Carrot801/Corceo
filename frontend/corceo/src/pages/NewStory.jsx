@@ -12,7 +12,7 @@ import StoryAnnotationsSidebar from "../components/story/StoryAnnotationsSidebar
 import StoryExportSlides from "../components/story/StoryExportSlides";
 import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal";
 
-
+import { apiRequest } from "../api/client";
 export const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
 
 export function createChartItem(
@@ -437,6 +437,90 @@ const makeStoryPreview = async () => {
   };
 
 
+const normalizeStorySlides = (storyData) => {
+  return (storyData.slides || []).map((slide) => ({
+    ...slide,
+
+    id: slide.id,
+
+    description: slide.description || "",
+
+    annotations: slide.annotations || [],
+
+    content: (slide.content || []).map((item, index) => ({
+      ...item,
+
+      /*
+       * Keep a stable UI ID for chart interactions.
+       * The backend currently returns chart items using a generated ID.
+       */
+      id:
+        item.id ||
+        `chart-instance-${slide.id}-${item.chartId}-${index}`,
+
+        chartId:
+          item.chartId ??
+          item.chart_id,
+
+imageUrl:
+  item.imageUrl ??
+  item.image_data ??
+  item.chart_image_data ??
+  item.image_url ??
+  item.chart_image_url ??
+  null,
+
+        name: item.name || "Chart",
+        type: item.type || "chart",
+
+      x: Number(item.x ?? 0),
+      y: Number(item.y ?? 0),
+      width: Number(item.width ?? 100),
+      height: Number(item.height ?? 100),
+      zIndex: Number(
+        item.zIndex ??
+        item.z_index ??
+        index + 1,
+      ),
+    })),
+  }));
+};
+
+
+
+const reloadSavedStory = async (
+  savedStoryId,
+) => {
+  const storyData = await apiRequest(
+    `/stories/${savedStoryId}`,
+  );
+
+
+setStoryHistoryState(
+  (current) => ({
+    ...current,
+
+    storyName:
+      storyData.name ||
+      current.storyName,
+
+    slides:
+      normalizeStorySlides(
+        storyData,
+      ),
+  }),
+  {
+    record: false,
+  },
+);
+
+  return storyData;
+};
+
+
+
+
+
     const duplicateSlide = async (index) => {
   const sourceSlide = slides[index];
 
@@ -449,12 +533,7 @@ const makeStoryPreview = async () => {
   }
 
   try {
-    /*
-     * First save the story.
-     *
-     * This guarantees that every slide has a current
-     * database ID before duplication begins.
-     */
+
     const actualStoryId = await saveStory();
 
     const token = localStorage.getItem("token");
@@ -464,30 +543,9 @@ const makeStoryPreview = async () => {
         "No authentication token found",
       );
     }
-
-    /*
-     * saveStory reloads the story and React state updates
-     * asynchronously. Therefore, obtain the canonical slide
-     * again directly from the server.
-     */
-    const storyResponse = await fetch(
-      `http://localhost:5000/stories/${actualStoryId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
-    const storyData = await storyResponse.json();
-
-    if (!storyResponse.ok) {
-      throw new Error(
-        storyData.error ||
-          "Failed to load saved slides",
-      );
-    }
-
+const storyData = await apiRequest(
+  `/stories/${actualStoryId}`,
+);
     const canonicalSlides =
       normalizeStorySlides(storyData);
 
@@ -502,33 +560,17 @@ const makeStoryPreview = async () => {
 
     isSlideActionRef.current = true;
 
-    const response = await fetch(
-      `http://localhost:5000/stories/${actualStoryId}/slides/${canonicalSourceSlide.id}/duplicate`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
+await apiRequest(
+  `/stories/${actualStoryId}/slides/${canonicalSourceSlide.id}/duplicate`,
+  {
+    method: "POST",
+  },
+);
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.error ||
-          "Failed to duplicate slide",
-      );
-    }
-
-    /*
-     * Reload the entire story after duplication.
-     * This keeps positions and all database IDs canonical.
-     */
-    const updatedStory = await reloadSavedStory(
-      actualStoryId,
-      token,
-    );
+const updatedStory =
+  await reloadSavedStory(
+    actualStoryId,
+  );
 
     const duplicatedIndex = Math.min(
       index + 1,
@@ -603,31 +645,12 @@ const deleteSlide = async (index) => {
   try {
     isSlideActionRef.current = true;
 
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(
-      `http://localhost:5000/stories/${storyId}/slides/${slideId}`,
+    await apiRequest(
+      `/stories/${storyId}/slides/${slideId}`,
       {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      },
     );
-
-    let data = {};
-
-    try {
-      data = await res.json();
-    } catch {
-      // DELETE endpoints may return an empty response.
-    }
-
-    if (!res.ok) {
-      throw new Error(
-        data.error || "Failed to delete slide"
-      );
-    }
 
     removeSlideLocally();
   } catch (err) {
@@ -765,6 +788,84 @@ const updateChartItem = (
     options,
   );
 };
+
+const saveStory = async () => {
+  const isNew =
+    storyId === "new" ||
+    !storyId ||
+    storyId ===
+      "undefined";
+
+  const path = isNew
+    ? "/stories"
+    : `/stories/${storyId}`;
+
+  try {
+    isSlideActionRef.current =
+      true;
+
+    const image_url =
+      await makeStoryPreview();
+
+    const result =
+      await apiRequest(
+        path,
+        {
+          method: isNew
+            ? "POST"
+            : "PUT",
+
+          body: JSON.stringify({
+            name: storyName,
+            slides: cleanSlides,
+            image_url,
+          }),
+        },
+      );
+
+    const actualStoryId =
+      isNew
+        ? result.id
+        : storyId;
+
+    if (!actualStoryId) {
+      throw new Error(
+        "The backend did not return a story ID.",
+      );
+    }
+
+    await reloadSavedStory(
+      actualStoryId,
+    );
+
+    hasLoadedStoryRef.current =
+      true;
+
+    if (isNew) {
+      navigate(
+        `/stories/${actualStoryId}`,
+        {
+          replace: true,
+        },
+      );
+    }
+
+    return actualStoryId;
+  } catch (error) {
+    console.error(
+      "Save story failed:",
+      error,
+    );
+
+    throw error;
+  } finally {
+    setTimeout(() => {
+      isSlideActionRef.current =
+        false;
+    }, 300);
+  }
+};
+
 
   const deleteChartItem = (itemId) => {
     setSlides((prev) =>
@@ -1141,14 +1242,10 @@ const stopChartInteraction = () => {
   useEffect(() => {
     const fetchCharts = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const data = await apiRequest(
+          "/projects/all",
+        );
 
-        const res = await fetch("http://localhost:5000/projects/all", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
         setAvailableProjects(data);
       } catch (err) {
         console.error("Failed to load projects", err);
@@ -1159,15 +1256,9 @@ const stopChartInteraction = () => {
 
 const handleProjectClick = async (projectId) => {
   try {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`http://localhost:5000/projects/chart/${projectId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const chart = await res.json();
+    const chart = await apiRequest(
+      `/projects/chart/${projectId}`,
+    );
 
     console.log("chart response:", chart);
 
@@ -1192,37 +1283,59 @@ setShowPicker(false);
   }
 };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+useEffect(() => {
+  if (
+    !storyId ||
+    storyId === "new" ||
+    storyId === "undefined"
+  ) {
+    return;
+  }
 
-    if (!storyId || storyId === "new" || storyId === "undefined") return;
+  let cancelled = false;
 
-    fetch(`http://localhost:5000/stories/${storyId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then((data) => {
-        hasLoadedStoryRef.current = true;
+  const loadStory = async () => {
+    try {
+      const data = await apiRequest(
+        `/stories/${storyId}`,
+      );
 
-        resetStoryHistory({
-          storyName:
-            data.name ||
-            "Untitled Story",
+      if (cancelled) {
+        return;
+      }
 
-          slides:
-            data.slides?.length
-              ? normalizeStorySlides(data)
-              : createInitialStoryState()
-                  .slides,
-        });
-      })
-      .catch(err => console.error("Fetch error:", err));
-  }, [storyId,resetStoryHistory]);
+      hasLoadedStoryRef.current = true;
+
+      resetStoryHistory({
+        storyName:
+          data.name ||
+          "Untitled Story",
+
+        slides:
+          data.slides?.length
+            ? normalizeStorySlides(data)
+            : createInitialStoryState().slides,
+      });
+    } catch (err) {
+      if (!cancelled) {
+        console.error(
+          "Failed to load story:",
+          err,
+        );
+      }
+    }
+  };
+
+  loadStory();
+
+  return () => {
+    cancelled = true;
+  };
+}, [
+  storyId,
+  resetStoryHistory,
+]);
+
 
   useEffect(() => {
   if (!hasLoadedStoryRef.current) return;
@@ -1263,198 +1376,22 @@ const cleanSlides = slides.map((slide) => {
   };
 });
 
-const normalizeStorySlides = (storyData) => {
-  return (storyData.slides || []).map((slide) => ({
-    ...slide,
 
-    id: slide.id,
-
-    description: slide.description || "",
-
-    annotations: slide.annotations || [],
-
-    content: (slide.content || []).map((item, index) => ({
-      ...item,
-
-      /*
-       * Keep a stable UI ID for chart interactions.
-       * The backend currently returns chart items using a generated ID.
-       */
-      id:
-        item.id ||
-        `chart-instance-${slide.id}-${item.chartId}-${index}`,
-
-        chartId:
-          item.chartId ??
-          item.chart_id,
-
-imageUrl:
-  item.imageUrl ??
-  item.image_data ??
-  item.chart_image_data ??
-  item.image_url ??
-  item.chart_image_url ??
-  null,
-
-        name: item.name || "Chart",
-        type: item.type || "chart",
-
-      x: Number(item.x ?? 0),
-      y: Number(item.y ?? 0),
-      width: Number(item.width ?? 100),
-      height: Number(item.height ?? 100),
-      zIndex: Number(
-        item.zIndex ??
-        item.z_index ??
-        index + 1,
-      ),
-    })),
-  }));
-};
-
-const reloadSavedStory = async (
-  savedStoryId,
-  token,
-) => {
-  const response = await fetch(
-    `http://localhost:5000/stories/${savedStoryId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  const storyData = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      storyData.error ||
-        "Failed to reload the saved story",
-    );
-  }
-
-setStoryHistoryState(
-  (current) => ({
-    ...current,
-
-    storyName:
-      storyData.name ||
-      current.storyName,
-
-    slides:
-      normalizeStorySlides(
-        storyData,
-      ),
-  }),
+const result = await apiRequest(
+  path,
   {
-    record: false,
+    method:
+      isNew
+        ? "POST"
+        : "PUT",
+
+    body: JSON.stringify({
+      name: storyName,
+      slides: cleanSlides,
+      image_url,
+    }),
   },
 );
-
-  return storyData;
-};
-
-const saveStory = async () => {
-  const isNew =
-    storyId === "new" ||
-    !storyId ||
-    storyId === "undefined";
-
-  const url = isNew
-    ? "http://localhost:5000/stories"
-    : `http://localhost:5000/stories/${storyId}`;
-
-  try {
-    /*
-     * Prevent autosave from running again while canonical
-     * slide IDs are being loaded into React state.
-     */
-    isSlideActionRef.current = true;
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
-
-const image_url =
-  await makeStoryPreview();
-
-console.log(
-  "Story preview before save:",
-  {
-    exists: Boolean(image_url),
-    length: image_url?.length || 0,
-    start:
-      image_url?.slice(0, 30) ||
-      null,
-  },
-);
-
-const response = await fetch(url, {
-      method: isNew ? "POST" : "PUT",
-
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-
-      body: JSON.stringify({
-        name: storyName,
-        slides: cleanSlides,
-        image_url,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.error || "Failed to save story",
-      );
-    }
-
-    const actualStoryId = isNew
-      ? result.id
-      : storyId;
-
-    if (!actualStoryId) {
-      throw new Error(
-        "The backend did not return a story ID",
-      );
-    }
-
-    /*
-     * Important:
-     * updateStory deletes and recreates all slides,
-     * so immediately reload their new database IDs.
-     */
-    await reloadSavedStory(actualStoryId, token);
-
-    hasLoadedStoryRef.current = true;
-
-    if (isNew) {
-      navigate(`/stories/${actualStoryId}`, {
-        replace: true,
-      });
-    }
-
-    return actualStoryId;
-  } catch (error) {
-    console.error("Save error:", error);
-    throw error;
-  } finally {
-    /*
-     * Keep autosave paused until the React state update
-     * produced by reloadSavedStory has finished.
-     */
-    setTimeout(() => {
-      isSlideActionRef.current = false;
-    }, 300);
-  }
-};
-
 
   const addAnnotation = () => {
     const newId = `anno-${Date.now()}`;
@@ -1720,13 +1657,6 @@ const handleDragStart = (
 
 const publishStory = async () => {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error(
-        "No authentication token found",
-      );
-    }
 
     const actualStoryId = await saveStory();
 
@@ -1736,25 +1666,14 @@ const publishStory = async () => {
       );
     }
 
-    const publishRes = await fetch(
-      `http://localhost:5000/stories/${actualStoryId}/publish`,
+    await apiRequest(
+      `/stories/${actualStoryId}/publish`,
       {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       },
     );
 
-    const published =
-      await publishRes.json();
-
-    if (!publishRes.ok) {
-      throw new Error(
-        published.error ||
-          "Failed to publish story",
-      );
-    }
+   
 
     navigate(
       `/publishedStory/${actualStoryId}`,

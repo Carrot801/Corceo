@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import StoryChart from "../components/StoryChart";
+import { apiRequest } from "../api/client";
 
 function PublishedStory() {
   const { storyId } = useParams();
@@ -11,16 +12,9 @@ function PublishedStory() {
   useEffect(() => {
     const loadStory = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/stories/public/${storyId}`
+        const data = await apiRequest(
+          `/stories/public/${storyId}`
         );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          console.error("Failed to load story:", data);
-          return;
-        }
 
         setStory(data);
       } catch (err) {
