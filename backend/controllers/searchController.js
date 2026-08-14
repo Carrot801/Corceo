@@ -1,5 +1,5 @@
 const { searchItems } = require("../models/searchModel");
-const search = async (req, res) => {
+const search = async (req, res, next) => {
   try {
     const q = req.query.q;
     const userId = req.user.userId;
@@ -16,11 +16,7 @@ const search = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Search failed",
-    });
+    
   }
 };
 

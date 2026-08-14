@@ -18,7 +18,6 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user")
 const errorHandler =require("./middleware/errorHandler");
 
-app.use(errorHandler);
 
 app.use("/search", searchRoutes);
 app.use("/projects", projectsRoutes);
@@ -29,7 +28,21 @@ app.use("/data", dataRoutes);
 app.use("/charts", chartsRoutes);
 app.use("/stories", storiesRoutes);
 app.use("/users",userRoutes);
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+  });
 });
- 
+
+app.use(errorHandler);
+
+const PORT =
+  process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(
+    `Server running on port ${PORT}`,
+  );
+});
+

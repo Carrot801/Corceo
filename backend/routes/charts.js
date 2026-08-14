@@ -13,5 +13,5 @@ router.get("/public/:chartId", getPublishedChart);
 router.post("/",authMiddleware, createChart);
 router.get("/",authMiddleware, getCharts);
 router.get("/:chartId",authMiddleware,getPublishedChart);
-router.put("/:chartId/publish",authMiddlewarepublishChart,);
+router.put("/:chartId/publish",authMiddleware,publishChart,);
 module.exports = router;

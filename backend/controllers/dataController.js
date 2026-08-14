@@ -1,6 +1,6 @@
 const pool = require("../db");
 
-const getColumns = async (req, res) => {
+const getColumns = async (req, res, next) => {
   const { dataset_id } = req.query;
 
   try {
@@ -18,12 +18,11 @@ const getColumns = async (req, res) => {
 
     res.json(columns);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch columns" });
+    next(err);
   }
 };
 
-const getColumnValues = async (req, res) => {
+const getColumnValues = async (req, res, next) => {
   try {
     const { dataset_id, column } = req.query;
     const userId = req.user.userId; 
@@ -38,7 +37,7 @@ const getColumnValues = async (req, res) => {
   }
 };
 
-const getDataset = async (req, res) => {
+const getDataset = async (req, res, next) => {
   const { project_id } = req.query;
   try {
     const userId = req.user.userId; // Get the user ID from the request object
@@ -52,7 +51,7 @@ const getDataset = async (req, res) => {
   }
 };
 
-const deleteDataset = async (req, res) => {
+const deleteDataset = async (req, res, next) => {
   const { dataset_id } = req.params;  
   const userId = req.user.userId; // Get the user ID from the request object
   try {
@@ -64,7 +63,7 @@ const deleteDataset = async (req, res) => {
   }
 }
 
-const getAllRows = async (req, res) => {
+const getAllRows = async (req, res, next) => {
   try {
     const datasetId = Number(req.query.dataset_id);
     const userId = req.user.userId;
@@ -85,7 +84,7 @@ const getAllRows = async (req, res) => {
 };
 
 
-const saveDataset = async (req, res) => {
+const saveDataset = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
@@ -316,7 +315,7 @@ const saveDataset = async (req, res) => {
     client.release();
   }
 };
-const renameColumn = async (req, res) => {
+const renameColumn = async (req, res, next) => {
   const { dataset_id, oldName, newName } = req.body;
   const userId = req.user.userId; // Get the user ID from the request object
   try {
@@ -334,7 +333,7 @@ const renameColumn = async (req, res) => {
     next(err);
   }
 };
-const deleteColumn = async (req, res) => {
+const deleteColumn = async (req, res, next) => {
   const { dataset_id, columnName } = req.body;
   const userId = req.user.userId; // Get the user ID from the request object
 
@@ -354,7 +353,7 @@ const deleteColumn = async (req, res) => {
     next(err);
   }
 };
-const addColumn = async (req, res) => {
+const addColumn = async (req, res, next) => {
   const {
     dataset_id,
     columnName,

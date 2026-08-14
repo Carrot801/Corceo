@@ -1,7 +1,7 @@
 const pool = require("../db");
 
 const { getProjects, createProject,getAllProjects } = require("../models/projectsModel");
-const fetchProjects = async (req, res) => {
+const fetchProjects = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const folder_id = req.query.folder_id || null;
@@ -22,12 +22,11 @@ const fetchProjects = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching projects:", error);
-    res.status(500).json({ error: "Failed to fetch projects" });
+    next(error);
   }
 };
 
-const fetchAllProjects = async (req, res) => {
+const fetchAllProjects = async (req, res, next) => {
   try {
     const userId = req.user.userId;
 
@@ -43,12 +42,11 @@ const fetchAllProjects = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching all projects:", error);
-    res.status(500).json({ error: "Failed to fetch all projects" });
+    next(error);
   }
 };
 
-const addProject = async (req, res) => {
+const addProject = async (req, res, next) => {
   try {
     const { name, folder_id } = req.body;
     const userId = req.user.userId;
@@ -64,12 +62,11 @@ const addProject = async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error creating project:", error);
-    res.status(500).json({ error: "Failed to create project" });
+    next(error);
   }
 };
 
-const renameProject = async (req, res) => {
+const renameProject = async (req, res, next) => {
   try {
     const { project_id } = req.params;
     const { name } = req.body;
@@ -87,12 +84,11 @@ const renameProject = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error renaming project:", error);
-    res.status(500).json({ error: "Failed to rename project" });
+    next(error);
   }
 };
 
-const deleteProject = async (req, res) => {
+const deleteProject = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
@@ -158,8 +154,7 @@ const deleteProject = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Error deleting project:", error);
-    res.status(500).json({ error: "Failed to delete project" });
+    next(error);
   } finally {
     client.release();
   }
@@ -226,7 +221,7 @@ const copyDatabaseRow = async (
   return result.rows[0];
 };
 
-const duplicateProject = async (req, res) => {
+const duplicateProject = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
@@ -374,17 +369,14 @@ const duplicateProject = async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
 
+    next(error);
     console.error("Duplicate project error:", error);
-
-    res.status(500).json({
-      error: error.message || "Failed to duplicate project",
-    });
   } finally {
     client.release();
   }
 };
 
-const getProjectChart = async (req, res) => {
+const getProjectChart = async (req, res, next) => {
   try {
     const { project_id } = req.params;
 
@@ -398,11 +390,7 @@ const getProjectChart = async (req, res) => {
 
     res.json(chart.rows[0]);
   } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      error: "Failed to fetch chart"
-    });
+    next(err);
   }
 };
 
@@ -447,15 +435,7 @@ const updateProjectFavorite = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(
-      "Update project favorite error:",
-      error,
-    );
-
-    res.status(500).json({
-      error:
-        "Failed to update project favorite",
-    });
+    next(error);
   }
 };
 

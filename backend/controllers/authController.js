@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const pool = require("../db");
 
 
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   try {
     const {
       full_name,
@@ -136,20 +136,16 @@ const registerUser = async (req, res) => {
       user,
     });
   } catch (err) {
-    console.error("Register error:", err);
-
     if (err.code === "23505") {
       return res.status(409).json({
         error: "Email or username is already in use",
       });
     }
 
-    return res.status(500).json({
-      error: "Registration failed",
-    });
+    next(err);
   }
 };
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const normalizedEmail = email?.trim().toLowerCase();
@@ -204,15 +200,12 @@ const loginUser = async (req, res) => {
       user: {
         id: user.id,
         full_name: user.full_name,
+        username: user.username,
         email: user.email,
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
-
-    return res.status(500).json({
-      error: "Login failed",
-    });
+    next(err);
   }
 };
 

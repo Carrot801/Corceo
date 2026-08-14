@@ -3,7 +3,7 @@ const pool = require("../db");
 // 1. CREATE A NEW STORY WITH ANNOTATIONS
 
 
-const createStory = async (req, res) => {
+const createStory = async (req, res, next) => {
   const { name, slides,folder_id, image_url } = req.body;
   const client = await pool.connect();
 
@@ -63,15 +63,14 @@ const createStory = async (req, res) => {
     res.json({ id: storyId, message: "Story created successfully" });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Create Story Error: ", err);
-    res.status(500).json({ error: "Failed to create story" });
+    next(err);
   } finally {
     client.release();
   }
 };
 
 // 2. UPDATE AN EXISTING STORY AND OVERWRITE ANNOTATIONS
-const updateStory = async (req, res) => {
+const updateStory = async (req, res, next) => {
   const { storyId } = req.params;
   const { name, slides,image_url } = req.body;
 
@@ -152,14 +151,13 @@ const updateStory = async (req, res) => {
     res.json({ message: "Story updated successfully" });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Update Story Error: ", err);
-    res.status(500).json({ error: "Failed to update story" });
+    next(err);
   } finally {
     client.release();
   }
 };
 
-const getStories = async (req, res) => {
+const getStories = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const folder_id = req.query.folder_id || null;
@@ -192,13 +190,12 @@ const getStories = async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("Get Stories Error:", err);
-    res.status(500).json({ error: "Failed to load stories" });
+    next(err);
   }
 };
 
 // 3. FETCH AND ASSEMBLE STORY HIERARCHY
-const getStory = async (req, res) => {
+const getStory = async (req, res,next) => {
   try {
     const { id } = req.params;
 
@@ -298,11 +295,10 @@ const getStory = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Get Story Error: ", err);
-    res.status(500).json({ error: "Failed to load story" });
+    next(err);
   }
 };
-const getPublicStory = async (req, res) => {
+const getPublicStory = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -388,11 +384,10 @@ const getPublicStory = async (req, res) => {
       slides: Object.values(slidesMap),
     });
   } catch (err) {
-    console.error("Get Public Story Error:", err);
-    res.status(500).json({ error: "Failed to load public story" });
+    next(err);
   }
 };
-const publishStory = async (req, res) => {
+const publishStory = async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const userId = req.user.userId;
@@ -417,11 +412,10 @@ const publishStory = async (req, res) => {
       url: `/publishedStory/${storyId}`,
     });
   } catch (err) {
-    console.error("Publish story error:", err);
-    res.status(500).json({ error: "Failed to publish story" });
+    next(err);
   }
 };
-const duplicateStory = async (req, res) => {
+const duplicateStory = async (req, res, next) => {
   const userId = req.user.userId;
   const storyId = req.params.id;
   const client = await pool.connect();
@@ -495,14 +489,13 @@ const duplicateStory = async (req, res) => {
     res.json(newStory);
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Duplicate story error:", err);
-    res.status(500).json({ error: err.message });
+    next(err);
   } finally {
     client.release();
   }
 };
 
-const deleteStory = async (req, res) => {
+const deleteStory = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
@@ -589,17 +582,13 @@ const deleteStory = async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error("Delete story error:", error);
-
-    return res.status(500).json({
-      error: error.message || "Failed to delete story",
-    });
+    next(error);
   } finally {
     client.release();
   }
 };
 
-const duplicateSlide = async (req, res) => {
+const duplicateSlide = async (req, res, next) => {
   const { storyId, slideId } = req.params;
   const userId = req.user.userId;
   const client = await pool.connect();
@@ -744,14 +733,13 @@ const duplicateSlide = async (req, res) => {
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Duplicate Slide Error:", err);
-    res.status(500).json({ error: "Failed to duplicate slide" });
+    next(err);
   } finally {
     client.release();
   }
 };
 
-const deleteSlide = async (req, res) => {
+const deleteSlide = async (req, res, next) => {
   const { storyId, slideId } = req.params;
   const userId = req.user.userId;
   const client = await pool.connect();
@@ -809,8 +797,7 @@ const deleteSlide = async (req, res) => {
     res.json({ success: true, deletedSlideId: Number(slideId) });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Delete Slide Error:", err);
-    res.status(500).json({ error: "Failed to delete slide" });
+    next(err);
   } finally {
     client.release();
   }

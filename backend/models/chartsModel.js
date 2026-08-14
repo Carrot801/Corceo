@@ -1,6 +1,6 @@
 const pool = require("../db");
 
-const createChart = async (req, res) => {
+const createChart = async (req, res, next) => {
 const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data,chart_config } = req.body;  try {
   const userId = req.user.userId;  
   const result = await pool.query(
@@ -24,8 +24,7 @@ const { project_id, dataset_id, chart_type, x_axis, y_axis, settings, image_data
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("Database Error:", err.message);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
@@ -39,11 +38,10 @@ const getCharts = async (req, res) => {
     );
     res.json(result.rows[0] || null); 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch chart" });
+    next(err);
   }
 };
-const getPublishedChart = async (req, res) => {
+const getPublishedChart = async (req, res, next) => {
   try {
     const { chartId } = req.params;
 
@@ -73,10 +71,7 @@ const getPublishedChart = async (req, res) => {
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Failed to load chart",
-    });
+    next(err);
   }
 };
 
