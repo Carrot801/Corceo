@@ -34,8 +34,7 @@ const getColumnValues = async (req, res) => {
 
     res.json(result.rows.map(r => r.value));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch column values" });
+    next(err);
   }
 };
 
@@ -49,8 +48,7 @@ const getDataset = async (req, res) => {
     );
     res.json(result.rows[0] || null);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch datasets" });
+    next(err);
   }
 };
 
@@ -62,8 +60,7 @@ const deleteDataset = async (req, res) => {
   await pool.query("DELETE FROM datasets WHERE id = $1 AND user_id = $2", [dataset_id, userId]);
   res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete dataset" });
+    next(err);
   }
 }
 
@@ -83,53 +80,240 @@ const getAllRows = async (req, res) => {
 
     res.json(result.rows.map(r => r.data));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch rows" });
+    next(err);
   }
 };
 
 
 const saveDataset = async (req, res) => {
-  const { rows, project_id } = req.body;
-  const userId = req.user.userId; // Get the user ID from the request object
-  try {
-    let dataset = await pool.query(
-      "SELECT id FROM datasets WHERE project_id = $1 AND user_id = $2",
-      [project_id, userId]
-    );
-    let datasetId;
+  const client = await pool.connect();
 
-    if (dataset.rows.length === 0) {
-      const newDataset = await pool.query(
-        "INSERT INTO datasets (project_id, name, user_id) VALUES ($1, $2, $3) RETURNING id",
-        [project_id, "Project Data", userId]
-      );
-      datasetId = newDataset.rows[0].id;
-    } else {
-      datasetId = dataset.rows[0].id;
+  try {
+    const { rows, project_id } = req.body;
+
+    const userId =
+      req.user.userId;
+
+    // =========================
+    // VALIDATION
+    // =========================
+
+    const projectId =
+      Number(project_id);
+
+    if (
+      !Number.isInteger(projectId)
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid project_id",
+        });
     }
 
-    await pool.query("DELETE FROM rows WHERE dataset_id = $1 AND user_id = $2", [datasetId, userId]);
+    if (!Array.isArray(rows)) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Rows must be an array",
+        });
+    }
+
+    // =========================
+    // TRANSACTION START
+    // =========================
+
+    await client.query("BEGIN");
+
+    // =========================
+    // VERIFY PROJECT OWNERSHIP
+    // =========================
+
+    const projectResult =
+      await client.query(
+        `
+        SELECT id
+        FROM projects
+        WHERE id = $1
+        AND user_id = $2
+        `,
+        [
+          projectId,
+          userId,
+        ],
+      );
+
+    if (
+      projectResult.rows.length ===
+      0
+    ) {
+      await client.query(
+        "ROLLBACK",
+      );
+
+      return res
+        .status(404)
+        .json({
+          error:
+            "Project not found",
+        });
+    }
+
+    // =========================
+    // FIND DATASET
+    // =========================
+
+    const datasetResult =
+      await client.query(
+        `
+        SELECT id
+        FROM datasets
+        WHERE project_id = $1
+        AND user_id = $2
+        `,
+        [
+          projectId,
+          userId,
+        ],
+      );
+
+    let datasetId;
+
+    // =========================
+    // CREATE IF NEEDED
+    // =========================
+
+    if (
+      datasetResult.rows.length ===
+      0
+    ) {
+      const newDataset =
+        await client.query(
+          `
+          INSERT INTO datasets (
+            project_id,
+            name,
+            user_id
+          )
+          VALUES ($1, $2, $3)
+          RETURNING id
+          `,
+          [
+            projectId,
+            "Project Data",
+            userId,
+          ],
+        );
+
+      datasetId =
+        newDataset.rows[0].id;
+    } else {
+      datasetId =
+        datasetResult.rows[0].id;
+    }
+
+    // =========================
+    // DELETE OLD ROWS
+    // =========================
+
+    await client.query(
+      `
+      DELETE FROM rows
+      WHERE dataset_id = $1
+      AND user_id = $2
+      `,
+      [
+        datasetId,
+        userId,
+      ],
+    );
+
+    // =========================
+    // INSERT NEW ROWS
+    // =========================
 
     if (rows.length > 0) {
       const values = [];
 
-      const placeholders = rows.map((row, i) => {
-        values.push(datasetId, row, userId);
-        return `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`;
-      });
+      const placeholders =
+        rows.map(
+          (row, index) => {
+            values.push(
+              datasetId,
+              row,
+              userId,
+            );
 
-      await pool.query(
-        `INSERT INTO rows (dataset_id, data, user_id)
-        VALUES ${placeholders.join(",")}`,
-        values
+            const base =
+              index * 3;
+
+            return `(
+              $${base + 1},
+              $${base + 2},
+              $${base + 3}
+            )`;
+          },
+        );
+
+      await client.query(
+        `
+        INSERT INTO rows (
+          dataset_id,
+          data,
+          user_id
+        )
+        VALUES
+        ${placeholders.join(",")}
+        `,
+        values,
       );
     }
 
-    res.json({ success: true, datasetId });
+    // =========================
+    // TRANSACTION SUCCESS
+    // =========================
+
+    await client.query(
+      "COMMIT",
+    );
+
+    return res.json({
+      success: true,
+      datasetId,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Save failed" });
+    // =========================
+    // TRANSACTION FAILED
+    // =========================
+
+    try {
+      await client.query(
+        "ROLLBACK",
+      );
+    } catch (
+      rollbackError
+    ) {
+      console.error(
+        "Rollback failed:",
+        rollbackError,
+      );
+    }
+
+    console.error(
+      "Dataset save failed:",
+      err,
+    );
+
+    return res
+      .status(500)
+      .json({
+        error:
+          "Failed to save dataset",
+      });
+  } finally {
+    client.release();
   }
 };
 const renameColumn = async (req, res) => {
@@ -147,8 +331,7 @@ const renameColumn = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to rename column" });
+    next(err);
   }
 };
 const deleteColumn = async (req, res) => {
@@ -168,10 +351,7 @@ const deleteColumn = async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Failed to delete column",
-    });
+    next(err);
   }
 };
 const addColumn = async (req, res) => {
@@ -198,11 +378,7 @@ const addColumn = async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      error: "Failed to add column",
-    });
+    next(err);
   }
 };
 

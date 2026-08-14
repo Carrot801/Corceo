@@ -333,70 +333,126 @@ function useProjectData(projectId) {
     }
   };
 
-  /**
-   * Called when the user selects a CSV, XLS, or XLSX file.
-   */
-  const handleDataFile = async (file) => {
-    if (!file) {
-      return null;
+
+const handleDataFile = async (
+  file,
+) => {
+  if (!file) {
+    return null;
+  }
+
+  setIsUploadingFile(true);
+  setError("");
+
+  try {
+    const result =
+      await parseDataFile(
+        file,
+      );
+
+    console.log(
+      "PARSED FILE:",
+      result,
+    );
+
+    // =========================
+    // EXCEL WITH MULTIPLE SHEETS
+    // =========================
+
+    if (
+      result.requiresSheetSelection
+    ) {
+      setExcelImport({
+        isOpen: true,
+
+        fileName:
+          result.fileName,
+
+        workbook:
+          result.workbook,
+
+        sheetNames:
+          result.sheetNames,
+
+        selectedSheet:
+          result.sheetNames?.[0] ??
+          "",
+      });
+
+      return {
+        requiresSheetSelection:
+          true,
+
+        sheetNames:
+          result.sheetNames,
+      };
     }
 
-    setIsUploadingFile(true);
-    setError("");
+    // =========================
+    // VALIDATE PARSED DATA
+    // =========================
 
-    try {
-      const result = await parseDataFile(file);
+    if (
+      !Array.isArray(
+        result.rows,
+      ) ||
+      result.rows.length === 0
+    ) {
+      throw new Error(
+        "The selected file contains no data rows.",
+      );
+    }
 
-      /*
-       * Excel workbook containing several sheets.
-       * Open the selection dialog instead of uploading yet.
-       */
-      if (result.requiresSheetSelection) {
-        setExcelImport({
-          isOpen: true,
-          fileName: result.fileName,
-          workbook: result.workbook,
-          sheetNames: result.sheetNames,
-          selectedSheet: result.sheetNames[0] ?? "",
-        });
+    // =========================
+    // SHOW DATA IMMEDIATELY
+    // =========================
 
-        return {
-          requiresSheetSelection: true,
-          sheetNames: result.sheetNames,
-        };
-      }
+    applyRows(
+      result.rows,
+      result.columns,
+    );
 
-      /*
-       * CSV or Excel workbook containing one sheet.
-       */
+    // =========================
+    // THEN SAVE TO BACKEND
+    // =========================
+
+    const savedDataset =
       await uploadData(
         result.rows,
         result.columns,
         {
-          fileName: result.fileName,
-          fileType: result.fileType,
-          sheetName: result.sheetName,
-        }
+          fileName:
+            result.fileName,
+
+          fileType:
+            result.fileType,
+
+          sheetName:
+            result.sheetName,
+        },
       );
 
-      return result;
-    } catch (fileError) {
-      console.error("File import error:", fileError);
+    return {
+      ...result,
+      savedDataset,
+    };
+  } catch (fileError) {
+    console.error(
+      "File import error:",
+      fileError,
+    );
 
-      setError(
-        fileError.message ||
-          "An error occurred while importing the file."
-      );
+    setError(
+      fileError?.message ||
+        "An error occurred while importing the file.",
+    );
 
-      throw fileError;
-    } finally {
-      setIsUploadingFile(false);
-    }
-  };
+    throw fileError;
+  } finally {
+    setIsUploadingFile(false);
+  }
+};
 
-  /**
-   * Updates the selected worksheet in the dialog.
-   */
   const selectExcelSheet = (sheetName) => {
     setExcelImport((currentImport) => ({
       ...currentImport,

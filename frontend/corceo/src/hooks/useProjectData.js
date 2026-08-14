@@ -317,41 +317,124 @@ const loadProject = useCallback(
   resetEmptySheet,
 ]);
 
-  // ===================================
-  // UPLOAD PARSED ROWS
-  // ===================================
 const uploadData = async (
   rows,
   uploadedColumns = null,
   metadata = {}
 ) => {
   if (!id) {
-    throw new Error("No project selected.");
+    throw new Error(
+      "No project selected."
+    );
   }
 
-  if (!Array.isArray(rows) || rows.length === 0) {
-    throw new Error("There are no rows to upload.");
+  if (
+    !Array.isArray(rows) ||
+    rows.length === 0
+  ) {
+    throw new Error(
+      "There are no rows to upload."
+    );
   }
 
   const columnsToUpload =
-    Array.isArray(uploadedColumns) &&
+    Array.isArray(
+      uploadedColumns
+    ) &&
     uploadedColumns.length > 0
       ? uploadedColumns
-      : Object.keys(rows[0] ?? {});
+      : Object.keys(
+          rows[0] ?? {}
+        );
 
   const requestBody = {
     project_id: Number(id),
+
     rows,
 
-    // Keep these only if your backend accepts them.
-    columns: columnsToUpload,
-    file_name: metadata.fileName ?? null,
-    file_type: metadata.fileType ?? null,
-    sheet_name: metadata.sheetName ?? null,
+    columns:
+      columnsToUpload,
+
+    file_name:
+      metadata.fileName ??
+      null,
+
+    file_type:
+      metadata.fileType ??
+      null,
+
+    sheet_name:
+      metadata.sheetName ??
+      null,
   };
 
+  try {
+    setError("");
 
-2
+    // =========================
+    // SHOW DATA IMMEDIATELY
+    // =========================
+
+    applyRows(
+      rows,
+      columnsToUpload,
+      true
+    );
+
+    // =========================
+    // SAVE TO BACKEND
+    // =========================
+
+    const savedDataset =
+      await apiRequest(
+        "/upload-data",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify(
+              requestBody
+            ),
+        }
+      );
+
+    const newDatasetId =
+      getReturnedDatasetId(
+        savedDataset
+      );
+
+    if (!newDatasetId) {
+      throw new Error(
+        "Upload succeeded, but the backend did not return a dataset ID."
+      );
+    }
+
+    setDatasetId(
+      newDatasetId
+    );
+
+    return {
+      ...savedDataset,
+
+      id:
+        newDatasetId,
+
+      datasetId:
+        newDatasetId,
+    };
+  } catch (uploadError) {
+    console.error(
+      "Dataset upload failed:",
+      uploadError
+    );
+
+    setError(
+      uploadError.message ??
+        "Could not upload the dataset."
+    );
+
+    throw uploadError;
+  }
 };
 
   // ===================================

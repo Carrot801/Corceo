@@ -49,9 +49,17 @@ const getPublishedChart = async (req, res) => {
 
     const result = await pool.query(
       `
-      SELECT *
+      SELECT
+        id,
+        dataset_id,
+        chart_type,
+        x_axis,
+        y_axis,
+        settings,
+        chart_config
       FROM charts
       WHERE id = $1
+      AND is_published = TRUE;
       `,
       [chartId]
     );
@@ -72,8 +80,58 @@ const getPublishedChart = async (req, res) => {
   }
 };
 
+const publishChart = async (req, res) => {
+  try {
+    const chartId =
+      Number(req.params.chartId);
+
+    const userId =
+      req.user.userId;
+
+    if (!Number.isInteger(chartId)) {
+      return res.status(400).json({
+        error: "Invalid chart ID",
+      });
+    }
+
+    const result =
+      await pool.query(
+        `
+        UPDATE charts
+        SET is_published = TRUE
+        WHERE id = $1
+        AND user_id = $2
+        RETURNING id
+        `,
+        [chartId, userId],
+      );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: "Chart not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      chartId:
+        result.rows[0].id,
+    });
+  } catch (error) {
+    console.error(
+      "Publish chart error:",
+      error,
+    );
+
+    return res.status(500).json({
+      error:
+        "Failed to publish chart",
+    });
+  }
+};
 module.exports = { 
   createChart,
   getCharts,
-  getPublishedChart
+  getPublishedChart,
+  publishChart,
  };

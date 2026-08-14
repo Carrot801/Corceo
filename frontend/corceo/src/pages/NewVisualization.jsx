@@ -14,7 +14,7 @@ import ActiveFilterChips from "../components/ActiveFilterChips";
 import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
 import useHistoryState from "../hooks/useHistoryState";
 import SheetSelectionDialog from "../components/SheetSelectionDialog";
-
+import {apiRequest} from "../api/client";
 
 function NewVisualization() {
   const { id } = useParams();
@@ -768,50 +768,62 @@ useEffect(() => {
     })
   );
 }, [chartConfig.dateHierarchySource, columns, data.length]);
-  
-const publishChart = async () => {
-  try {
-    const savedDataset =
+  const publishChart =
+  async () => {
+    try {
+      // 1. Save latest dataset
       await saveDataset();
 
-    const saved =
-      await saveChartToBackend({
-        dataset_id:
-          savedDataset.datasetId,
+      // 2. Save latest chart configuration
+      const saved =
+        await saveChartToBackend(
+          {
+            dataset_id:
+              datasetId,
 
-        chart_type:
-          chartConfig.type,
+            chart_type:
+              chartConfig.type,
 
-        x_axis:
-          chartConfig.x,
+            x_axis:
+              chartConfig.x,
 
-        y_axis:
-          JSON.stringify(
-            chartConfig.y
-          ),
+            y_axis:
+              JSON.stringify(
+                chartConfig.y,
+              ),
 
-        settings,
-        chart_config:
-          chartConfig,
-      });
+            settings,
 
-    if (!saved?.id) {
-      alert(
-        "Failed to publish chart."
+            chart_config:
+              chartConfig,
+          },
+        );
+
+      if (!saved?.id) {
+        throw new Error(
+          "Chart could not be saved before publishing.",
+        );
+      }
+
+      // 3. Explicitly publish it
+      await apiRequest(
+        `/charts/${saved.id}/publish`,
+        {
+          method: "PUT",
+        },
       );
-      return;
-    }
 
-    navigate(
-      `/published/${saved.id}`
-    );
-  } catch (error) {
-    console.error(
-      "Publish failed:",
-      error
-    );
-  }
-};
+      // 4. Go to public page
+      navigate(
+        `/published/${saved.id}`,
+      );
+    } catch (error) {
+      console.error(
+        "Publish failed:",
+        error,
+      );
+    }
+  };
 
 useEffect(() => {
   if (!savedChart) {

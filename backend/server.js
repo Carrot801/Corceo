@@ -16,7 +16,9 @@ const searchRoutes = require("./routes/search");
 const storiesRoutes = require("./routes/stories");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user")
+const errorHandler =require("./middleware/errorHandler");
 
+app.use(errorHandler);
 
 app.use("/search", searchRoutes);
 app.use("/projects", projectsRoutes);
