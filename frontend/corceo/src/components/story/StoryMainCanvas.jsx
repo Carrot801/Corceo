@@ -1,8 +1,8 @@
 import React from "react";
-import StoryChart from "../StoryChart";
+import StoryChart from "../StoryChart";import AnnotationLayer from "../annotations/AnnotationLayer";
 
 function StoryMainCanvas({
-  activeSlideIndex,currentSlide,setSlides,slides,canvasRef,selectedChartId,selectedAnnoId,setSelectedChartId,setSelectedAnnoId,startChartInteraction,duplicateChartItem,deleteChartItem,sendChartToBack,setShowPicker,canvasDimensions,renderConnectorPath,handleDragStart,setActiveSlideIndex
+  activeSlideIndex,currentSlide,setSlides,slides,canvasRef,selectedChartId,selectedAnnoId,setSelectedChartId,setSelectedAnnoId,startChartInteraction,duplicateChartItem,deleteChartItem,sendChartToBack,setShowPicker,canvasDimensions,handleDragStart,setActiveSlideIndex
 }) {
   return (
           <div className="flex-1 p-8 flex flex-col items-center justify-center overflow-hidden">
@@ -225,141 +225,35 @@ function StoryMainCanvas({
                     </button>
                   )}
                 </div>
+<AnnotationLayer
+  annotations={
+    currentSlide.annotations ||
+    []
+  }
+  width={
+    canvasDimensions.width
+  }
+  height={
+    canvasDimensions.height
+  }
+  interactive
+  selectedAnnoId={
+    selectedAnnoId
+  }
+  onSelect={(annotationId) => {
+    setSelectedAnnoId(
+      annotationId,
+    );
 
-                {/* Sharp SVG Connector Path Layer - Absolute dimensions prevent stretching distortion */}
-                <svg 
-                  className="absolute inset-0 pointer-events-none z-10"
-                  style={{ width: canvasDimensions.width, height: canvasDimensions.height }}
-                >
-                  <defs>
-                    {(currentSlide.annotations || []).map((anno) => (
-                      <marker 
-                        key={anno.id}
-                        id={`arrow-${anno.id}`} 
-                        viewBox="0 0 10 10" 
-                        refX="6" refY="5" 
-                        markerWidth="7" markerHeight="7" 
-                        orient="auto-start-reverse"
-                      >
-                        {/* Sleek, razor-thin sharp triangle matching target UI style */}
-                        <path d="M 0 2 L 8 5 L 0 8 z" fill={anno.lineColor || "#64748b"} />
-                      </marker>
-                    ))}
-                  </defs>
-                  {(currentSlide.annotations || []).map((anno) => renderConnectorPath(anno))}
-                </svg>
-
-                {/* DOM Element Layer */}
-                {(currentSlide.annotations || []).map((anno, listIdx) => {
-                  const isSelected = selectedAnnoId === anno.id;
-                  return (
-                    <div key={anno.id} className="absolute inset-0 pointer-events-none z-20">
-                  
-                      {/* Context Circle Highlight Ring */}
-                      {/* Bounding Box Resizable Shape Component Wrapper */}
-                      {anno.markerType !== "none" && (
-                        <div
-                          className={`absolute pointer-events-auto transition-shadow ${
-                            isSelected ? 'z-40' : 'z-30'
-                          }`}
-                          style={{
-                            left: `${anno.x}%`,
-                            top: `${anno.y}%`,
-                            // If it's a dot, use pixels. Otherwise use percentage width.
-                            width: anno.markerType === "dot" ? `${(anno.radius || 6) * 2.5}px` : `${anno.width || 15}%`,
-                        
-                            // FIX: For circles, let CSS calculate height automatically based on width to stay perfectly round
-                            height: anno.markerType === "dot" 
-                              ? `${(anno.radius || 6) * 2.5}px` 
-                              : anno.markerType === "circle" 
-                                ? "auto" 
-                                : `${anno.height || 15}%`,
-                        
-                            // FORCE 1:1 aspect ratio strictly for circles
-                            aspectRatio: anno.markerType === "circle" ? "1 / 1" : "auto",
-                        
-                            transform: anno.markerType === "dot" ? 'translate(-50%, -50%)' : 'none',
-                          }}
-                        >
-                          {/* 1. If it's a regular standalone Dot handle */}
-                          {anno.markerType === "dot" && (
-                            <div 
-                              onMouseDown={(e) => handleDragStart(e, "target", anno.id, anno)}
-                              onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                              className={`w-full h-full rounded-full cursor-move shadow-md border flex items-center justify-center text-[9px] font-bold text-white transition-transform ${
-                                isSelected ? 'ring-4 ring-blue-500/20 border-blue-600' : 'border-white hover:scale-110'
-                              }`}
-                              style={{ backgroundColor: anno.fillColor }}
-                            >
-                            </div>
-                          )}
-
-                          {/* 2. If it's an expandable visual Circle Ring */}
-                          {anno.markerType === "circle" && (
-                            <div 
-                              onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id, anno) }}
-                              onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                              className={`w-full h-full border-2 border-dashed rounded-full cursor-move relative transition-all ${
-                                isSelected ? 'border-solid border-blue-500 shadow-xs' : 'hover:border-gray-400'
-                              }`}
-                              style={{ borderColor: anno.fillColor, backgroundColor: `${anno.fillColor}08` }}
-                            >
-                            </div>
-                          )}
-
-                          {/* 3. If it's an expandable visual Square Block */}
-                          {anno.markerType === "square" && (
-                            <div 
-                              onMouseDown={(e) => { if(e.target === e.currentTarget) handleDragStart(e, "target", anno.id) }}
-                              onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                              className={`w-full h-full border-2 border-dashed rounded-lg cursor-move relative transition-all ${
-                                isSelected ? 'border-solid border-blue-500 shadow-xs' : 'hover:border-gray-400'
-                              }`}
-                              style={{ borderColor: anno.fillColor, backgroundColor: `${anno.fillColor}05` }}
-                            >
-                            </div>
-                          )}
-
-                          {/* Dynamic Handle Anchor Link ("Punk Circle") - Displayed only on selection for custom shapes */}
-                          {isSelected && anno.markerType !== "dot" && (
-                            <div 
-                              onMouseDown={(e) => handleDragStart(e, "resize", anno.id, anno)}
-                              className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[rgb(var(--color-primary))] border-2 border-[rgb(var(--color-surface))] rounded-full translate-x-1/2 translate-y-1/2 cursor-se-resize shadow-md hover:scale-125 transition-transform z-50"
-                              title="Drag to resize shape frame layout"
-                            />
-                          )}
-                        </div>
-                      )}
-
-                      {/* Floating Content Label Text Box */}
-                      <div 
-                        onMouseDown={(e) => handleDragStart(e, "label", anno.id, anno)}
-                        onClick={(e) => { e.stopPropagation(); setSelectedAnnoId(anno.id); }}
-                        className={`absolute p-2 pointer-events-auto cursor-move shadow-xs select-text rounded border border-transparent transition-all ${
-                          isSelected ? 'ring-2 ring-blue-500 shadow-lg rounded-lg z-50 bg-white border-blue-100' : ''
-                        }`}
-                        style={{
-                          left: `${anno.textX}%`,
-                          top: `${anno.textY}%`,
-                          transform: 'translate(-50%, -50%)',
-                          maxWidth: `${anno.labelWidth || 12}rem`,
-                          padding: "6px 9px",
-                          fontSize: `${anno.textSize || 0.85}rem`,
-                          color: anno.textColor || "#1e293b",
-                          fontWeight: anno.fontWeight || "normal",
-                          textAlign: anno.textAlign || "left",
-                          backgroundColor: anno.textBg === "transparent" ? "transparent" : (anno.textBg || "#ffffff"),
-                          border: anno.textBg === "outline" ? `1px solid ${anno.textColor}40` : (isSelected ? "1px solid #3b82f6" : "none"),
-                        }}
-                      >
-                        <div className="break-words leading-snug pointer-events-none">
-                          {anno.text || "Comment text..."}
-                        </div>
-                      </div>
-
-                    </div>
-                  );
-                })}
+    setSelectedChartId(
+      null,
+    );
+  }}
+  onDragStart={
+    handleDragStart
+  }
+  idPrefix={`story-editor-${activeSlideIndex}`}
+/>
               </div>
 
               {/* LOWER CONTROLS */}

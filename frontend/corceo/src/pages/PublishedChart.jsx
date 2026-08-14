@@ -194,7 +194,10 @@ const preparedRows = useMemo(() => {
         setLoadError("");
 
         const chartResult = await apiRequest(
-          `/charts/${chartId}`,
+          `/public/charts/${chartId}`,
+          {
+            auth: false,
+          }
         );
 
      

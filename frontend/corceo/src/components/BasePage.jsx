@@ -32,28 +32,31 @@ function BasePage() {
 });
 const createProject = async () => {
   try {
-    const res = await apiRequest("/projects", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const newProject = await apiRequest(
+      "/projects",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: "New Project",
+          folder_id:
+            activeFolder || null,
+        }),
       },
-      body: JSON.stringify({
-        name: "New Project",
-        folder_id: activeFolder || null,
-      }),
-    });
+    );
 
-    const newProject = await res.json();
+    setProjects((prev) => [
+      ...prev,
+      newProject,
+    ]);
 
-    if (!res.ok) {
-      console.error("Create project failed:", newProject);
-      return;
-    }
-
-    setProjects((prev) => [...prev, newProject]);
-    navigate(`/projects/new/${newProject.id}`);
+    navigate(
+      `/projects/new/${newProject.id}`,
+    );
   } catch (err) {
-    console.error("Failed to create project:", err);
+    console.error(
+      "Failed to create project:",
+      err,
+    );
   }
 };
 

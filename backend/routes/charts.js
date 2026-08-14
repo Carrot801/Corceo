@@ -7,7 +7,8 @@ const {
      } = require("../models/chartsModel");
 const authMiddleware = require("../middleware/authMiddleware");
 
-router.use(authMiddleware);
+router.get("/public/:chartId", getPublishedChart);
+
 router.post("/",authMiddleware, createChart);
 router.get("/",authMiddleware, getCharts);
 router.get("/:chartId",authMiddleware,getPublishedChart);

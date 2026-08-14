@@ -431,6 +431,8 @@ const {
   publishStory,
   reloadSavedStory,
   normalizeStorySlides,
+
+  
 } = useStoryPersistence({
   storyId,
   storyName,
@@ -1548,114 +1550,6 @@ useEffect(() => {
   };
 }, [undoStory, redoStory]);
 
-  // Convert responsive percentages back into strict uniform pixel targets
-  // Convert responsive percentages into strict uniform pixel targets anchored to shape borders
-  const renderConnectorPath = (anno) => {
-    if (anno.connectorType === "none" || !canvasDimensions.width) return null;
-
-    const x1 = (anno.textX / 100) * canvasDimensions.width;
-    const y1 = (anno.textY / 100) * canvasDimensions.height;
-    
-    // Change these to 'let' so we can recalculate their boundary positions dynamically
-    let x2 = (anno.x / 100) * canvasDimensions.width;
-    let y2 = (anno.y / 100) * canvasDimensions.height;
-
-    // DYNAMIC BORDER ANCHORING ENGINE
-    if (anno.markerType === "square" || anno.markerType === "circle") {
-      const boxW = ((anno.width || 15) / 100) * canvasDimensions.width;
-      // If it's a circle, its pixel height matches its pixel width due to aspect-ratio rules
-      const boxH = anno.markerType === "circle" ? boxW : ((anno.height || 15) / 100) * canvasDimensions.height;
-      
-      // 1. Pinpoint the exact center coordinates of the shape framework
-      const shapeCenterX = x2 + boxW / 2;
-      const shapeCenterY = y2 + boxH / 2;
-      
-      // 2. Formulate direction vectors from the floating text label to the shape center
-      const dx = shapeCenterX - x1;
-      const dy = shapeCenterY - y1;
-      const distance = Math.hypot(dx, dy) || 1;
-      
-      // 3. Compute precise border intersection padding offset based on approach angle
-      let edgeOffset = boxW / 2; 
-      
-      if (anno.markerType === "square") {
-        const absCos = Math.abs(dx / distance);
-        const absSin = Math.abs(dy / distance);
-        // Angular slope check determines if arrow hits the left/right or top/bottom walls
-        if (boxW * absSin <= boxH * absCos) {
-          edgeOffset = (boxW / 2) / (absCos || 1);
-        } else {
-          edgeOffset = (boxH / 2) / (absSin || 1);
-        }
-      }
-      
-      // 4. Override line destination to snap flush against the outer wall perimeter
-      x2 = shapeCenterX - (dx / distance) * edgeOffset;
-      y2 = shapeCenterY - (dy / distance) * edgeOffset;
-    }
-    else if (anno.markerType === "dot") {
-      // Calculate the dot's real pixel radius based on your rendering layout
-      const radiusPx = (anno.radius || 6) * 1.25;
-      
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const distance = Math.hypot(dx, dy) || 1;
-      
-      // Pull the arrow destination back to the outer rim of the dot (plus 3px breathing room)
-      x2 = x2 - (dx / distance) * (radiusPx + 3);
-      y2 = y2 - (dy / distance) * (radiusPx + 3);
-    }
-
-    const strokeColor = anno.lineColor || "#64748b";
-    const strokeW = anno.lineWidth || 1.5;
-
-    if (anno.connectorType === "straight") {
-      return (
-        <line 
-          key={`line-${anno.id}`}
-          x1={x1} 
-          y1={y1} 
-          x2={x2} 
-          y2={y2} 
-          stroke={strokeColor} 
-          strokeWidth={strokeW} 
-          markerEnd={`url(#arrow-${anno.id})`} 
-        />
-      );
-    }
-    
-    if (anno.connectorType === "curved") {
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const h = Math.hypot(dx, dy);
-      
-      const bendFactor = 0.2; 
-      const cx = (x1 + x2) / 2 - (dy / h) * (h * bendFactor);
-      const cy = (y1 + y2) / 2 + (dx / h) * (h * bendFactor);
-
-      return (
-        <path 
-          key={`angle-${anno.id}`}
-          d={`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`} 
-          fill="none" stroke={strokeColor} strokeWidth={strokeW} 
-          markerEnd={`url(#arrow-${anno.id})`} 
-        />
-      );
-    }
-    
-    if (anno.connectorType === "angled") {
-      return (
-        <path 
-          d={`M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`} 
-          fill="none" stroke={strokeColor} strokeWidth={strokeW} 
-          markerEnd={`url(#arrow-${anno.id})`} 
-        />
-      );
-    }
-    return null;
-  };
-  
-
 
   return (
     <>
@@ -1706,7 +1600,6 @@ useEffect(() => {
             sendChartToBack={sendChartToBack}
             setShowPicker={setShowPicker}
             canvasDimensions={canvasDimensions}
-            renderConnectorPath={renderConnectorPath}
             handleDragStart={handleDragStart}
             setActiveSlideIndex={setActiveSlideIndex}
           />
