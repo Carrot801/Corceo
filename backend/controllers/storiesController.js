@@ -68,95 +68,330 @@ const createStory = async (req, res, next) => {
     client.release();
   }
 };
+const updateStory = async (
+  req,
+  res,
+  next
+) => {
+  const { storyId } =
+    req.params;
 
-// 2. UPDATE AN EXISTING STORY AND OVERWRITE ANNOTATIONS
-const updateStory = async (req, res, next) => {
-  const { storyId } = req.params;
-  const { name, slides,image_url } = req.body;
+  const {
+    name,
+    slides,
+    image_url,
+  } = req.body;
 
-  const userId = req.user.userId;
-  if (!storyId || isNaN(Number(storyId))) {
-    return res.status(400).json({ error: "Invalid storyId" });
+  const userId =
+    req.user.userId;
+
+  // =========================
+  // VALIDATION
+  // =========================
+
+  if (
+    !storyId ||
+    Number.isNaN(
+      Number(storyId)
+    )
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Invalid storyId",
+      });
   }
 
-  const client = await pool.connect();
+  if (
+    !Array.isArray(slides)
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Slides must be an array",
+      });
+  }
+
+  const client =
+    await pool.connect();
 
   try {
-    await client.query("BEGIN");
-
-    // Update main story name
     await client.query(
-      "UPDATE stories SET name = $1, image_url = $4 WHERE id = $2 AND user_id = $3",
-      [name, storyId, userId, image_url]
+      "BEGIN"
     );
 
-    // Clean out previous annotations before purging slides
-    await client.query(
-      `DELETE FROM slide_annotations 
-       WHERE slide_id IN (SELECT id FROM slides WHERE story_id = $1 AND user_id = $2)`,
-      [storyId, userId]
-    );
+    // =========================
+    // UPDATE STORY
+    // + VERIFY OWNERSHIP
+    // =========================
 
-    // Wipe old slides (this cascades to slide_content automatically)
-    await client.query("DELETE FROM slides WHERE story_id = $1 AND user_id = $2", [storyId, userId]);
-
-    // Re-insert new data payload structure
-    for (let i = 0; i < slides.length; i++) {
-      const slideRes = await client.query(
-        "INSERT INTO slides (story_id, position, description, user_id) VALUES ($1, $2, $3, $4) RETURNING id",
-        [storyId, i, slides[i].description || "", userId]
+    const storyUpdate =
+      await client.query(
+        `
+        UPDATE stories
+        SET
+          name = $1,
+          image_url = $4
+        WHERE id = $2
+          AND user_id = $3
+        RETURNING id
+        `,
+        [
+          name,
+          storyId,
+          userId,
+          image_url ?? null,
+        ]
       );
-      const slideId = slideRes.rows[0].id;
 
-      // Re-insert content
-      if (slides[i].content && Array.isArray(slides[i].content)) {
-        for (let j = 0; j < slides[i].content.length; j++) {
-          const item = slides[i].content[j];
+    // Story does not exist
+    // OR belongs to another user
+    if (
+      storyUpdate.rows.length ===
+      0
+    ) {
+      await client.query(
+        "ROLLBACK"
+      );
+
+      return res
+        .status(404)
+        .json({
+          error:
+            "Story not found",
+        });
+    }
+
+    // =========================
+    // DELETE OLD ANNOTATIONS
+    // =========================
+
+    await client.query(
+      `
+      DELETE FROM slide_annotations
+      WHERE slide_id IN (
+        SELECT id
+        FROM slides
+        WHERE story_id = $1
+          AND user_id = $2
+      )
+      `,
+      [
+        storyId,
+        userId,
+      ]
+    );
+
+    // =========================
+    // DELETE OLD SLIDES
+    // slide_content cascades
+    // =========================
+
+    await client.query(
+      `
+      DELETE FROM slides
+      WHERE story_id = $1
+        AND user_id = $2
+      `,
+      [
+        storyId,
+        userId,
+      ]
+    );
+
+    // =========================
+    // RECREATE SLIDES
+    // =========================
+
+    for (
+      let i = 0;
+      i < slides.length;
+      i++
+    ) {
+      const slide =
+        slides[i];
+
+      const slideRes =
+        await client.query(
+          `
+          INSERT INTO slides (
+            story_id,
+            position,
+            description,
+            user_id
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4
+          )
+          RETURNING id
+          `,
+          [
+            storyId,
+            i,
+            slide.description ||
+              "",
+            userId,
+          ]
+        );
+
+      const slideId =
+        slideRes.rows[0].id;
+
+      // =========================
+      // RECREATE CONTENT
+      // =========================
+
+      if (
+        Array.isArray(
+          slide.content
+        )
+      ) {
+        for (
+          let j = 0;
+          j <
+          slide.content.length;
+          j++
+        ) {
+          const item =
+            slide.content[j];
+
           await client.query(
             `
-            INSERT INTO slide_content
-              (slide_id, chart_id, position, layout, user_id)
-            VALUES ($1, $2, $3, $4::jsonb, $5)
+            INSERT INTO slide_content (
+              slide_id,
+              chart_id,
+              position,
+              layout,
+              user_id
+            )
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4::jsonb,
+              $5
+            )
             `,
             [
               slideId,
               item.chartId,
               j,
+
               JSON.stringify({
-                x: Number(item.x ?? 0),
-                y: Number(item.y ?? 0),
-                width: Number(item.width ?? 100),
-                height: Number(item.height ?? 100),
-                zIndex: Number(item.zIndex ?? j + 1),
+                x: Number(
+                  item.x ?? 0
+                ),
+
+                y: Number(
+                  item.y ?? 0
+                ),
+
+                width: Number(
+                  item.width ??
+                    100
+                ),
+
+                height: Number(
+                  item.height ??
+                    100
+                ),
+
+                zIndex: Number(
+                  item.zIndex ??
+                    j + 1
+                ),
               }),
+
               userId,
             ]
           );
         }
       }
 
-      // Re-insert annotations
-      if (slides[i].annotations && Array.isArray(slides[i].annotations)) {
-        for (let k = 0; k < slides[i].annotations.length; k++) {
-          const anno = slides[i].annotations[k];
+      // =========================
+      // RECREATE ANNOTATIONS
+      // =========================
+
+      if (
+        Array.isArray(
+          slide.annotations
+        )
+      ) {
+        for (
+          let k = 0;
+          k <
+          slide.annotations
+            .length;
+          k++
+        ) {
+          const annotation =
+            slide.annotations[k];
+
           await client.query(
-            "INSERT INTO slide_annotations (slide_id, annotation, user_id) VALUES ($1, $2, $3)",
-            [slideId, JSON.stringify(anno), userId]
+            `
+            INSERT INTO slide_annotations (
+              slide_id,
+              annotation,
+              user_id
+            )
+            VALUES (
+              $1,
+              $2,
+              $3
+            )
+            `,
+            [
+              slideId,
+
+              JSON.stringify(
+                annotation
+              ),
+
+              userId,
+            ]
           );
         }
       }
     }
 
-    await client.query("COMMIT");
-    res.json({ message: "Story updated successfully" });
+    // =========================
+    // SUCCESS
+    // =========================
+
+    await client.query(
+      "COMMIT"
+    );
+
+    return res.json({
+      message:
+        "Story updated successfully",
+    });
+
   } catch (err) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch (
+      rollbackError
+    ) {
+      console.error(
+        "Story rollback failed:",
+        rollbackError
+      );
+    }
+
     next(err);
+
   } finally {
     client.release();
   }
 };
-
 const getStories = async (req, res, next) => {
   try {
     const userId = req.user.userId;

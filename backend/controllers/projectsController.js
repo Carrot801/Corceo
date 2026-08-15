@@ -65,24 +65,82 @@ const addProject = async (req, res, next) => {
     next(error);
   }
 };
-
-const renameProject = async (req, res, next) => {
+const renameProject = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const { project_id } = req.params;
-    const { name } = req.body;
-    const userId = req.user.userId;
+    const { project_id } =
+      req.params;
 
-    const result = await pool.query(
-      `
-      UPDATE projects
-      SET name = $1
-      WHERE id = $2 AND user_id = $3
-      RETURNING *
-      `,
-      [name, project_id, userId]
+    const { name } =
+      req.body;
+
+    const userId =
+      req.user.userId;
+
+    // Validate project id
+    if (
+      !project_id ||
+      Number.isNaN(
+        Number(project_id)
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid project ID",
+        });
+    }
+
+    // Validate name
+    const normalizedName =
+      name?.trim();
+
+    if (!normalizedName) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Project name is required",
+        });
+    }
+
+    const result =
+      await pool.query(
+        `
+        UPDATE projects
+        SET name = $1
+        WHERE id = $2
+          AND user_id = $3
+        RETURNING *
+        `,
+        [
+          normalizedName,
+          project_id,
+          userId,
+        ]
+      );
+
+    // Project doesn't exist
+    // OR belongs to another user
+    if (
+      result.rows.length === 0
+    ) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Project not found",
+        });
+    }
+
+    return res.json(
+      result.rows[0]
     );
 
-    res.json(result.rows[0]);
   } catch (error) {
     next(error);
   }

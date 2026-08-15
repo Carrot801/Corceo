@@ -37,17 +37,63 @@ const getColumnValues = async (req, res, next) => {
   }
 };
 
-const getDataset = async (req, res, next) => {
-  const { project_id } = req.query;
+const getDataset = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const userId = req.user.userId; // Get the user ID from the request object
-    const result = await pool.query(
-      "SELECT * FROM datasets WHERE project_id = $1 AND user_id = $2 LIMIT 1",
-      [project_id, userId]
+    const { project_id } =
+      req.query;
+
+    const userId =
+      req.user.userId;
+
+    if (
+      !project_id ||
+      Number.isNaN(
+        Number(project_id)
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid project ID",
+        });
+    }
+
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM datasets
+        WHERE project_id = $1
+          AND user_id = $2
+        LIMIT 1
+        `,
+        [
+          project_id,
+          userId,
+        ]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Dataset not found",
+        });
+    }
+
+    return res.json(
+      result.rows[0]
     );
-    res.json(result.rows[0] || null);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -62,27 +108,96 @@ const deleteDataset = async (req, res, next) => {
     next(err);
   }
 }
-
-const getAllRows = async (req, res, next) => {
+const getAllRows = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const datasetId = Number(req.query.dataset_id);
-    const userId = req.user.userId;
+    const datasetId =
+      Number(
+        req.query.dataset_id
+      );
 
-    if (!Number.isInteger(datasetId)) {
-      return res.status(400).json({ error: "Invalid dataset_id" });
+    const userId =
+      req.user.userId;
+
+    // =========================
+    // VALIDATE DATASET ID
+    // =========================
+
+    if (
+      !Number.isInteger(
+        datasetId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid dataset_id",
+        });
     }
 
-    const result = await pool.query(
-      "SELECT data FROM rows WHERE dataset_id = $1 AND user_id = $2",
-      [datasetId, userId]
+    // =========================
+    // VERIFY DATASET OWNERSHIP
+    // =========================
+
+    const datasetResult =
+      await pool.query(
+        `
+        SELECT id
+        FROM datasets
+        WHERE id = $1
+          AND user_id = $2
+        `,
+        [
+          datasetId,
+          userId,
+        ]
+      );
+
+    if (
+      datasetResult.rows.length ===
+      0
+    ) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Dataset not found",
+        });
+    }
+
+    // =========================
+    // LOAD ROWS
+    // =========================
+
+    const result =
+      await pool.query(
+        `
+        SELECT data
+        FROM rows
+        WHERE dataset_id = $1
+          AND user_id = $2
+        ORDER BY id
+        `,
+        [
+          datasetId,
+          userId,
+        ]
+      );
+
+    return res.json(
+      result.rows.map(
+        (row) => row.data
+      )
     );
 
-    res.json(result.rows.map(r => r.data));
   } catch (err) {
     next(err);
   }
 };
-
 
 const saveDataset = async (req, res, next) => {
   const client = await pool.connect();

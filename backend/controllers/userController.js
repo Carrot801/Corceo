@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const pool = require("../db");
-const getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req, res,next) => {
   try {
     const userId = req.user?.userId;
 
@@ -32,14 +32,10 @@ const getCurrentUser = async (req, res) => {
 
     return res.json(result.rows[0]);
   } catch (err) {
-    console.error("Get current user error:", err);
-
-    return res.status(500).json({
-      error: "Failed to load account",
-    });
+    next(err);
   }
 };
-const updateCurrentUser = async (req, res) => {
+const updateCurrentUser = async (req, res, next) => {
   try {
     const userId = req.user.userId;
 
@@ -136,13 +132,11 @@ const updateCurrentUser = async (req, res) => {
       });
     }
 
-    return res.status(500).json({
-      error: "Failed to update profile",
-    });
+    next(err);
   }
 };
 
-const changePassword = async (req, res) => {
+const changePassword = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { currentPassword, newPassword } = req.body;
@@ -153,11 +147,32 @@ const changePassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        error: "New password must be at least 6 characters",
-      });
-    }
+    if (newPassword.length < 8) {
+  return res
+    .status(400)
+    .json({
+      error:
+        "New password must be at least 8 characters",
+    });
+}
+
+if (!/[A-Z]/.test(newPassword)) {
+  return res
+    .status(400)
+    .json({
+      error:
+        "New password must contain at least one uppercase letter",
+    });
+}
+
+if (!/[0-9]/.test(newPassword)) {
+  return res
+    .status(400)
+    .json({
+      error:
+        "New password must contain at least one number",
+    });
+}
 
     const result = await pool.query(
       `
@@ -215,15 +230,11 @@ const changePassword = async (req, res) => {
       message: "Password changed successfully",
     });
   } catch (err) {
-    console.error("Change password error:", err);
-
-    return res.status(500).json({
-      error: "Failed to change password",
-    });
+    next(err);
   }
 };
 
-const deleteCurrentUser = async (req, res) => {
+const deleteCurrentUser = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
@@ -285,21 +296,30 @@ const deleteCurrentUser = async (req, res) => {
       message: "Account deleted successfully",
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+  try {
+    await client.query(
+      "ROLLBACK"
+    );
+  } catch (
+    rollbackError
+  ) {
+    console.error(
+      "Rollback failed:",
+      rollbackError
+    );
+  }
 
-    console.error("Delete account error:", err);
-
-    if (err.code === "23503") {
-      return res.status(409).json({
+  if (err.code === "23503") {
+    return res
+      .status(409)
+      .json({
         error:
           "The account still owns projects or stories. Configure cascading deletion or delete those records first.",
       });
-    }
+  }
 
-    return res.status(500).json({
-      error: "Failed to delete account",
-    });
-  } finally {
+  next(err);
+} finally {
     client.release();
   }
 };
