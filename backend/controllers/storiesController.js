@@ -589,21 +589,46 @@ const getStory = async (req, res,next) => {
 };
 const getPublicStory = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const storyId = Number(req.params.id);
+
+    // =========================
+    // VALIDATE ID
+    // =========================
+
+    if (!Number.isInteger(storyId)) {
+      return res.status(400).json({
+        error: "Invalid story ID",
+      });
+    }
+
+    // =========================
+    // 1. GET PUBLISHED STORY
+    // =========================
 
     const storyResult = await pool.query(
       `
-      SELECT *
+      SELECT
+        id,
+        name,
+        image_url,
+        created_at,
+        is_published
       FROM stories
       WHERE id = $1
-      AND is_published = true
+        AND is_published = TRUE
       `,
-      [id]
+      [storyId]
     );
 
     if (storyResult.rows.length === 0) {
-      return res.status(404).json({ error: "Story not found" });
+      return res.status(404).json({
+        error: "Story not found or not published",
+      });
     }
+
+    // =========================
+    // 2. GET SLIDES + CONTENT
+    // =========================
 
     const slidesResult = await pool.query(
       `
@@ -611,71 +636,345 @@ const getPublicStory = async (req, res, next) => {
         s.id AS slide_id,
         s.position AS slide_position,
         s.description,
+
+        sc.id AS slide_content_id,
         sc.chart_id,
         sc.position AS content_position,
         sc.layout,
+
         p.name AS chart_name
+
       FROM slides s
-      LEFT JOIN slide_content sc ON sc.slide_id = s.id
-      LEFT JOIN charts c ON c.id = sc.chart_id
-      LEFT JOIN projects p ON p.id = c.project_id
+
+      LEFT JOIN slide_content sc
+        ON sc.slide_id = s.id
+
+      LEFT JOIN charts c
+        ON c.id = sc.chart_id
+
+      LEFT JOIN projects p
+        ON p.id = c.project_id
+
       WHERE s.story_id = $1
-      ORDER BY s.position, sc.position
+
+      ORDER BY
+        s.position,
+        sc.position
       `,
-      [id]
+      [storyId]
     );
+
+    // =========================
+    // 3. GET ANNOTATIONS
+    // =========================
 
     const annotationsResult = await pool.query(
       `
-      SELECT sa.slide_id, sa.annotation
+      SELECT
+        sa.slide_id,
+        sa.annotation
       FROM slide_annotations sa
-      JOIN slides s ON s.id = sa.slide_id
+
+      JOIN slides s
+        ON s.id = sa.slide_id
+
       WHERE s.story_id = $1
       `,
-      [id]
+      [storyId]
     );
+
+    // =========================
+    // 4. GET CHART IDS
+    // =========================
+
+    const chartIds = [
+      ...new Set(
+        slidesResult.rows
+          .map((row) => row.chart_id)
+          .filter((id) => id != null)
+      ),
+    ];
+
+    let charts = [];
+
+    // =========================
+    // 5. GET CHART CONFIGURATION
+    // =========================
+
+    if (chartIds.length > 0) {
+      const chartsResult = await pool.query(
+        `
+        SELECT
+          c.id,
+          c.dataset_id,
+          c.chart_type,
+          c.x_axis,
+          c.y_axis,
+          c.settings,
+          c.chart_config
+
+        FROM charts c
+
+        WHERE c.id = ANY($1::int[])
+
+          AND EXISTS (
+            SELECT 1
+
+            FROM slide_content sc
+
+            JOIN slides s
+              ON s.id = sc.slide_id
+
+            JOIN stories st
+              ON st.id = s.story_id
+
+            WHERE sc.chart_id = c.id
+              AND st.id = $2
+              AND st.is_published = TRUE
+          )
+        `,
+        [
+          chartIds,
+          storyId,
+        ]
+      );
+
+      charts =
+        chartsResult.rows;
+    }
+
+    // =========================
+    // 6. GET DATASET IDS
+    // =========================
+
+    const datasetIds = [
+      ...new Set(
+        charts
+          .map(
+            (chart) =>
+              chart.dataset_id
+          )
+          .filter(
+            (id) =>
+              id != null
+          )
+      ),
+    ];
+
+    let rawRows = [];
+
+    // =========================
+    // 7. GET DATASET ROWS
+    // =========================
+
+    if (
+      datasetIds.length > 0
+    ) {
+      const rowsResult =
+        await pool.query(
+          `
+          SELECT
+            dataset_id,
+            data
+          FROM rows
+
+          WHERE dataset_id =
+            ANY($1::int[])
+
+          ORDER BY id
+          `,
+          [datasetIds]
+        );
+
+      rawRows =
+        rowsResult.rows;
+    }
+
+    // =========================
+    // 8. GROUP ROWS BY DATASET
+    // =========================
+
+    const rowsByDataset = {};
+
+    rawRows.forEach(
+      (row) => {
+        if (
+          !rowsByDataset[
+            row.dataset_id
+          ]
+        ) {
+          rowsByDataset[
+            row.dataset_id
+          ] = [];
+        }
+
+        rowsByDataset[
+          row.dataset_id
+        ].push(
+          row.data
+        );
+      }
+    );
+
+    // =========================
+    // 9. GROUP CHARTS BY ID
+    // =========================
+
+    const chartsById = {};
+
+    charts.forEach(
+      (chart) => {
+        chartsById[
+          chart.id
+        ] = {
+          ...chart,
+
+          rows:
+            rowsByDataset[
+              chart.dataset_id
+            ] || [],
+        };
+      }
+    );
+
+    // =========================
+    // 10. BUILD SLIDES
+    // =========================
 
     const slidesMap = {};
 
-    slidesResult.rows.forEach((row) => {
-      if (!slidesMap[row.slide_id]) {
-        slidesMap[row.slide_id] = {
-          id: row.slide_id,
-          description: row.description,
-          content: [],
-          annotations: [],
-        };
-      }
+    slidesResult.rows.forEach(
+      (row) => {
+        if (
+          !slidesMap[
+            row.slide_id
+          ]
+        ) {
+          slidesMap[
+            row.slide_id
+          ] = {
+            id:
+              row.slide_id,
 
-      if (row.chart_id) {
-        slidesMap[row.slide_id].content.push({
-        id: `${row.slide_id}-${row.chart_id}`,
-        type: "chart",
-        chartId: row.chart_id,
-        name: row.chart_name,
-        x: Number(row.layout?.x ?? 0),
-        y: Number(row.layout?.y ?? 0),
-        width: Number(row.layout?.width ?? 100),
-        height: Number(row.layout?.height ?? 100),
-        zIndex: Number(row.layout?.zIndex ?? row.content_position + 1),
-      });
-      }
-    });
+            description:
+              row.description,
 
-    annotationsResult.rows.forEach((row) => {
-      if (slidesMap[row.slide_id]) {
-        slidesMap[row.slide_id].annotations.push(row.annotation);
-      }
-    });
+            content: [],
 
-    res.json({
+            annotations: [],
+          };
+        }
+
+        if (!row.chart_id) {
+          return;
+        }
+
+        const chart =
+          chartsById[
+            row.chart_id
+          ];
+
+        if (!chart) {
+          return;
+        }
+
+        slidesMap[
+          row.slide_id
+        ].content.push({
+          id:
+            row.slide_content_id ??
+            `${row.slide_id}-${row.chart_id}`,
+
+          type: "chart",
+
+          chartId:
+            row.chart_id,
+
+          name:
+            row.chart_name ||
+            "Chart",
+
+          // =====================
+          // THIS IS THE IMPORTANT
+          // PUBLIC DATA
+          // =====================
+
+          chart,
+
+          rows:
+            chart.rows || [],
+
+          // =====================
+          // LAYOUT
+          // =====================
+
+          x: Number(
+            row.layout?.x ??
+              0
+          ),
+
+          y: Number(
+            row.layout?.y ??
+              0
+          ),
+
+          width: Number(
+            row.layout?.width ??
+              100
+          ),
+
+          height: Number(
+            row.layout?.height ??
+              100
+          ),
+
+          zIndex: Number(
+            row.layout?.zIndex ??
+              row.content_position +
+                1
+          ),
+        });
+      }
+    );
+
+    // =========================
+    // 11. ADD ANNOTATIONS
+    // =========================
+
+    annotationsResult.rows.forEach(
+      (row) => {
+        if (
+          slidesMap[
+            row.slide_id
+          ]
+        ) {
+          slidesMap[
+            row.slide_id
+          ].annotations.push(
+            row.annotation
+          );
+        }
+      }
+    );
+
+    // =========================
+    // 12. RESPONSE
+    // =========================
+
+    return res.json({
       ...storyResult.rows[0],
-      slides: Object.values(slidesMap),
+
+      slides:
+        Object.values(
+          slidesMap
+        ),
     });
+
   } catch (err) {
     next(err);
   }
 };
+
 const publishStory = async (req, res, next) => {
   try {
     const { storyId } = req.params;

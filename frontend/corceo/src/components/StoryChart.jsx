@@ -98,104 +98,147 @@ function StoryChart({
   tooltipPortal = null,
   chartId,
   storyMode = false,
+  initialChart = null,
+  initialRows = null,
 }) {
-  const [chart, setChart] =
-    useState(null);
+const [chart, setChart] =
+  useState(initialChart);
 
-  const [rows, setRows] =
-    useState([]);
+const [rows, setRows] =
+  useState(
+    Array.isArray(initialRows)
+      ? initialRows
+      : []
+  );
 
-  const [loading, setLoading] =
-    useState(true);
+const [loading, setLoading] =
+  useState(!initialChart);
 
   const [error, setError] =
     useState(null);
 
-  useEffect(() => {
-    if (!chartId) {
-      return;
-    }
+useEffect(() => {
+  // =========================
+  // PUBLIC STORY
+  // =========================
+  //
+  // PublishedStory already received
+  // chart configuration + rows from
+  // /stories/public/:id.
+  //
+  // Therefore there is no reason to
+  // call private API endpoints.
 
-    let cancelled = false;
+  if (initialChart) {
+    setChart(initialChart);
 
-    const loadChart = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    setRows(
+      Array.isArray(initialRows)
+        ? initialRows
+        : []
+    );
 
-        const chartData =
-          await apiRequest(
-            `/charts/${chartId}`,
-          );
+    setLoading(false);
+    setError(null);
 
-        if (cancelled) {
-          return;
-        }
+    return;
+  }
 
-        setChart(chartData);
+  // =========================
+  // PRIVATE STORY / EDITOR
+  // =========================
 
-        if (
-          !chartData?.dataset_id
-        ) {
-          setRows([]);
-          return;
-        }
+  if (!chartId) {
+    setLoading(false);
+    return;
+  }
 
-        const datasetRows =
-          await apiRequest(
-            `/data/rows?dataset_id=${encodeURIComponent(
-              chartData.dataset_id,
-            )}`,
-          );
+  let cancelled = false;
 
-        if (cancelled) {
-          return;
-        }
+  const loadChart = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const rowsArray =
-          Array.isArray(
-            datasetRows,
-          )
-            ? datasetRows
-            : Array.isArray(
-                  datasetRows?.rows,
-                )
-              ? datasetRows.rows
-              : [];
-
-        setRows(
-          rowsArray.map(
-            (row) =>
-              row?.data ?? row,
-          ),
-        );
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-
-        console.error(
-          "Failed to load story chart:",
-          err,
+      const chartData =
+        await apiRequest(
+          `/charts/${chartId}`
         );
 
-        setError(
-          err.message ||
-            "Failed to load chart.",
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      if (cancelled) {
+        return;
       }
-    };
 
-    loadChart();
+      setChart(chartData);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [chartId]);
+      if (!chartData?.dataset_id) {
+        setRows([]);
+        return;
+      }
+
+      const datasetRows =
+        await apiRequest(
+          `/data/rows?dataset_id=${encodeURIComponent(
+            chartData.dataset_id
+          )}`
+        );
+
+      if (cancelled) {
+        return;
+      }
+
+      const rowsArray =
+        Array.isArray(
+          datasetRows
+        )
+          ? datasetRows
+          : Array.isArray(
+              datasetRows?.rows
+            )
+            ? datasetRows.rows
+            : [];
+
+      setRows(
+        rowsArray.map(
+          (row) =>
+            row?.data ?? row
+        )
+      );
+
+    } catch (err) {
+      if (cancelled) {
+        return;
+      }
+
+      console.error(
+        "Failed to load story chart:",
+        err
+      );
+
+      setError(
+        err.message ||
+          "Failed to load chart."
+      );
+
+    } finally {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }
+  };
+
+  loadChart();
+
+  return () => {
+    cancelled = true;
+  };
+
+}, [
+  chartId,
+  initialChart,
+  initialRows,
+]);
+
 
   const parseJsonValue = (
     value,

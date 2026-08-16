@@ -16,10 +16,10 @@ const {
 
 const authMiddleware = require("../middleware/authMiddleware");
 router.post("/",authMiddleware, createStory);
-router.get("/:id",authMiddleware, getStory);
-router.get("/",authMiddleware, getStories);
-router.put("/:storyId",authMiddleware, updateStory);
 router.get("/public/:id", getPublicStory);
+router.get("/",authMiddleware, getStories);
+router.get("/:id",authMiddleware, getStory);
+router.put("/:storyId",authMiddleware, updateStory);
 router.put("/:storyId/publish", authMiddleware, publishStory);
 router.post("/:storyId/slides/:slideId/duplicate",authMiddleware,duplicateSlide);
 router.delete("/:storyId/slides/:slideId",authMiddleware,deleteSlide);

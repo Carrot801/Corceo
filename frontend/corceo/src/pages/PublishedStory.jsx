@@ -360,9 +360,9 @@ useEffect(() => {
     >
                 <div className="relative h-full w-full overflow-visible bg-white">
                   <StoryChart
-                    chartId={
-                      item.chartId
-                    }
+                    chartId={item.chartId}
+                    initialChart={item.chart}
+                    initialRows={item.rows}
                     storyMode
                   />
                 </div>
