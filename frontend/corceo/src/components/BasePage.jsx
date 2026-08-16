@@ -680,10 +680,22 @@ const deleteStory = async (storyId) => {
   return (
     <>
     <Header />
-    <div className="app-page flex min-h-screen min-w-screen">
+<div className="app-page flex min-h-screen w-full overflow-x-hidden">
+<div
+  className="
+    app-sidebar
+    w-[220px]
+    shrink-0
+    border-r
+    p-5
+    flex
+    flex-col
+    gap-4
 
-      <div className="app-sidebar w-[240px] border-r p-5 flex flex-col gap-4">
-        <button
+    lg:w-[240px]
+  "
+>
+          <button
           onClick={createProject}
           className="btn-primary"
         >
@@ -764,7 +776,14 @@ const deleteStory = async (storyId) => {
             placeholder="Search projects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="app-input w-[350px] p-3 border rounded-lg"
+            className="
+            app-input
+            w-full
+            max-w-[350px]
+            p-3
+            border
+            rounded-lg
+          "
           />
 
 
@@ -772,11 +791,19 @@ const deleteStory = async (storyId) => {
         </div>
 
 
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-4 ">
-
+<div
+  className="
+    grid
+    grid-cols-1
+    gap-6
+    sm:grid-cols-2
+    xl:grid-cols-3
+    2xl:grid-cols-4
+  "
+>
           {!isSearching && (
             <div
-              className="app-create-card flex h-[280px] w-[280px] cursor-pointer items-center justify-center rounded-lg"
+              className="app-create-card flex aspect-square w-full max-w-[280px] cursor-pointer items-center justify-center rounded-lg"
               onClick={createProject}
             >
               + Create project
@@ -797,7 +824,7 @@ const deleteStory = async (storyId) => {
 
               loadTreeItemsForFolder(folder.id);
             }}
-              className="app-card h-[280px] w-[280px] flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
+              className="app-card aspect-square w-full max-w-[280px]flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
             
             >
               <div className="text-lg app-text font-semibold">
@@ -808,7 +835,7 @@ const deleteStory = async (storyId) => {
           {displayedStories.map((story) => (
             <div
               key={story.id}
-              className="app-card relative h-[280px] w-[280px] rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
+              className="app-card relative aspect-square w-full max-w-[280px]rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="absolute top- right-2 z-20">
                 <button
@@ -879,8 +906,7 @@ const deleteStory = async (storyId) => {
               className="
                 app-card
                 relative
-                h-[280px]
-                w-[280px]
+                aspect-square w-full max-w-[280px]
                 overflow-hidden
                 rounded-lg
                 border

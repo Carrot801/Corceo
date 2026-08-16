@@ -3,11 +3,11 @@ import {
   useRef,
   useState,
 } from "react";
-
+import {
+  StoryChartScaleContext,} from "../context/StoryChartScaleContext";
 import ChartPreview from "../components/charts/ChartPreview";
 import useChartData from "../hooks/useChartData";
 import { apiRequest } from "../api/client";
-
 function StoryChartScaler({
   children,
 }) {
@@ -62,10 +62,13 @@ function StoryChartScaler({
     };
   }, []);
 
-  return (
+return (
+  <StoryChartScaleContext.Provider
+    value={scale}
+  >
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
+      className="relative h-full w-full overflow-visible"
     >
       <div
         style={{
@@ -81,17 +84,18 @@ function StoryChartScaler({
             scale(${scale})
           `,
 
-          transformOrigin:
-            "center",
+          transformOrigin: "center",
         }}
       >
         {children}
       </div>
     </div>
-  );
+  </StoryChartScaleContext.Provider>
+);
 }
 
 function StoryChart({
+  tooltipPortal = null,
   chartId,
   storyMode = false,
 }) {
@@ -341,28 +345,23 @@ function StoryChart({
 
   const preview = (
     <ChartPreview
-      chartData={
-        chartData
-      }
-      chartConfig={
-        chartConfig
-      }
-      generatedColors={
-        generatedColors
-      }
-      visibleYKeys={
-        visibleYKeys
-      }
-      rawData={rows}
-      settings={{
-        ...parsedSettings,
-      }}
-    />
+  chartData={chartData}
+  chartConfig={chartConfig}
+  generatedColors={generatedColors}
+  visibleYKeys={visibleYKeys}
+  rawData={rows}
+  settings={{
+    ...parsedSettings,
+  }}
+
+  storyMode={storyMode}
+  tooltipPortal={tooltipPortal}
+/>
   );
 
   if (storyMode) {
     return (
-      <div className="relative h-full w-full overflow-hidden">
+      <div className="relative h-full w-full overflow-visible">
         <StoryChartScaler>
           {preview}
         </StoryChartScaler>

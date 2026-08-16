@@ -11,9 +11,63 @@ const createStory = async (req, res, next) => {
     await client.query("BEGIN");
 
     const userId = req.user.userId;
+
+    let folderId = null;
+
+if (
+  folder_id !== null &&
+  folder_id !== undefined
+) {
+  folderId =
+    Number(folder_id);
+
+  if (
+    !Number.isInteger(folderId)
+  ) {
+    await client.query(
+      "ROLLBACK"
+    );
+
+    return res
+      .status(400)
+      .json({
+        error:
+          "Invalid folder ID",
+      });
+  }
+
+  const folder =
+    await client.query(
+      `
+      SELECT id
+      FROM folders
+      WHERE id = $1
+        AND user_id = $2
+      `,
+      [
+        folderId,
+        userId,
+      ]
+    );
+
+  if (
+    folder.rows.length === 0
+  ) {
+    await client.query(
+      "ROLLBACK"
+    );
+
+    return res
+      .status(404)
+      .json({
+        error:
+          "Folder not found",
+      });
+  }
+}
     const storyRes = await client.query(
       "INSERT INTO stories (name, user_id, folder_id, image_url) VALUES ($1, $2, $3, $4) RETURNING id",
-      [name, userId, folder_id, image_url]
+      [name, userId, folderId, image_url]
     );
     const storyId = storyRes.rows[0].id;
 
@@ -973,66 +1027,173 @@ const duplicateSlide = async (req, res, next) => {
     client.release();
   }
 };
+const deleteSlide = async (
+  req,
+  res,
+  next
+) => {
+  const {
+    storyId,
+    slideId,
+  } = req.params;
 
-const deleteSlide = async (req, res, next) => {
-  const { storyId, slideId } = req.params;
-  const userId = req.user.userId;
-  const client = await pool.connect();
+  const userId =
+    req.user.userId;
+
+  const client =
+    await pool.connect();
 
   try {
-    await client.query("BEGIN");
-
-    const slideCheck = await client.query(
-      `
-      SELECT id, position
-      FROM slides
-      WHERE id = $1
-      AND story_id = $2
-      AND user_id = $3
-      `,
-      [slideId, storyId, userId]
+    await client.query(
+      "BEGIN"
     );
 
-    if (slideCheck.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Slide not found" });
+    // =========================
+    // FIND SLIDE
+    // =========================
+
+    const slideCheck =
+      await client.query(
+        `
+        SELECT
+          id,
+          position
+        FROM slides
+        WHERE id = $1
+          AND story_id = $2
+          AND user_id = $3
+        `,
+        [
+          slideId,
+          storyId,
+          userId,
+        ]
+      );
+
+    if (
+      slideCheck.rows.length ===
+      0
+    ) {
+      await client.query(
+        "ROLLBACK"
+      );
+
+      return res
+        .status(404)
+        .json({
+          error:
+            "Slide not found",
+        });
     }
 
-    await client.query(
-      `DELETE FROM slide_annotations WHERE slide_id = $1 AND user_id = $2`,
-      [slideId, userId]
-    );
+    const deletedPosition =
+      slideCheck.rows[0]
+        .position;
+
+    // =========================
+    // DELETE SLIDE
+    // =========================
+
+    /*
+     * Because slide_content and
+     * slide_annotations should cascade,
+     * deleting the slide is enough if
+     * your FK schema is configured.
+     */
 
     await client.query(
-      `DELETE FROM slide_content WHERE slide_id = $1 AND user_id = $2`,
-      [slideId, userId]
+      `
+      DELETE FROM slides
+      WHERE id = $1
+        AND story_id = $2
+        AND user_id = $3
+      `,
+      [
+        slideId,
+        storyId,
+        userId,
+      ]
     );
 
-    await client.query(
-      `DELETE FROM slides WHERE id = $1 AND story_id = $2 AND user_id = $3`,
-      [slideId, storyId, userId]
-    );
+    // =========================
+    // SHIFT POSITIONS SAFELY
+    // =========================
+
+    /*
+     * Only slides AFTER the deleted
+     * position need to move.
+     *
+     * We first move them temporarily
+     * far away so the UNIQUE constraint
+     * cannot collide.
+     */
 
     await client.query(
       `
       UPDATE slides
-      SET position = ordered.new_position
-      FROM (
-        SELECT id, ROW_NUMBER() OVER (ORDER BY position, id) - 1 AS new_position
-        FROM slides
-        WHERE story_id = $1 AND user_id = $2
-      ) ordered
-      WHERE slides.id = ordered.id
+      SET position =
+        position + 1000000
+      WHERE story_id = $1
+        AND user_id = $2
+        AND position > $3
       `,
-      [storyId, userId]
+      [
+        storyId,
+        userId,
+        deletedPosition,
+      ]
     );
 
-    await client.query("COMMIT");
+    /*
+     * Move them back down by one.
+     *
+     * Original:
+     * 2 → 1000002 → 1
+     * 3 → 1000003 → 2
+     */
+    await client.query(
+      `
+      UPDATE slides
+      SET position =
+        position - 1000001
+      WHERE story_id = $1
+        AND user_id = $2
+        AND position >
+          1000000
+      `,
+      [
+        storyId,
+        userId,
+      ]
+    );
 
-    res.json({ success: true, deletedSlideId: Number(slideId) });
+    await client.query(
+      "COMMIT"
+    );
+
+    return res.json({
+      success: true,
+
+      deletedSlideId:
+        Number(slideId),
+    });
+
   } catch (err) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch (
+      rollbackError
+    ) {
+      console.error(
+        "Delete slide rollback failed:",
+        rollbackError
+      );
+    }
+
     next(err);
+
   } finally {
     client.release();
   }

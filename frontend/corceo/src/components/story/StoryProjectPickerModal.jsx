@@ -41,16 +41,23 @@ function StoryProjectPickerModal({
         <div className="app-surface-secondary flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-3 gap-4">
             {availableProjects
-              .filter((project) =>
-                project.name
-                  ?.toLowerCase()
-                  .includes(search.toLowerCase())
+              .filter(
+                (project) =>
+                  project.has_chart &&
+                  project.chart_id &&
+                  project.name
+                    ?.toLowerCase()
+                    .includes(
+                      search.toLowerCase()
+                    )
               )
-              .map((project) => (
+                .map((project) => (
                 <div
                   key={project.id}
                   onClick={() =>
-                    handleProjectClick(project.id)
+                    handleProjectClick(
+                      project.id
+                    )
                   }
                   className="app-card hover:border-[rgb(var(--color-primary))] rounded-xl p-3 cursor-pointer shadow-2xs transition-all items-center gap-3 group"
                 >

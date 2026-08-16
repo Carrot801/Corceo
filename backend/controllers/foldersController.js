@@ -7,6 +7,7 @@ const {
   requireString,
   parsePositiveInt,
 } = require("../utils/validation");
+const pool = require("../db");
 
 
 // =========================
@@ -66,6 +67,36 @@ const addFolder = async (
           req.body.parent_id,
           "parent_id"
         );
+
+      // =========================
+      // VERIFY PARENT OWNERSHIP
+      // =========================
+
+      const parentResult =
+        await pool.query(
+          `
+          SELECT id
+          FROM folders
+          WHERE id = $1
+            AND user_id = $2
+          `,
+          [
+            parentId,
+            userId,
+          ]
+        );
+
+      if (
+        parentResult.rows.length ===
+        0
+      ) {
+        return res
+          .status(404)
+          .json({
+            error:
+              "Parent folder not found",
+          });
+      }
     }
 
     const result =
@@ -85,7 +116,6 @@ const addFolder = async (
     next(error);
   }
 };
-
 
 module.exports = {
   fetchFolders,

@@ -77,9 +77,7 @@ const createInitialStoryState =
     }),
     [],
   );
-  useEffect(() => {
-    console.log("URL Param storyId is:", storyId);
-  }, [storyId]);
+
   const [isExporting, setIsExporting] =
     useState(false);
   const [availableProjects, setAvailableProjects] = useState([]);
@@ -468,7 +466,76 @@ const {
     setSelectedChartId(null);
   };
 
-    const duplicateSlide = async (index) => {
+const reorderSlides = (
+  fromIndex,
+  toIndex
+) => {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= slides.length ||
+    toIndex >= slides.length
+  ) {
+    return;
+  }
+
+  const activeSlideId =
+    slides[activeSlideIndex]?.id;
+
+  setSlides((previousSlides) => {
+    const reordered =
+      [...previousSlides];
+
+    const [movedSlide] =
+      reordered.splice(
+        fromIndex,
+        1
+      );
+
+    reordered.splice(
+      toIndex,
+      0,
+      movedSlide
+    );
+
+    return reordered;
+  });
+
+  // Keep the same slide selected
+  // after its position changes.
+  const reorderedPreview =
+    [...slides];
+
+  const [movedSlide] =
+    reorderedPreview.splice(
+      fromIndex,
+      1
+    );
+
+  reorderedPreview.splice(
+    toIndex,
+    0,
+    movedSlide
+  );
+
+  const newActiveIndex =
+    reorderedPreview.findIndex(
+      (slide) =>
+        slide.id === activeSlideId
+    );
+
+  if (newActiveIndex !== -1) {
+    setActiveSlideIndex(
+      newActiveIndex
+    );
+  }
+
+  setSelectedAnnoId(null);
+  setSelectedChartId(null);
+};
+
+  const duplicateSlide = async (index) => {
   const sourceSlide = slides[index];
 
   if (!sourceSlide) {
@@ -1122,7 +1189,6 @@ const handleProjectClick = async (projectId) => {
       `/projects/chart/${projectId}`,
     );
 
-    console.log("chart response:", chart);
 
     if (!chart || !chart.id) {
       console.error("No chart id found:", chart);
@@ -1582,6 +1648,7 @@ useEffect(() => {
             duplicateSlide={duplicateSlide}
             deleteSlide={deleteSlide}
             addSlide={addSlide}
+            reorderSlides={reorderSlides}
           />
 
           <StoryMainCanvas

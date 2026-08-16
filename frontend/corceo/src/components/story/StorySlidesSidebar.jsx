@@ -1,7 +1,15 @@
 import SlideThumbnail from "./SlideThumbnail";
 
 function StorySlidesSidebar({
-  slides,activeSlideIndex,setActiveSlideIndex,setSelectedAnnoId,setSelectedChartId,duplicateSlide,deleteSlide,addSlide
+  slides,
+  activeSlideIndex,
+  setActiveSlideIndex,
+  setSelectedAnnoId,
+  setSelectedChartId,
+  duplicateSlide,
+  deleteSlide,
+  addSlide,
+  reorderSlides,
 }) {
   return (
           <div
@@ -45,14 +53,109 @@ function StorySlidesSidebar({
 
                 return (
                   <div
-                    key={slide.id}
-                    className="group flex w-full shrink-0 gap-2"
-                  >
-                    {/* Slide number */}
-                    <div className="app-text-muted flex w-5 shrink-0 items-start justify-center pt-3 text-[11px] font-semibold">
-                      {index + 1}
-                    </div>
+                  key={slide.id}
 
+                  draggable
+
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed =
+                      "move";
+
+                    event.dataTransfer.setData(
+                      "text/plain",
+                      String(index)
+                    );
+                  }}
+
+                  onDragOver={(event) => {
+                    event.preventDefault();
+
+                    event.dataTransfer.dropEffect =
+                      "move";
+                  }}
+
+                  onDrop={(event) => {
+                    event.preventDefault();
+
+                    const fromIndex =
+                      Number(
+                        event.dataTransfer.getData(
+                          "text/plain"
+                        )
+                      );
+
+                    const toIndex =
+                      index;
+
+                    if (
+                      !Number.isInteger(fromIndex) ||
+                      fromIndex === toIndex
+                    ) {
+                      return;
+                    }
+
+                    reorderSlides(
+                      fromIndex,
+                      toIndex
+                    );
+                  }}
+
+                  className="
+                    group
+                    flex
+                    w-full
+                    shrink-0
+                    gap-2
+                    cursor-grab
+                    active:cursor-grabbing
+                  "
+                >
+                {/* Slide number + drag handle */}
+                <div
+                  className="
+                    app-text-muted
+                    flex
+                    w-5
+                    shrink-0
+                    flex-col
+                    items-center
+                    pt-3
+                  "
+                >
+                  {/* Number */}
+                  <span className="text-[11px] font-semibold">
+                    {index + 1}
+                  </span>
+
+                  {/* Drag handle */}
+                  <div
+                    draggable
+                    title="Drag to reorder slide"
+
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed =
+                        "move";
+
+                      event.dataTransfer.setData(
+                        "text/plain",
+                        String(index)
+                      );
+                    }}
+
+                    className="
+                      mt-1
+                      cursor-grab
+                      select-none
+                      text-sm
+                      leading-none
+                      opacity-60
+                      hover:opacity-100
+                      active:cursor-grabbing
+                    "
+                  >
+                    ⋮⋮
+                  </div>
+                </div>
                     {/* Slide thumbnail */}
                     <div
                       onClick={() => {

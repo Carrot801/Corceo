@@ -97,7 +97,7 @@ function StoryAnnotationsSidebar({
                                 <button 
                                   key={c.id}
                                   onClick={() => updateAnnotation(anno.id, "connectorType", c.id)}
-                                  className={`py-1 rounded text-[9px] transition-all truncate px-0.5 ${anno.connectorType === c.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
+                                  className={`py-1 rounded text-[10px] transition-all truncate px-0.5 ${anno.connectorType === c.id ? 'app-surface shadow-xs font-bold text-[rgb(var(--color-primary))]' : 'hover:text-[rgb(var(--color-text))]'}`}
                                 >
                                   {c.label}
                                 </button>

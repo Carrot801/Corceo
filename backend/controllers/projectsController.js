@@ -25,42 +25,139 @@ const fetchProjects = async (req, res, next) => {
     next(error);
   }
 };
-
-const fetchAllProjects = async (req, res, next) => {
+const fetchAllProjects = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const userId = req.user.userId;
+    const userId =
+      req.user.userId;
 
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM projects
-      WHERE user_id = $1
-      ORDER BY is_favorite DESC, id DESC
-      `,
-      [userId]
+    const result =
+      await pool.query(
+        `
+        SELECT
+          p.*,
+
+          c.id AS chart_id,
+
+          c.image_data AS chart_image_data,
+
+          CASE
+            WHEN c.id IS NOT NULL
+            THEN TRUE
+            ELSE FALSE
+          END AS has_chart
+
+        FROM projects p
+
+        LEFT JOIN charts c
+          ON c.project_id = p.id
+          AND c.user_id = p.user_id
+
+        WHERE p.user_id = $1
+
+        ORDER BY
+          p.is_favorite DESC,
+          p.id DESC
+        `,
+        [userId]
+      );
+
+    return res.json(
+      result.rows
     );
 
-    res.json(result.rows);
   } catch (error) {
     next(error);
   }
 };
-
-const addProject = async (req, res, next) => {
+const addProject = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const { name, folder_id } = req.body;
-    const userId = req.user.userId;
+    const {
+      name,
+      folder_id,
+    } = req.body;
 
-    const result = await pool.query(
-      `
-      INSERT INTO projects (name, folder_id, user_id)
-      VALUES ($1, $2, $3)
-      RETURNING *
-      `,
-      [name || "New Project", folder_id ?? null, userId]
-    );
+    const userId =
+      req.user.userId;
 
-    res.status(201).json(result.rows[0]);
+    let folderId = null;
+
+    if (
+      folder_id !== null &&
+      folder_id !== undefined
+    ) {
+      folderId =
+        Number(folder_id);
+
+      if (
+        !Number.isInteger(folderId)
+      ) {
+        return res
+          .status(400)
+          .json({
+            error:
+              "Invalid folder ID",
+          });
+      }
+
+      const folder =
+        await pool.query(
+          `
+          SELECT id
+          FROM folders
+          WHERE id = $1
+            AND user_id = $2
+          `,
+          [
+            folderId,
+            userId,
+          ]
+        );
+
+      if (
+        folder.rows.length === 0
+      ) {
+        return res
+          .status(404)
+          .json({
+            error:
+              "Folder not found",
+          });
+      }
+    }
+
+    const result =
+      await pool.query(
+        `
+        INSERT INTO projects (
+          name,
+          folder_id,
+          user_id
+        )
+        VALUES ($1, $2, $3)
+        RETURNING *
+        `,
+        [
+          name?.trim() ||
+            "New Project",
+          folderId,
+          userId,
+        ]
+      );
+
+    return res
+      .status(201)
+      .json(
+        result.rows[0]
+      );
+
   } catch (error) {
     next(error);
   }

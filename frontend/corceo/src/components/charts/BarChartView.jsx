@@ -25,6 +25,7 @@ function BarChartView({
   visibleYKeys,
   onChartItemClick,
   selectedChartValues = [],
+  
 }) {
   const yKeys =
     visibleYKeys ??
@@ -376,26 +377,32 @@ const yDomainMax =
           {settings.showTooltip !==
             false && (
             <Tooltip
-              formatter={(
-                value,
-                name
-              ) => [
-                formatValue(
-                  value,
-                  settings,
-                  total
-                ),
-                name,
-              ]}
-              content={
-                <CustomChartTooltip
-                  settings={
-                    settings
-                  }
-                  total={total}
-                />
-              }
-            />
+  allowEscapeViewBox={{
+    x: true,
+    y: true,
+  }}
+
+  wrapperStyle={{
+    zIndex: 999999,
+    pointerEvents: "none",
+  }}
+
+  formatter={(value, name) => [
+    formatValue(
+      value,
+      settings,
+      total
+    ),
+    name,
+  ]}
+
+  content={
+    <CustomChartTooltip
+      settings={settings}
+      total={total}
+    />
+  }
+/>
           )}
 
           {/* BARS */}

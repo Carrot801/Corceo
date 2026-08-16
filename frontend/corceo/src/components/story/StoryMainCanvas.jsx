@@ -1,12 +1,20 @@
-import React from "react";
+
+import React, {
+  useState,
+} from "react";
 import StoryChart from "../StoryChart";import AnnotationLayer from "../annotations/AnnotationLayer";
 
 function StoryMainCanvas({
   activeSlideIndex,currentSlide,setSlides,slides,canvasRef,selectedChartId,selectedAnnoId,setSelectedChartId,setSelectedAnnoId,startChartInteraction,duplicateChartItem,deleteChartItem,sendChartToBack,setShowPicker,canvasDimensions,handleDragStart,setActiveSlideIndex
 }) {
+
+  const [
+  hoveredChartId,
+  setHoveredChartId,
+] = useState(null);
   return (
           <div className="flex-1 p-8 flex flex-col items-center justify-center overflow-hidden">
-            <div className="story-slide app-card w-full max-w-4xl shadow-xl h-[620px] rounded-2xl p-6 flex flex-col gap-4 relative">          
+            <div className="story-slide app-card w-full max-w-4xl shadow-xl h-[520px] lg:h-[620px] rounded-2xl p-4 lg:p-6 flex flex-col gap-4 relative">          
               <input
       type="text"
       placeholder={`Slide ${activeSlideIndex + 1}`}
@@ -54,32 +62,45 @@ function StoryMainCanvas({
                 }}
               >
                 {/* Chart Renderer Layer */}
-                <div className="absolute inset-0 z-[5] overflow-hidden rounded-xl">
+                <div className="absolute inset-0 z-[5] overflow-visible rounded-xl">
                   {(currentSlide.content || []).map((item) => {
                     const isSelected = selectedChartId === item.id;
 
                     return (
-                      <div
-                        key={item.id}
-                        className={`absolute group rounded-xl transition-shadow ${
-                          isSelected
-                            ? "ring-2 ring-[rgb(var(--color-primary))] shadow-xl"
-                            : "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]"
-                        }`}
-                        style={{
-                          left: `${item.x ?? 5}%`,
-                          top: `${item.y ?? 5}%`,
-                          width: `${item.width ?? 48}%`,
-                          height: `${item.height ?? 45}%`,
-                          zIndex: item.zIndex ?? 1,
-                        }}
-                        onMouseDown={(event) => {
-                          event.stopPropagation();
-                          setSelectedChartId(item.id);
-                          setSelectedAnnoId(null);
-                        }}
-                      >
-                        <div className="app-card relative h-full w-full overflow-hidden rounded-sm">
+                     <div
+                      key={item.id}
+                      className={`absolute group rounded-xl transition-shadow ${
+                        isSelected
+                          ? "ring-2 ring-[rgb(var(--color-primary))] shadow-xl"
+                          : "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]"
+                      }`}
+                      style={{
+                        left: `${item.x ?? 5}%`,
+                        top: `${item.y ?? 5}%`,
+                        width: `${item.width ?? 48}%`,
+                        height: `${item.height ?? 45}%`,
+
+                        zIndex:
+                          hoveredChartId === item.id
+                            ? 10000
+                            : item.zIndex ?? 1,
+                      }}
+
+                      onMouseEnter={() => {
+                        setHoveredChartId(item.id);
+                      }}
+
+                      onMouseLeave={() => {
+                        setHoveredChartId(null);
+                      }}
+
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                        setSelectedChartId(item.id);
+                        setSelectedAnnoId(null);
+                      }}
+                    >
+                        <div className="app-card relative h-full w-full overflow-visible rounded-sm">
                           <div
                             className={`absolute left-0 right-0 top-0 z-20 flex h-9 items-center justify-between border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/90 px-2 backdrop-blur-sm transition-opacity ${
                               isSelected

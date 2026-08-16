@@ -19,12 +19,7 @@ function Legend({
   const limitedRawData = rawData.filter((row) =>
     topXValues.has(row[xField])
   );
-  console.log({
-  xField,
-  rawSample: rawData[0],
-  limitedRawData,
-  customLegendFields,
-});
+
 
   const legendItems =
     customLegendFields.length > 0

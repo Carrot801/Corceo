@@ -506,10 +506,67 @@ const publishChart = async (
   }
 };
 
+const getChartById = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const chartId =
+      Number(req.params.chartId);
+
+    const userId =
+      req.user.userId;
+
+    if (
+      !Number.isInteger(chartId)
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid chart ID",
+        });
+    }
+
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM charts
+        WHERE id = $1
+          AND user_id = $2
+        `,
+        [
+          chartId,
+          userId,
+        ]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Chart not found",
+        });
+    }
+
+    return res.json(
+      result.rows[0]
+    );
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createChart,
   getCharts,
   getPublishedChart,
   publishChart,
+  getChartById,
 };

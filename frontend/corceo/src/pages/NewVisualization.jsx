@@ -830,10 +830,6 @@ useEffect(() => {
     return;
   }
 
-  console.log(
-    "Loaded savedChart:",
-    savedChart,
-  );
 
   let parsedSettings = {};
 
