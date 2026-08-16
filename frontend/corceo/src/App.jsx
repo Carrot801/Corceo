@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import Legend from "./custom/Legend";
 import BasePage from "./components/BasePage";
 import Projects from "./components/Projects";
@@ -13,10 +13,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 
 
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, } from "react-router-dom";
 
 function ChartsPage() {
-  const navigate = useNavigate();
 
   return (
     <div>

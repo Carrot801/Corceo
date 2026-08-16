@@ -83,13 +83,14 @@ const createDateHierarchy = (field) => {
   closeMenu();
 };
 
-  const useField = (fieldName, configUpdates) => {
-    setChartConfig((prev) => ({
-      ...prev,
-      ...configUpdates(fieldName),
-    }));
-    closeMenu();
-  };
+const applyField = (fieldName, configUpdates) => {
+  setChartConfig((prev) => ({
+    ...prev,
+    ...configUpdates(fieldName),
+  }));
+
+  closeMenu();
+};
 
   const createDateField = (mode) => {
     const name = `${selectedCol}_${mode}`;
@@ -112,7 +113,7 @@ const createDateHierarchy = (field) => {
       return row[selectedCol];
     });
 
-    useField(fieldName, (f) => ({
+    applyField(fieldName, (f) => ({
       x: f,
       dateHierarchySource: selectedCol,
       xHierarchy: [
@@ -179,11 +180,20 @@ const createNumberField = (mode) => {
       return value;
     });
 
-    useField(fieldName, (f) => ({
+    applyField(fieldName, (f) => ({
       x: f,
-      limit: mode === "Top10" ? 10 : mode === "Top20" ? 20 : null,
-      groupSmallCategories: mode === "GroupedOther",
-      filterField: mode === "Filter" ? f : null,
+      limit:
+        mode === "Top10"
+          ? 10
+          : mode === "Top20"
+            ? 20
+            : null,
+      groupSmallCategories:
+        mode === "GroupedOther",
+      filterField:
+        mode === "Filter"
+          ? f
+          : null,
     }));
   };
 
@@ -285,7 +295,14 @@ const createNumberField = (mode) => {
 
           {selectedType === "date" && (
             <>
-              <MenuButton onClick={() => useField(selectedCol, (f) => ({ x: f }))}>
+              <MenuButton
+                onClick={() =>
+                  applyField(
+                    selectedCol,
+                    (f) => ({ x: f })
+                  )
+                }
+              >
                 Add to X Axis
               </MenuButton>
               <MenuButton onClick={() => createDateHierarchy(selectedCol)}>
@@ -304,13 +321,14 @@ const createNumberField = (mode) => {
               <MenuSection title="Use field">
                 <MenuButton
                   onClick={() =>
-                    useField(selectedCol, (field) => ({
-                      y: [field],
-                    }))
+                    applyField(
+                      selectedCol,
+                      (f) => ({ x: f })
+                    )
                   }
                 >
-                  Add to Y Axis
-                </MenuButton>
+                  Add to X Axis
+              </MenuButton>
               </MenuSection>
 
               <MenuSection title="Aggregation">
@@ -331,8 +349,17 @@ const createNumberField = (mode) => {
 
           {selectedType !== "number" && selectedType !== "date" && (
             <>
-              <MenuButton onClick={() => useField(selectedCol, (f) => ({ x: f }))}>
-                Add to X Axis
+              <MenuButton
+                onClick={() =>
+                  applyField(
+                    selectedCol,
+                    (field) => ({
+                      y: [field],
+                    })
+                  )
+                }
+              >
+                Add to Y Axis
               </MenuButton>
               <MenuButton onClick={() => createTextField("GroupedOther")}>
                 Group Small Categories into "Other"

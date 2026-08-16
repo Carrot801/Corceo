@@ -101,46 +101,50 @@ function StoryChart({
   initialChart = null,
   initialRows = null,
 }) {
-const [chart, setChart] =
-  useState(initialChart);
+const [
+  loadedChart,
+  setLoadedChart,
+] = useState(null);
 
-const [rows, setRows] =
-  useState(
-    Array.isArray(initialRows)
-      ? initialRows
-      : []
-  );
+const [
+  loadedRows,
+  setLoadedRows,
+] = useState([]);
 
-const [loading, setLoading] =
-  useState(!initialChart);
+const [
+  loading,
+  setLoading,
+] = useState(false);
 
-  const [error, setError] =
-    useState(null);
+const [
+  error,
+  setError,
+] = useState(null);
 
-useEffect(() => {
+const chart =
+  initialChart ??
+  loadedChart;
+
+const rows =
+  initialChart
+    ? (
+        Array.isArray(initialRows)
+          ? initialRows
+          : []
+      )
+    : loadedRows;
+
+    useEffect(() => {
   // =========================
   // PUBLIC STORY
   // =========================
   //
-  // PublishedStory already received
-  // chart configuration + rows from
-  // /stories/public/:id.
-  //
-  // Therefore there is no reason to
-  // call private API endpoints.
+  // If initialChart exists,
+  // no API request is necessary.
+  // The component reads directly
+  // from initialChart + initialRows.
 
   if (initialChart) {
-    setChart(initialChart);
-
-    setRows(
-      Array.isArray(initialRows)
-        ? initialRows
-        : []
-    );
-
-    setLoading(false);
-    setError(null);
-
     return;
   }
 
@@ -149,7 +153,6 @@ useEffect(() => {
   // =========================
 
   if (!chartId) {
-    setLoading(false);
     return;
   }
 
@@ -169,10 +172,14 @@ useEffect(() => {
         return;
       }
 
-      setChart(chartData);
+      setLoadedChart(
+        chartData
+      );
 
-      if (!chartData?.dataset_id) {
-        setRows([]);
+      if (
+        !chartData?.dataset_id
+      ) {
+        setLoadedRows([]);
         return;
       }
 
@@ -198,7 +205,7 @@ useEffect(() => {
             ? datasetRows.rows
             : [];
 
-      setRows(
+      setLoadedRows(
         rowsArray.map(
           (row) =>
             row?.data ?? row
@@ -236,9 +243,7 @@ useEffect(() => {
 }, [
   chartId,
   initialChart,
-  initialRows,
 ]);
-
 
   const parseJsonValue = (
     value,

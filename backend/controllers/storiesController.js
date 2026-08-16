@@ -592,7 +592,7 @@ const getPublicStory = async (req, res, next) => {
     const storyId = Number(req.params.id);
 
     // =========================
-    // VALIDATE ID
+    // VALIDATE STORY ID
     // =========================
 
     if (!Number.isInteger(storyId)) {
@@ -673,6 +673,7 @@ const getPublicStory = async (req, res, next) => {
       SELECT
         sa.slide_id,
         sa.annotation
+
       FROM slide_annotations sa
 
       JOIN slides s
@@ -684,7 +685,8 @@ const getPublicStory = async (req, res, next) => {
     );
 
     // =========================
-    // 4. GET CHART IDS
+    // 4. GET CHART IDS USED
+    //    IN THIS STORY
     // =========================
 
     const chartIds = [
@@ -698,7 +700,7 @@ const getPublicStory = async (req, res, next) => {
     let charts = [];
 
     // =========================
-    // 5. GET CHART CONFIGURATION
+    // 5. GET CHART CONFIGS
     // =========================
 
     if (chartIds.length > 0) {
@@ -733,14 +735,10 @@ const getPublicStory = async (req, res, next) => {
               AND st.is_published = TRUE
           )
         `,
-        [
-          chartIds,
-          storyId,
-        ]
+        [chartIds, storyId]
       );
 
-      charts =
-        chartsResult.rows;
+      charts = chartsResult.rows;
     }
 
     // =========================
@@ -750,14 +748,8 @@ const getPublicStory = async (req, res, next) => {
     const datasetIds = [
       ...new Set(
         charts
-          .map(
-            (chart) =>
-              chart.dataset_id
-          )
-          .filter(
-            (id) =>
-              id != null
-          )
+          .map((chart) => chart.dataset_id)
+          .filter((id) => id != null)
       ),
     ];
 
@@ -767,27 +759,22 @@ const getPublicStory = async (req, res, next) => {
     // 7. GET DATASET ROWS
     // =========================
 
-    if (
-      datasetIds.length > 0
-    ) {
-      const rowsResult =
-        await pool.query(
-          `
-          SELECT
-            dataset_id,
-            data
-          FROM rows
+    if (datasetIds.length > 0) {
+      const rowsResult = await pool.query(
+        `
+        SELECT
+          dataset_id,
+          data
+        FROM rows
 
-          WHERE dataset_id =
-            ANY($1::int[])
+        WHERE dataset_id = ANY($1::int[])
 
-          ORDER BY id
-          `,
-          [datasetIds]
-        );
+        ORDER BY id
+        `,
+        [datasetIds]
+      );
 
-      rawRows =
-        rowsResult.rows;
+      rawRows = rowsResult.rows;
     }
 
     // =========================
@@ -796,25 +783,15 @@ const getPublicStory = async (req, res, next) => {
 
     const rowsByDataset = {};
 
-    rawRows.forEach(
-      (row) => {
-        if (
-          !rowsByDataset[
-            row.dataset_id
-          ]
-        ) {
-          rowsByDataset[
-            row.dataset_id
-          ] = [];
-        }
-
-        rowsByDataset[
-          row.dataset_id
-        ].push(
-          row.data
-        );
+    rawRows.forEach((row) => {
+      if (!rowsByDataset[row.dataset_id]) {
+        rowsByDataset[row.dataset_id] = [];
       }
-    );
+
+      rowsByDataset[row.dataset_id].push(
+        row.data
+      );
+    });
 
     // =========================
     // 9. GROUP CHARTS BY ID
@@ -822,20 +799,16 @@ const getPublicStory = async (req, res, next) => {
 
     const chartsById = {};
 
-    charts.forEach(
-      (chart) => {
-        chartsById[
-          chart.id
-        ] = {
-          ...chart,
+    charts.forEach((chart) => {
+      chartsById[chart.id] = {
+        ...chart,
 
-          rows:
-            rowsByDataset[
-              chart.dataset_id
-            ] || [],
-        };
-      }
-    );
+        rows:
+          rowsByDataset[
+            chart.dataset_id
+          ] || [],
+      };
+    });
 
     // =========================
     // 10. BUILD SLIDES
@@ -843,99 +816,82 @@ const getPublicStory = async (req, res, next) => {
 
     const slidesMap = {};
 
-    slidesResult.rows.forEach(
-      (row) => {
-        if (
-          !slidesMap[
-            row.slide_id
-          ]
-        ) {
-          slidesMap[
-            row.slide_id
-          ] = {
-            id:
-              row.slide_id,
+    slidesResult.rows.forEach((row) => {
+      if (!slidesMap[row.slide_id]) {
+        slidesMap[row.slide_id] = {
+          id: row.slide_id,
 
-            description:
-              row.description,
+          description:
+            row.description,
 
-            content: [],
+          content: [],
 
-            annotations: [],
-          };
-        }
-
-        if (!row.chart_id) {
-          return;
-        }
-
-        const chart =
-          chartsById[
-            row.chart_id
-          ];
-
-        if (!chart) {
-          return;
-        }
-
-        slidesMap[
-          row.slide_id
-        ].content.push({
-          id:
-            row.slide_content_id ??
-            `${row.slide_id}-${row.chart_id}`,
-
-          type: "chart",
-
-          chartId:
-            row.chart_id,
-
-          name:
-            row.chart_name ||
-            "Chart",
-
-          // =====================
-          // THIS IS THE IMPORTANT
-          // PUBLIC DATA
-          // =====================
-
-          chart,
-
-          rows:
-            chart.rows || [],
-
-          // =====================
-          // LAYOUT
-          // =====================
-
-          x: Number(
-            row.layout?.x ??
-              0
-          ),
-
-          y: Number(
-            row.layout?.y ??
-              0
-          ),
-
-          width: Number(
-            row.layout?.width ??
-              100
-          ),
-
-          height: Number(
-            row.layout?.height ??
-              100
-          ),
-
-          zIndex: Number(
-            row.layout?.zIndex ??
-              row.content_position +
-                1
-          ),
-        });
+          annotations: [],
+        };
       }
-    );
+
+      if (!row.chart_id) {
+        return;
+      }
+
+      const chart =
+        chartsById[row.chart_id];
+
+      if (!chart) {
+        return;
+      }
+
+      slidesMap[
+        row.slide_id
+      ].content.push({
+        id:
+          row.slide_content_id ??
+          `${row.slide_id}-${row.chart_id}`,
+
+        type: "chart",
+
+        chartId:
+          row.chart_id,
+
+        name:
+          row.chart_name ||
+          "Chart",
+
+        // =====================
+        // PUBLIC CHART DATA
+        // =====================
+
+        chart,
+
+        rows:
+          chart.rows || [],
+
+        // =====================
+        // LAYOUT
+        // =====================
+
+        x: Number(
+          row.layout?.x ?? 0
+        ),
+
+        y: Number(
+          row.layout?.y ?? 0
+        ),
+
+        width: Number(
+          row.layout?.width ?? 100
+        ),
+
+        height: Number(
+          row.layout?.height ?? 100
+        ),
+
+        zIndex: Number(
+          row.layout?.zIndex ??
+            row.content_position + 1
+        ),
+      });
+    });
 
     // =========================
     // 11. ADD ANNOTATIONS
@@ -944,9 +900,7 @@ const getPublicStory = async (req, res, next) => {
     annotationsResult.rows.forEach(
       (row) => {
         if (
-          slidesMap[
-            row.slide_id
-          ]
+          slidesMap[row.slide_id]
         ) {
           slidesMap[
             row.slide_id
@@ -958,7 +912,7 @@ const getPublicStory = async (req, res, next) => {
     );
 
     // =========================
-    // 12. RESPONSE
+    // 12. RETURN STORY
     // =========================
 
     return res.json({

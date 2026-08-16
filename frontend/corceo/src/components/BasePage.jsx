@@ -60,16 +60,7 @@ const createProject = async () => {
   }
 };
 
-const requireAuth = (destination) => {
-  const token = localStorage.getItem("token");
 
-  if (!token) {
-    setShowAuthModal(true);
-    return;
-  }
-
-  navigate(destination);
-};
 
 
 const loadTreeItemsForFolder = async (folderId) => {
@@ -176,13 +167,6 @@ const createFolder = async () => {
     }
   };
 
-  const toggleFolder = (id) => {
-    setOpenFolders(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
   const renderFolders = (parentId = null, level = 0) => {
   const currentFolders = folders.filter((f) => f.parent_id === parentId);
   const currentProjects = treeProjects.filter((p) => p.folder_id === parentId);
@@ -223,11 +207,13 @@ const createFolder = async () => {
 
               setActiveFolder(folder.id);
 
-              setOpenFolders(prev => ({
+              setOpenFolders((prev) => ({
                 ...prev,
                 [folder.id]: true,
               }));
 
+              getProjects(folder.id);
+              getStories(folder.id);
               loadTreeItemsForFolder(folder.id);
             }}
           >
@@ -325,19 +311,75 @@ const createFolder = async () => {
     </div>
   );
 };
-  const renderFoldersForProjects = (parentId = null) => {
-    return folders
-      .filter(folder => folder.parent_id === parentId)
-  };
+
+
 useEffect(() => {
+  let cancelled = false;
+
   const init = async () => {
-    await getFolders();
-    await getProjects(null);
-    await getStories(null);
-    await loadTreeItemsForFolder(null);
+    try {
+      const [
+        foldersData,
+        projectsData,
+        storiesData,
+      ] = await Promise.all([
+        apiRequest("/folders"),
+        apiRequest("/projects"),
+        apiRequest("/stories"),
+      ]);
+
+      if (cancelled) {
+        return;
+      }
+
+      setFolders(
+        Array.isArray(foldersData)
+          ? foldersData
+          : []
+      );
+
+      setProjects(
+        Array.isArray(projectsData)
+          ? projectsData
+          : []
+      );
+
+      setStories(
+        Array.isArray(storiesData)
+          ? storiesData
+          : []
+      );
+
+      // Root-level items for the sidebar tree.
+      setTreeProjects(
+        Array.isArray(projectsData)
+          ? projectsData
+          : []
+      );
+
+      setTreeStories(
+        Array.isArray(storiesData)
+          ? storiesData
+          : []
+      );
+
+    } catch (error) {
+      if (cancelled) {
+        return;
+      }
+
+      console.error(
+        "Failed to initialize dashboard:",
+        error
+      );
+    }
   };
 
   init();
+
+  return () => {
+    cancelled = true;
+  };
 }, []);
 
 
@@ -354,10 +396,6 @@ const searchItems = async (value) => {
 };
 
 
-useEffect(() => {
-  getProjects(activeFolder);
-  getStories(activeFolder);
-}, [activeFolder]);
 
 const createFolderWithParent = async (parentId) => {
   if (!folderName.trim()) return;
@@ -512,13 +550,10 @@ const sortProjects = (projectList) => {
 const toggleProjectFavorite = async (
   project,
 ) => {
-  const nextFavorite =
-    !Boolean(project.is_favorite);
+const nextFavorite =
+  !project.is_favorite;
 
-  /*
-   * Optimistic update:
-   * change the star immediately.
-   */
+
   const updateLocalProject = (
     projectList,
     favoriteValue,
@@ -729,7 +764,9 @@ const deleteStory = async (storyId) => {
             <button
               onClick={() => {
                 setActiveFolder(null);
-                loadTreeItemsForFolder(null);
+              getProjects(null);
+              getStories(null);
+              loadTreeItemsForFolder(null);
               }}
               className="bg-gray-200 text-sm text-left text-gray-700 py-2 rounded"
             >
@@ -815,15 +852,17 @@ const deleteStory = async (storyId) => {
             <div
               key={folder.id}
               onClick={() => {
-              setActiveFolder(folder.id);
+                setActiveFolder(folder.id);
 
-              setOpenFolders(prev => ({
-                ...prev,
-                [folder.id]: true,
-              }));
+                setOpenFolders((prev) => ({
+                  ...prev,
+                  [folder.id]: true,
+                }));
 
-              loadTreeItemsForFolder(folder.id);
-            }}
+                getProjects(folder.id);
+                getStories(folder.id);
+                loadTreeItemsForFolder(folder.id);
+              }}
               className="app-card aspect-square w-full max-w-[280px]flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
             
             >

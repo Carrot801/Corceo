@@ -82,15 +82,7 @@ function useProjectData(id) {
       selectedSheet: "",
     });
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem("token");
 
-    return token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {};
-  }, []);
   
 
   const clearError = useCallback(() => {
@@ -157,23 +149,7 @@ function useProjectData(id) {
     []
   );
 
-  const readJsonResponse = async (
-    response,
-    fallbackMessage
-  ) => {
-    const responseData =
-      await response.json().catch(() => null);
 
-    if (!response.ok) {
-      throw new Error(
-        responseData?.message ??
-          responseData?.error ??
-          fallbackMessage
-      );
-    }
-
-    return responseData;
-  };
 
 const loadProject = useCallback(
   async (signal) => {
@@ -252,10 +228,8 @@ const loadProject = useCallback(
   // ===================================
   // INITIAL LOAD
   // ===================================
-  useEffect(() => {
+useEffect(() => {
   if (!id) {
-    resetEmptySheet();
-    setSavedChart(null);
     return;
   }
 
@@ -270,10 +244,11 @@ const loadProject = useCallback(
       try {
         await Promise.all([
           loadProject(
-            controller.signal,
+            controller.signal
           ),
+
           loadChart(
-            controller.signal,
+            controller.signal
           ),
         ]);
       } catch (loadError) {
@@ -286,36 +261,32 @@ const loadProject = useCallback(
 
         console.error(
           "Project loading failed:",
-          loadError,
+          loadError
         );
 
         setError(
           loadError.message ??
-            "Could not load the project.",
+            "Could not load the project."
         );
       } finally {
         if (
-          !controller.signal
-            .aborted
+          !controller.signal.aborted
         ) {
-          setIsLoadingProject(
-            false,
-          );
+          setIsLoadingProject(false);
         }
       }
     };
 
-  initializeProject();
+    initializeProject();
 
-  return () => {
-    controller.abort();
-  };
-}, [
-  id,
-  loadProject,
-  loadChart,
-  resetEmptySheet,
-]);
+    return () => {
+      controller.abort();
+    };
+  }, [
+    id,
+    loadProject,
+    loadChart,
+  ]);
 
 const uploadData = async (
   rows,

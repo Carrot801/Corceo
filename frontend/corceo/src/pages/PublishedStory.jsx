@@ -76,10 +76,19 @@ useEffect(() => {
       setStory(publicStory);
       return;
 
-    } catch (publicError) {
-      // Story may simply be unpublished.
-      // In that case try authenticated
-      // owner access below.
+    } catch (privateError) {
+      if (cancelled) {
+        return;
+      }
+
+      console.error(
+        "Story load failed:",
+        privateError
+      );
+
+      setLoadError(
+        "This story does not exist, is private, or you do not have permission to view it."
+      );
     }
 
 

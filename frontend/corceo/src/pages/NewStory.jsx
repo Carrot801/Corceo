@@ -20,9 +20,9 @@ import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal
 import useStoryPersistence from "../hooks/story/useStoryPersistence";
 
 import { apiRequest } from "../api/client";
-export const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
+const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
 
-export function createChartItem(
+function createChartItem(
   chartId,
   name,
   imageUrl,
@@ -668,15 +668,6 @@ const deleteSlide = async (index) => {
   }
 };
 
-function withCurrentRatio(item) {
-  const width = Number(item.width) || 1;
-  const height = Number(item.height) || 1;
-
-  return {
-    ...item,
-    aspectRatio: width / height,
-  };
-}
 
   const arrangeCharts = (items = []) => {
     const count = items.length;
@@ -1513,8 +1504,6 @@ const handleDragEnd = () => {
       context.latestStoryState,
     );
 
-    storyStateRef.current =
-      context.latestStoryState;
   }
 
   dragContext.current = {
@@ -1548,9 +1537,9 @@ useEffect(() => {
       handleDragEnd,
     );
   };
-}, []);
 
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
 
 
   useEffect(() => {

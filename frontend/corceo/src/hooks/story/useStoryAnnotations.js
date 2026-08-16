@@ -14,6 +14,10 @@ export default function useStoryInteractions({
   const chartInteractionRef =
     useRef(null);
 
+  // =========================
+  // HANDLE MOUSE MOVE
+  // =========================
+
   const handleMove =
     useCallback(
       (event) => {
@@ -52,6 +56,10 @@ export default function useStoryInteractions({
             rect.height) *
           100;
 
+        // =========================
+        // MOVE CHART
+        // =========================
+
         if (
           interaction.mode ===
           "move"
@@ -64,9 +72,10 @@ export default function useStoryInteractions({
                 Math.min(
                   100 -
                     interaction.startWidth,
+
                   interaction.startX +
-                    deltaX,
-                ),
+                    deltaX
+                )
               ),
 
               y: Math.max(
@@ -74,18 +83,23 @@ export default function useStoryInteractions({
                 Math.min(
                   100 -
                     interaction.startHeight,
+
                   interaction.startY +
-                    deltaY,
-                ),
+                    deltaY
+                )
               ),
             },
             {
               record: false,
-            },
+            }
           );
 
           return;
         }
+
+        // =========================
+        // RESIZE CHART
+        // =========================
 
         const minWidth = 18;
         const minHeight = 18;
@@ -102,53 +116,62 @@ export default function useStoryInteractions({
         let height =
           interaction.startHeight;
 
+        // RIGHT
         if (
           interaction.mode.includes(
-            "right",
+            "right"
           )
         ) {
           width = Math.max(
             minWidth,
+
             Math.min(
               100 -
                 interaction.startX,
+
               interaction.startWidth +
-                deltaX,
-            ),
+                deltaX
+            )
           );
         }
 
+        // BOTTOM
         if (
           interaction.mode.includes(
-            "bottom",
+            "bottom"
           )
         ) {
           height = Math.max(
             minHeight,
+
             Math.min(
               100 -
                 interaction.startY,
+
               interaction.startHeight +
-                deltaY,
-            ),
+                deltaY
+            )
           );
         }
 
+        // LEFT
         if (
           interaction.mode.includes(
-            "left",
+            "left"
           )
         ) {
           const nextX =
             Math.max(
               0,
+
               Math.min(
                 interaction.startX +
                   interaction.startWidth -
                   minWidth,
+
                 interaction.startX +
-                  deltaX,
-              ),
+                  deltaX
+              )
             );
 
           x = nextX;
@@ -159,21 +182,24 @@ export default function useStoryInteractions({
             nextX;
         }
 
+        // TOP
         if (
           interaction.mode.includes(
-            "top",
+            "top"
           )
         ) {
           const nextY =
             Math.max(
               0,
+
               Math.min(
                 interaction.startY +
                   interaction.startHeight -
                   minHeight,
+
                 interaction.startY +
-                  deltaY,
-              ),
+                  deltaY
+              )
             );
 
           y = nextY;
@@ -194,14 +220,18 @@ export default function useStoryInteractions({
           },
           {
             record: false,
-          },
+          }
         );
       },
       [
         canvasRef,
         updateChartItem,
-      ],
+      ]
     );
+
+  // =========================
+  // STOP INTERACTION
+  // =========================
 
   const stopInteraction =
     useCallback(() => {
@@ -214,21 +244,19 @@ export default function useStoryInteractions({
       ) {
         commitStoryHistory(
           interaction.startingStoryState,
-          storyStateRef.current,
+          storyStateRef.current
         );
       }
 
       chartInteractionRef.current =
         null;
 
+      // Mouseup listener uses
+      // { once: true }, so it removes
+      // itself automatically.
       document.removeEventListener(
         "mousemove",
-        handleMove,
-      );
-
-      document.removeEventListener(
-        "mouseup",
-        stopInteraction,
+        handleMove
       );
     }, [
       commitStoryHistory,
@@ -236,29 +264,39 @@ export default function useStoryInteractions({
       storyStateRef,
     ]);
 
+  // =========================
+  // START INTERACTION
+  // =========================
+
   const startInteraction =
     useCallback(
       (
         event,
         mode,
-        item,
+        item
       ) => {
         event.preventDefault();
         event.stopPropagation();
 
-        if (!canvasRef.current) {
+        if (
+          !canvasRef.current
+        ) {
           return;
         }
 
         setSelectedChartId(
-          item.id,
+          item.id
         );
 
-        setSelectedAnnoId(null);
+        setSelectedAnnoId(
+          null
+        );
 
         chartInteractionRef.current = {
           mode,
-          itemId: item.id,
+
+          itemId:
+            item.id,
 
           startClientX:
             event.clientX,
@@ -280,18 +318,26 @@ export default function useStoryInteractions({
 
           startingStoryState:
             structuredClone(
-              storyStateRef.current,
+              storyStateRef.current
             ),
         };
 
+        // Track movement until
+        // mouse is released.
         document.addEventListener(
           "mousemove",
-          handleMove,
+          handleMove
         );
 
+        // "once" means the browser
+        // removes this listener after
+        // the first mouseup.
         document.addEventListener(
           "mouseup",
           stopInteraction,
+          {
+            once: true,
+          }
         );
       },
       [
@@ -301,7 +347,7 @@ export default function useStoryInteractions({
         setSelectedChartId,
         stopInteraction,
         storyStateRef,
-      ],
+      ]
     );
 
   return {

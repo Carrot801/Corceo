@@ -13,9 +13,6 @@ import {
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
-import {
-  getConditionalColor,
-} from "../../utils/conditionalFormatting";
 
 function HeatmapCellShape({
   cx,

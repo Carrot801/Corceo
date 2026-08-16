@@ -187,53 +187,49 @@ const preparedRows = useMemo(() => {
   rows,
   chartConfig.dateHierarchySource,
 ]);
-  useEffect(() => {
-    const loadChart = async () => {
-      try {
-        setLoading(true);
-        setLoadError("");
+useEffect(() => {
+  const loadChart = async () => {
+    try {
+      setLoading(true);
+      setLoadError("");
 
-        const chartResult = await apiRequest(
+      const result =
+        await apiRequest(
           `/charts/public/${chartId}`,
           {
             auth: false,
           }
         );
 
-     
-        setChart(chartResult);
+      setChart(
+        result.chart
+      );
 
-        const datasetRows = await apiRequest(
-          `/data/rows?dataset_id=${chartResult.dataset_id}`,
-        );
+      setRows(
+        Array.isArray(result.rows)
+          ? result.rows
+          : []
+      );
 
-        const rowsArray = Array.isArray(datasetRows)
-          ? datasetRows
-          : Array.isArray(datasetRows?.rows)
-            ? datasetRows.rows
-            : [];
+    } catch (error) {
+      console.error(
+        "Failed to load published chart:",
+        error
+      );
 
-        const cleanRows = rowsArray.map((row) => {
-          return row?.data ?? row;
-        });
+      setLoadError(
+        error.message ||
+          "Failed to load published chart."
+      );
 
-        setRows(cleanRows);
-      } catch (error) {
-        console.error(
-          "Failed to load published chart resources:",
-          error,
-        );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setLoadError(
-          error.message || "Failed to load published chart.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  loadChart();
 
-    loadChart();
-  }, [chartId]);
+}, [chartId]);
 
 const {
   chartData,

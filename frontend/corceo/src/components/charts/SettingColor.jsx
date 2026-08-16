@@ -4,47 +4,29 @@ import {
   useState,
 } from "react";
 
-function SettingColor({
+function SettingColorControl({
   label,
-  value,
-  fallback = "#000000",
-
-  /*
-   * Called continuously for a smooth chart preview.
-   * This should update appearance without recording history.
-   */
+  initialValue,
   onPreview,
-
-  /*
-   * Called once when the user finishes choosing.
-   * This should create the undo-history action.
-   */
   onChange,
 }) {
-  const normalizedValue =
-    value || fallback;
-
-  const [draftColor, setDraftColor] =
-    useState(normalizedValue);
+  const [
+    draftColor,
+    setDraftColor,
+  ] = useState(initialValue);
 
   const committedColorRef =
-    useRef(normalizedValue);
+    useRef(initialValue);
 
   const pendingColorRef =
-    useRef(normalizedValue);
+    useRef(initialValue);
 
   const animationFrameRef =
     useRef(null);
 
-  useEffect(() => {
-    setDraftColor(normalizedValue);
-
-    committedColorRef.current =
-      normalizedValue;
-
-    pendingColorRef.current =
-      normalizedValue;
-  }, [normalizedValue]);
+  // =========================
+  // CLEAN UP ANIMATION FRAME
+  // =========================
 
   useEffect(() => {
     return () => {
@@ -53,27 +35,29 @@ function SettingColor({
         null
       ) {
         cancelAnimationFrame(
-          animationFrameRef.current,
+          animationFrameRef.current
         );
       }
     };
   }, []);
 
+  // =========================
+  // PREVIEW COLOR
+  // =========================
+
   const previewColor = (
-    nextColor,
+    nextColor
   ) => {
-    /*
-     * Update the small sidebar preview immediately.
-     */
-    setDraftColor(nextColor);
+    // Update sidebar immediately.
+    setDraftColor(
+      nextColor
+    );
 
     pendingColorRef.current =
       nextColor;
 
-    /*
-     * Only update the chart once per browser frame.
-     * This normally gives a smooth 60 FPS preview.
-     */
+    // Only update the chart once
+    // per animation frame.
     if (
       animationFrameRef.current !==
       null
@@ -82,37 +66,47 @@ function SettingColor({
     }
 
     animationFrameRef.current =
-      requestAnimationFrame(() => {
-        animationFrameRef.current =
-          null;
+      requestAnimationFrame(
+        () => {
+          animationFrameRef.current =
+            null;
 
-        onPreview?.(
-          pendingColorRef.current,
-        );
-      });
+          onPreview?.(
+            pendingColorRef.current
+          );
+        }
+      );
   };
 
+  // =========================
+  // COMMIT FINAL COLOR
+  // =========================
+
   const commitColor = (
-    nextColor = pendingColorRef.current,
+    nextColor =
+      pendingColorRef.current
   ) => {
     if (
       animationFrameRef.current !==
       null
     ) {
       cancelAnimationFrame(
-        animationFrameRef.current,
+        animationFrameRef.current
       );
 
       animationFrameRef.current =
         null;
     }
 
-    setDraftColor(nextColor);
+    setDraftColor(
+      nextColor
+    );
 
-    /*
-     * Ensure the chart displays the final color.
-     */
-    onPreview?.(nextColor);
+    // Make sure final color
+    // is displayed.
+    onPreview?.(
+      nextColor
+    );
 
     if (
       nextColor ===
@@ -127,9 +121,12 @@ function SettingColor({
     committedColorRef.current =
       nextColor;
 
+    pendingColorRef.current =
+      nextColor;
+
     onChange?.(
       nextColor,
-      previousColor,
+      previousColor
     );
   };
 
@@ -144,23 +141,15 @@ function SettingColor({
           type="color"
           value={draftColor}
 
-          /*
-           * onInput fires continuously while the
-           * color-selection circle is moving.
-           */
           onInput={(event) =>
             previewColor(
-              event.currentTarget.value,
+              event.currentTarget.value
             )
           }
 
-          /*
-           * Usually fires when the native picker
-           * confirms the final selected color.
-           */
           onChange={(event) =>
             commitColor(
-              event.currentTarget.value,
+              event.currentTarget.value
             )
           }
 
@@ -187,6 +176,29 @@ function SettingColor({
         </span>
       </div>
     </div>
+  );
+}
+
+function SettingColor({
+  label,
+  value,
+  fallback = "#000000",
+  onPreview,
+  onChange,
+}) {
+  const normalizedValue =
+    value || fallback;
+
+  return (
+    <SettingColorControl
+      key={normalizedValue}
+      label={label}
+      initialValue={
+        normalizedValue
+      }
+      onPreview={onPreview}
+      onChange={onChange}
+    />
   );
 }
 

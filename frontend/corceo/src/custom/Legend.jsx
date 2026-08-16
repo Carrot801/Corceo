@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react";
 
 function Legend({
   chartData = [],

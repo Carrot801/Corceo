@@ -367,22 +367,22 @@ const getCharts = async (
 // =========================================
 // GET PUBLISHED CHART
 // =========================================
-
 const getPublishedChart = async (
   req,
   res,
   next
 ) => {
   try {
-    const chartId =
-      Number(
-        req.params.chartId
-      );
+    const chartId = Number(
+      req.params.chartId
+    );
+
+    // =========================
+    // VALIDATE ID
+    // =========================
 
     if (
-      !Number.isInteger(
-        chartId
-      )
+      !Number.isInteger(chartId)
     ) {
       return res
         .status(400)
@@ -392,7 +392,11 @@ const getPublishedChart = async (
         });
     }
 
-    const result =
+    // =========================
+    // GET PUBLISHED CHART
+    // =========================
+
+    const chartResult =
       await pool.query(
         `
         SELECT
@@ -403,7 +407,8 @@ const getPublishedChart = async (
           y_axis,
           settings,
           chart_config,
-          image_data
+          image_data,
+          is_published
 
         FROM charts
 
@@ -414,26 +419,57 @@ const getPublishedChart = async (
       );
 
     if (
-      result.rows.length ===
+      chartResult.rows.length ===
       0
     ) {
       return res
         .status(404)
         .json({
           error:
-            "Chart not found",
+            "Chart not found or not published",
         });
     }
 
-    return res.json(
-      result.rows[0]
-    );
+    const chart =
+      chartResult.rows[0];
+
+    // =========================
+    // GET DATASET ROWS
+    // =========================
+
+    let rows = [];
+
+    if (chart.dataset_id) {
+      const rowsResult =
+        await pool.query(
+          `
+          SELECT data
+          FROM rows
+          WHERE dataset_id = $1
+          ORDER BY id
+          `,
+          [chart.dataset_id]
+        );
+
+      rows =
+        rowsResult.rows.map(
+          (row) => row.data
+        );
+    }
+
+    // =========================
+    // RETURN PUBLIC RESOURCE
+    // =========================
+
+    return res.json({
+      chart,
+      rows,
+    });
 
   } catch (err) {
     next(err);
   }
 };
-
 
 // =========================================
 // PUBLISH CHART

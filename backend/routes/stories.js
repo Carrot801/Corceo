@@ -15,8 +15,9 @@ const {
 } = require("../controllers/storiesController");
 
 const authMiddleware = require("../middleware/authMiddleware");
-router.post("/",authMiddleware, createStory);
+
 router.get("/public/:id", getPublicStory);
+router.post("/",authMiddleware, createStory);
 router.get("/",authMiddleware, getStories);
 router.get("/:id",authMiddleware, getStory);
 router.put("/:storyId",authMiddleware, updateStory);

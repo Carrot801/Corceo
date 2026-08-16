@@ -210,15 +210,6 @@ const yMax =
 
   const barRadius =
     appearance.barRadius ?? 6;
-    const yDomainMin =
-  typeof yAxisSettings.min === "number"
-    ? yAxisSettings.min
-    : "auto";
-
-const yDomainMax =
-  typeof yAxisSettings.max === "number"
-    ? yAxisSettings.max
-    : "auto";
 
   return (
     <div className="h-full min-h-0 w-full">

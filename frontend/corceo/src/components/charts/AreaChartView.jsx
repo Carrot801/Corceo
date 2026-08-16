@@ -11,7 +11,6 @@ import {
 import {
   getYKey,
   getTotal,
-  getPercent,
 } from "../../utils/chartValueHelpers";
 import { formatValue } from "../../utils/formatters";
 
@@ -29,7 +28,6 @@ function AreaChartView({
     ? [chartConfig.y]
     : ["y"];
 
-  const color = generatedColors[0] || "#3b82f6";
 
   return (
     <div className="w-full h-full min-h-0">

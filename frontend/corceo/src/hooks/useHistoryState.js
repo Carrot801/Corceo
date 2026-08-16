@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useRef,
   useState,
 } from "react";
 
@@ -12,7 +11,25 @@ function cloneValue(value) {
   }
 
   return JSON.parse(
-    JSON.stringify(value),
+    JSON.stringify(value)
+  );
+}
+
+function areEqual(
+  firstValue,
+  secondValue,
+  equalityFn
+) {
+  if (equalityFn) {
+    return equalityFn(
+      firstValue,
+      secondValue
+    );
+  }
+
+  return (
+    JSON.stringify(firstValue) ===
+    JSON.stringify(secondValue)
   );
 }
 
@@ -21,242 +38,352 @@ function useHistoryState(
   {
     maxHistory = 50,
     equalityFn = null,
-  } = {},
+  } = {}
 ) {
-  const initial =
-    typeof initialValue === "function"
-      ? initialValue()
-      : initialValue;
+  // =========================
+  // HISTORY STATE
+  // =========================
 
-    const commit = useCallback(
-  (
-    previousValue,
-    nextValue,
-  ) => {
-    setHistory(
-      (currentHistory) => {
-        const previous =
-          cloneValue(
-            previousValue,
+  const [history, setHistory] =
+    useState(() => {
+      const initial =
+        typeof initialValue ===
+        "function"
+          ? initialValue()
+          : initialValue;
+
+      return {
+        past: [],
+        present:
+          cloneValue(initial),
+        future: [],
+      };
+    });
+
+  // =========================
+  // SET STATE
+  // =========================
+
+  const set = useCallback(
+    (
+      nextValueOrUpdater,
+      options = {}
+    ) => {
+      const {
+        record = true,
+      } = options;
+
+      setHistory(
+        (currentHistory) => {
+          const currentValue =
+            currentHistory.present;
+
+          const nextValue =
+            typeof nextValueOrUpdater ===
+            "function"
+              ? nextValueOrUpdater(
+                  cloneValue(
+                    currentValue
+                  )
+                )
+              : nextValueOrUpdater;
+
+          const clonedNextValue =
+            cloneValue(
+              nextValue
+            );
+
+          if (
+            areEqual(
+              currentValue,
+              clonedNextValue,
+              equalityFn
+            )
+          ) {
+            return currentHistory;
+          }
+
+          // Change state without
+          // adding an undo step.
+          if (!record) {
+            return {
+              ...currentHistory,
+
+              present:
+                clonedNextValue,
+            };
+          }
+
+          const updatedPast = [
+            ...currentHistory.past,
+
+            cloneValue(
+              currentValue
+            ),
+          ].slice(
+            -maxHistory
           );
 
-        const next =
-          cloneValue(nextValue);
+          return {
+            past:
+              updatedPast,
 
-        const isEqual = equalityFn
-          ? equalityFn(
-              previous,
-              next,
-            )
-          : JSON.stringify(
-              previous,
-            ) ===
-            JSON.stringify(next);
+            present:
+              clonedNextValue,
 
-        if (isEqual) {
-          return currentHistory;
+            future: [],
+          };
         }
+      );
+    },
+    [
+      equalityFn,
+      maxHistory,
+      setHistory,
+    ]
+  );
 
-        return {
+  // =========================
+  // COMMIT MANUAL CHANGE
+  // =========================
+
+  const commit = useCallback(
+    (
+      previousValue,
+      nextValue
+    ) => {
+      const previous =
+        cloneValue(
+          previousValue
+        );
+
+      const next =
+        cloneValue(
+          nextValue
+        );
+
+      if (
+        areEqual(
+          previous,
+          next,
+          equalityFn
+        )
+      ) {
+        return;
+      }
+
+      setHistory(
+        (currentHistory) => ({
           past: [
             ...currentHistory.past,
             previous,
-          ].slice(-maxHistory),
+          ].slice(
+            -maxHistory
+          ),
 
-          present: next,
+          present:
+            next,
+
           future: [],
-        };
-      },
-    );
-  },
-  [equalityFn, maxHistory],
-);
-
-  const [history, setHistory] =
-    useState(() => ({
-      past: [],
-      present: cloneValue(initial),
-      future: [],
-    }));
-
-  const historyRef = useRef(history);
-  historyRef.current = history;
-
-  const set = useCallback(
-    (nextValueOrUpdater, options = {}) => {
-      const { record = true } = options;
-
-      setHistory((currentHistory) => {
-        const currentValue =
-          currentHistory.present;
-
-        const nextValue =
-          typeof nextValueOrUpdater ===
-          "function"
-            ? nextValueOrUpdater(
-                cloneValue(currentValue),
-              )
-            : nextValueOrUpdater;
-
-        const clonedNextValue =
-          cloneValue(nextValue);
-
-        const isEqual = equalityFn
-          ? equalityFn(
-              currentValue,
-              clonedNextValue,
-            )
-          : JSON.stringify(currentValue) ===
-            JSON.stringify(
-              clonedNextValue,
-            );
-
-        if (isEqual) {
-          return currentHistory;
-        }
-
-        if (!record) {
-          return {
-            ...currentHistory,
-            present: clonedNextValue,
-          };
-        }
-
-        const updatedPast = [
-          ...currentHistory.past,
-          cloneValue(currentValue),
-        ].slice(-maxHistory);
-
-        return {
-          past: updatedPast,
-          present: clonedNextValue,
-          future: [],
-        };
-      });
+        })
+      );
     },
-    [equalityFn, maxHistory],
+    [
+      equalityFn,
+      maxHistory,
+      setHistory,
+    ]
   );
 
-  const undo = useCallback(() => {
-    setHistory((currentHistory) => {
-      if (
-        currentHistory.past.length ===
-        0
-      ) {
-        return currentHistory;
-      }
+  // =========================
+  // UNDO
+  // =========================
 
-      const previous =
-        currentHistory.past[
-          currentHistory.past.length - 1
-        ];
+  const undo = useCallback(
+    () => {
+      setHistory(
+        (currentHistory) => {
+          if (
+            currentHistory
+              .past.length === 0
+          ) {
+            return currentHistory;
+          }
 
-      return {
-        past:
-          currentHistory.past.slice(
-            0,
-            -1,
-          ),
-        present: cloneValue(previous),
-        future: [
-          cloneValue(
-            currentHistory.present,
-          ),
-          ...currentHistory.future,
-        ],
-      };
-    });
-  }, []);
+          const previous =
+            currentHistory.past[
+              currentHistory
+                .past.length - 1
+            ];
 
-  const redo = useCallback(() => {
-    setHistory((currentHistory) => {
-      if (
-        currentHistory.future.length ===
-        0
-      ) {
-        return currentHistory;
-      }
+          return {
+            past:
+              currentHistory.past.slice(
+                0,
+                -1
+              ),
 
-      const next =
-        currentHistory.future[0];
+            present:
+              cloneValue(
+                previous
+              ),
 
-      return {
-        past: [
-          ...currentHistory.past,
-          cloneValue(
-            currentHistory.present,
-          ),
-        ].slice(-maxHistory),
+            future: [
+              cloneValue(
+                currentHistory.present
+              ),
 
-        present: cloneValue(next),
+              ...currentHistory.future,
+            ],
+          };
+        }
+      );
+    },
+    [setHistory]
+  );
 
-        future:
-          currentHistory.future.slice(
-            1,
-          ),
-      };
-    });
-  }, [maxHistory]);
+  // =========================
+  // REDO
+  // =========================
+
+  const redo = useCallback(
+    () => {
+      setHistory(
+        (currentHistory) => {
+          if (
+            currentHistory
+              .future.length === 0
+          ) {
+            return currentHistory;
+          }
+
+          const next =
+            currentHistory.future[0];
+
+          return {
+            past: [
+              ...currentHistory.past,
+
+              cloneValue(
+                currentHistory.present
+              ),
+            ].slice(
+              -maxHistory
+            ),
+
+            present:
+              cloneValue(
+                next
+              ),
+
+            future:
+              currentHistory.future.slice(
+                1
+              ),
+          };
+        }
+      );
+    },
+    [
+      maxHistory,
+      setHistory,
+    ]
+  );
+
+  // =========================
+  // RESET
+  // =========================
 
   const reset = useCallback(
     (
       nextValue,
-      { clearHistory = true } = {},
+      {
+        clearHistory = true,
+      } = {}
     ) => {
       const value =
-        typeof nextValue === "function"
+        typeof nextValue ===
+        "function"
           ? nextValue()
           : nextValue;
 
-      setHistory((currentHistory) => {
-        if (!clearHistory) {
+      const clonedValue =
+        cloneValue(
+          value
+        );
+
+      setHistory(
+        (currentHistory) => {
+          if (!clearHistory) {
+            return {
+              ...currentHistory,
+
+              present:
+                clonedValue,
+            };
+          }
+
           return {
-            ...currentHistory,
+            past: [],
+
             present:
-              cloneValue(value),
+              clonedValue,
+
+            future: [],
           };
         }
-
-        return {
-          past: [],
-          present: cloneValue(value),
-          future: [],
-        };
-      });
+      );
     },
-    [],
+    [setHistory]
   );
 
+  // =========================
+  // CLEAR HISTORY
+  // =========================
+
   const clearHistory =
-    useCallback(() => {
-      setHistory((currentHistory) => ({
-        past: [],
-        present:
-          currentHistory.present,
-        future: [],
-      }));
-    }, []);
+    useCallback(
+      () => {
+        setHistory(
+          (currentHistory) => ({
+            past: [],
+
+            present:
+              currentHistory.present,
+
+            future: [],
+          })
+        );
+      },
+      [setHistory]
+    );
+
+  // =========================
+  // RETURN
+  // =========================
 
   return {
-    state: history.present,
-    setState: set,
+    state:
+      history.present,
+
+    setState:
+      set,
 
     undo,
     redo,
     reset,
     clearHistory,
-
-    commit, // Add this
+    commit,
 
     canUndo:
-        history.past.length > 0,
+      history.past.length > 0,
 
     canRedo:
-        history.future.length > 0,
+      history.future.length > 0,
 
     historyLength:
-        history.past.length,
-    };
+      history.past.length,
+  };
 }
 
 export default useHistoryState;

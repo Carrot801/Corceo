@@ -1,5 +1,9 @@
 import DropUpload from "./DropUpload";
-import { useState,useEffect } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { apiRequest } from "../../api/client";
 function DataTable({
   data,
@@ -136,49 +140,61 @@ const renameColumn = async (oldName, newName) => {
     setColumnError(err.message);
   }
 };
-const deleteColumn = async (columnName) => {
-  try {
-    await apiRequest(
-      "/data/columns/delete",
-      {
-        method: "DELETE",
-        body: JSON.stringify({
-          dataset_id: datasetId,
-          columnName,
+
+const deleteColumn = useCallback(
+  async (columnName) => {
+    try {
+      await apiRequest(
+        "/data/columns/delete",
+        {
+          method: "DELETE",
+
+          body: JSON.stringify({
+            dataset_id:
+              datasetId,
+
+            columnName,
+          }),
+        },
+      );
+
+      setData((previous) =>
+        previous.map((row) => {
+          const nextRow = {
+            ...row,
+          };
+
+          delete nextRow[
+            columnName
+          ];
+
+          return nextRow;
         }),
-      },
-    );
+      );
 
-    setData((previous) =>
-      previous.map((row) => {
-        const nextRow = {
-          ...row,
-        };
+      setColumns((previous) =>
+        previous.filter(
+          (column) =>
+            column !==
+            columnName,
+        ),
+      );
 
-        delete nextRow[
-          columnName
-        ];
+      setSelectedColumn(null);
 
-        return nextRow;
-      }),
-    );
-
-    setColumns((previous) =>
-      previous.filter(
-        (column) =>
-          column !==
-          columnName,
-      ),
-    );
-
-    setSelectedColumn(null);
-  } catch (err) {
-    console.error(
-      "Failed to delete column:",
-      err,
-    );
-  }
-};
+    } catch (err) {
+      console.error(
+        "Failed to delete column:",
+        err,
+      );
+    }
+  },
+  [
+    datasetId,
+    setData,
+    setColumns,
+  ],
+);
 
   const handleCellChange = (
     rowIndex,
@@ -269,7 +285,11 @@ useEffect(() => {
       handleKeyDown
     );
 
-}, [selectedColumn, data]);
+}, [
+  selectedColumn,
+  deleteColumn,
+]);
+
 useEffect(() => {
   const closeMenu = () =>
     setContextMenu({
