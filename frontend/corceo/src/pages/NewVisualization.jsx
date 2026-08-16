@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { toPng } from "html-to-image";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -97,31 +103,36 @@ const removeFieldFromAxis = (axis, field) => {
 const MIN_CHART_HEIGHT = 320;
 const MAX_CHART_HEIGHT = 1200;
 
-const getInitialChartHeight = () => {
-  const storedValue =
-    localStorage.getItem(
-      `chart-height-${id}`,
+const getInitialChartHeight =
+  useCallback(() => {
+    const storedValue =
+      localStorage.getItem(
+        `chart-height-${id}`
+      );
+
+    if (storedValue === null) {
+      return 520;
+    }
+
+    const parsedHeight =
+      Number(storedValue);
+
+    if (
+      !Number.isFinite(
+        parsedHeight
+      )
+    ) {
+      return 520;
+    }
+
+    return Math.max(
+      MIN_CHART_HEIGHT,
+      Math.min(
+        MAX_CHART_HEIGHT,
+        parsedHeight
+      )
     );
-
-  if (storedValue === null) {
-    return 520;
-  }
-
-  const parsedHeight =
-    Number(storedValue);
-
-  if (!Number.isFinite(parsedHeight)) {
-    return 520;
-  }
-
-  return Math.max(
-    MIN_CHART_HEIGHT,
-    Math.min(
-      MAX_CHART_HEIGHT,
-      parsedHeight,
-    ),
-  );
-};
+  }, [id]);
 
   
   
@@ -247,10 +258,6 @@ const setChartHeight = (
 };
 
 
-    const multiYCharts = ["bar", "line", "area", "composed"];
-
-  const isMultiYChart = multiYCharts.includes(chartConfig.type);
-
 
 const waitForExportRender = async () => {
   await document.fonts?.ready;
@@ -265,10 +272,11 @@ const waitForExportRender = async () => {
 };
 
 const createSafeFileName = (value) => {
-  const safeName = String(value || "chart")
-    .trim()
-    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
-    .replace(/\s+/g, " ");
+  const safeName =
+    String(value || "chart")
+      .trim()
+      .replace(/[<>:"/\\|?*]/g, "_")
+      .replace(/\s+/g, " ");
 
   return safeName || "chart";
 };
@@ -513,6 +521,7 @@ useEffect(() => {
       stopChartResize,
     );
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
 const applyChartSelection = () => {
@@ -706,33 +715,6 @@ const handleChartItemClick = (item) => {
 };
 
 
-  const recreateDateHierarchy = (field) => {
-  const newFields = [
-    `${field}_Year`,
-    `${field}_Quarter`,
-    `${field}_Month`,
-  ];
-
-  setColumns((prev) => [...new Set([...prev, ...newFields])]);
-
-  setData((prevData) =>
-    prevData.map((row) => {
-      const date = new Date(row[field]);
-      if (isNaN(date)) return row;
-
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const quarter = `Q${Math.floor((month - 1) / 3) + 1}`;
-
-      return {
-        ...row,
-        [`${field}_Year`]: String(year),
-        [`${field}_Quarter`]: `${year} ${quarter}`,
-        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`,
-      };
-    })
-  );
-};
 useEffect(() => {
   if (!data || data.length === 0) return;
   if (!chartConfig.dateHierarchySource) return;
@@ -767,65 +749,107 @@ useEffect(() => {
       };
     })
   );
-}, [chartConfig.dateHierarchySource, columns, data.length]);
-  const publishChart =
-  async () => {
-    try {
-      // 1. Save latest dataset
+}, [
+  chartConfig.dateHierarchySource,
+  columns,
+  data,
+  setColumns,
+  setData,
+]);
+
+const publishChart = async () => {
+  try {
+    // =========================
+    // 1. VALIDATE CHART
+    // =========================
+
+    validateChartBeforeSave();
+
+    // =========================
+    // 2. SAVE LATEST DATASET
+    // =========================
+
+    const savedDataset =
       await saveDataset();
 
-      // 2. Save latest chart configuration
-      const saved =
-        await saveChartToBackend(
-          {
-            dataset_id:
-              datasetId,
+    if (!savedDataset?.datasetId) {
+      throw new Error(
+        "Dataset could not be saved before publishing."
+      );
+    }
 
-            chart_type:
-              chartConfig.type,
+    // =========================
+    // 3. SAVE LATEST CHART
+    // =========================
 
-            x_axis:
-              chartConfig.x,
+    const saved =
+      await saveChartToBackend({
+        dataset_id:
+          savedDataset.datasetId,
 
-            y_axis:
-              JSON.stringify(
-                chartConfig.y,
-              ),
+        chart_type:
+          chartConfig.type,
 
-            settings,
+        x_axis:
+          chartConfig.x,
 
-            chart_config:
-              chartConfig,
-          },
-        );
+        y_axis:
+          JSON.stringify(
+            chartConfig.y
+          ),
 
-      if (!saved?.id) {
-        throw new Error(
-          "Chart could not be saved before publishing.",
-        );
-      }
+        settings,
 
-      // 3. Explicitly publish it
+        chart_config:
+          chartConfig,
+      });
+
+    if (!saved?.id) {
+      throw new Error(
+        "Chart could not be saved before publishing."
+      );
+    }
+
+    // =========================
+    // 4. PUBLISH CHART
+    // =========================
+
+    const publishResult =
       await apiRequest(
         `/charts/${saved.id}/publish`,
         {
           method: "PUT",
-        },
+        }
       );
 
-      // 4. Go to public page
-      navigate(
-        `/published/${saved.id}`,
-      );
-    } catch (error) {
-      console.error(
-        "Publish failed:",
-        error,
-      );
-    }
-  };
+    console.log(
+      "Published chart:",
+      publishResult
+    );
 
-useEffect(() => {
+    // =========================
+    // 5. OPEN PUBLIC PAGE
+    // =========================
+
+    navigate(
+      `/published/${saved.id}`
+    );
+
+  } catch (error) {
+    console.error(
+      "Publish failed:",
+      error
+    );
+
+    alert(
+      error.message ||
+        "Chart could not be published."
+    );
+  }
+};
+
+
+  useEffect(() => {
   if (!savedChart) {
     return;
   }
@@ -1025,8 +1049,8 @@ useEffect(() => {
   savedChart,
   id,
   resetVisualizationHistory,
+  getInitialChartHeight,
 ]);
-
 
 useEffect(() => {
   const handleHistoryShortcut = (
