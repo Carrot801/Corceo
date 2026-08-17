@@ -213,13 +213,13 @@ useEffect(() => {
 
     } catch (error) {
       console.error(
-        "Failed to load published chart:",
+        "Failed to load published chartsdfsf:",
         error
       );
 
       setLoadError(
         error.message ||
-          "Failed to load published chart."
+          "Failed to load published chartsafdfs."
       );
 
     } finally {

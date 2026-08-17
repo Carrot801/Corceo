@@ -178,7 +178,7 @@ export default function useStoryExport({
         setIsExporting(false);
       }
     }, [
-      slides,
+      slides.length,
       storyName,
       waitForExportSlides,
     ]);

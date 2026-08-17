@@ -18,6 +18,9 @@ export function createChartItem(
   };
 }
 
+export const SLIDE_WIDTH = 1280;
+export const SLIDE_HEIGHT = 720;
+
 export function arrangeCharts(items = []) {
   const count = items.length;
   const gap = 1.5;

@@ -5,7 +5,6 @@ import React, {
   useState,
 } from "react";
 
-import { toPng } from "html-to-image";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Sidebar from "../components/sidebar/Sidebar";
@@ -20,19 +19,22 @@ import ActiveFilterChips from "../components/ActiveFilterChips";
 import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
 import useHistoryState from "../hooks/useHistoryState";
 import SheetSelectionDialog from "../components/SheetSelectionDialog";
-import {apiRequest} from "../api/client";
+
+
+import useChartResize
+  from "../hooks/chart/useChartResize";
+
+import useChartExport
+  from "../hooks/chart/useChartExport";
+
+import useChartPersistence
+  from "../hooks/chart/useChartPersistence";
+
 
 function NewVisualization() {
   const { id } = useParams();
-
-const visibleChartRef = useRef(null);
-const exportChartRef = useRef(null);
-const chartResizeRef = useRef({
-  resizing: false,
-  startY: 0,
-  startHeight: 520,
-  latestHeight: 520,
-});
+const visibleChartRef =
+  useRef(null);
 
   const navigate = useNavigate();
   const {
@@ -248,6 +250,23 @@ const setChartHeight = (
   chartHeight,
 } = visualizationState;
 
+const {
+  startChartResize,
+} = useChartResize({
+  chartHeight,
+
+  setChartHeight,
+
+  visualizationState,
+
+  commitVisualizationHistory,
+
+  minHeight:
+    MIN_CHART_HEIGHT,
+
+  maxHeight:
+    MAX_CHART_HEIGHT,
+});
 
 
   const updateSetting = (key, value) => {
@@ -259,120 +278,7 @@ const setChartHeight = (
 
 
 
-const waitForExportRender = async () => {
-  await document.fonts?.ready;
 
-  await new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(resolve, 150);
-      });
-    });
-  });
-};
-
-const createSafeFileName = (value) => {
-  const safeName =
-    String(value || "chart")
-      .trim()
-      .replace(/[<>:"/\\|?*]/g, "_")
-      .replace(/\s+/g, " ");
-
-  return safeName || "chart";
-};
-
-const createExportImage = async (pixelRatio = 2) => {
-  const node = exportChartRef.current;
-
-  if (!node) {
-    throw new Error(
-      "The export chart element was not found."
-    );
-  }
-
-  await waitForExportRender();
-
-  const width = 1400;
-  const height = 900;
-
-  return toPng(node, {
-    cacheBust: true,
-    pixelRatio,
-    backgroundColor: "#ffffff",
-    width,
-    height,
-    canvasWidth: width * pixelRatio,
-    canvasHeight: height * pixelRatio,
-
-    style: {
-      width: `${width}px`,
-      height: `${height}px`,
-      minWidth: `${width}px`,
-      minHeight: `${height}px`,
-      maxWidth: "none",
-      maxHeight: "none",
-      overflow: "hidden",
-      transform: "none",
-      backgroundColor: "#ffffff",
-    },
-
-    filter: (element) => {
-      return !element?.classList?.contains(
-        "no-export"
-      );
-    },
-  });
-};
-
-
-const exportPNG = async () => {
-  try {
-    if (!chartConfig.x) {
-      throw new Error(
-        "Select a field for the X axis before exporting."
-      );
-    }
-
-    if (
-      !Array.isArray(chartConfig.y) ||
-      chartConfig.y.length === 0
-    ) {
-      throw new Error(
-        "Select at least one field for the Y axis before exporting."
-      );
-    }
-
-    if (
-      !Array.isArray(chartData) ||
-      chartData.length === 0
-    ) {
-      throw new Error(
-        "There is no chart data to export."
-      );
-    }
-
-    const dataUrl = await createExportImage(2);
-
-    const link = document.createElement("a");
-
-    link.download = `${createSafeFileName(
-      settings.title
-    )}.png`;
-
-    link.href = dataUrl;
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error("Export failed:", error);
-
-    alert(
-      error.message ||
-        "The chart could not be exported."
-    );
-  }
-};
 
 const removeFilterValue = (
   filterIndex,
@@ -411,118 +317,7 @@ const removeFilterValue = (
     };
   });
 };
-const handleChartResizeMove = (
-  event,
-) => {
-  const resizeState =
-    chartResizeRef.current;
 
-  if (!resizeState.resizing) return;
-
-  const difference =
-    event.clientY -
-    resizeState.startY;
-
-  const nextHeight = Math.max(
-    320,
-    Math.min(
-      1200,
-      resizeState.startHeight +
-        difference,
-    ),
-  );
-
-  resizeState.latestHeight =
-    nextHeight;
-
-  setChartHeight(nextHeight, {
-    record: false,
-  });
-};
-
-
-const stopChartResize = () => {
-  const resizeState =
-    chartResizeRef.current;
-
-  if (!resizeState.resizing) {
-    return;
-  }
-
-  resizeState.resizing = false;
-
-  const startHeight =
-    resizeState.startHeight;
-
-  const finalHeight =
-    resizeState.latestHeight;
-
-  if (
-    startHeight !== finalHeight
-  ) {
-    commitVisualizationHistory(
-      {
-        ...visualizationState,
-        chartHeight: startHeight,
-      },
-      {
-        ...visualizationState,
-        chartHeight: finalHeight,
-      },
-    );
-  }
-
-  document.removeEventListener(
-    "mousemove",
-    handleChartResizeMove,
-  );
-
-  document.removeEventListener(
-    "mouseup",
-    stopChartResize,
-  );
-};
-
-
-const startChartResize = (
-  event,
-) => {
-  event.preventDefault();
-
-  chartResizeRef.current = {
-    resizing: true,
-    startY: event.clientY,
-    startHeight: chartHeight,
-    latestHeight: chartHeight,
-  };
-
-  document.addEventListener(
-    "mousemove",
-    handleChartResizeMove,
-  );
-
-  document.addEventListener(
-    "mouseup",
-    stopChartResize,
-  );
-};
-
-
-
-useEffect(() => {
-  return () => {
-    document.removeEventListener(
-      "mousemove",
-      handleChartResizeMove,
-    );
-
-    document.removeEventListener(
-      "mouseup",
-      stopChartResize,
-    );
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
 
 const applyChartSelection = () => {
   if (!chartConfig.x || selectedChartValues.length === 0) {
@@ -605,6 +400,32 @@ const handleDropAxis = (axis) => (e) => {
     settings,
   });
 
+const {
+  exportChartRef,
+  createExportImage,
+  exportPNG,
+} = useChartExport({
+  chartConfig,
+  chartData,
+  settings,
+});
+
+
+
+const {
+  saveChart,
+  publishChart,
+} = useChartPersistence({
+  chartConfig,
+  settings,
+
+  saveDataset,
+  saveChartToBackend,
+
+  createExportImage,
+
+  navigate,
+});
 
   
 const isUsed = (col) =>
@@ -614,67 +435,7 @@ const isUsed = (col) =>
     chartConfig.y.includes(col)
   );
 
-  const validateChartBeforeSave = () => {
-    if (!chartConfig.x) {
-      throw new Error("Select a field for the X axis.");
-    }
 
-    if (
-      !Array.isArray(chartConfig.y) ||
-      chartConfig.y.length === 0
-    ) {
-      throw new Error(
-        "Select at least one field for the Y axis."
-      );
-    }
-  };
-
-  const saveChart = async () => {
-  let base64Image = null;
-
-  try {
-    base64Image =
-      await createExportImage(1);
-  } catch (error) {
-    console.error(
-      "Could not create preview:",
-      error
-    );
-  }
-
-  try {
-    const savedDataset =
-      await saveDataset();
-
-    await saveChartToBackend({
-      dataset_id:
-        savedDataset.datasetId,
-
-      chart_type:
-        chartConfig.type,
-
-      x_axis:
-        chartConfig.x,
-
-      y_axis:
-        JSON.stringify(
-          chartConfig.y
-        ),
-
-      settings,
-      chart_config:
-        chartConfig,
-
-      image_data:
-        base64Image,
-    });
-  } catch (error) {
-    console.error(
-      "Save chart failed:",
-      error
-    );
-  }
-};
 const handleChartItemClick = (item) => {
   const clickedValue = item?.x;
 
@@ -756,97 +517,6 @@ useEffect(() => {
   setColumns,
   setData,
 ]);
-
-const publishChart = async () => {
-  try {
-    // =========================
-    // 1. VALIDATE CHART
-    // =========================
-
-    validateChartBeforeSave();
-
-    // =========================
-    // 2. SAVE LATEST DATASET
-    // =========================
-
-    const savedDataset =
-      await saveDataset();
-
-    if (!savedDataset?.datasetId) {
-      throw new Error(
-        "Dataset could not be saved before publishing."
-      );
-    }
-
-    // =========================
-    // 3. SAVE LATEST CHART
-    // =========================
-
-    const saved =
-      await saveChartToBackend({
-        dataset_id:
-          savedDataset.datasetId,
-
-        chart_type:
-          chartConfig.type,
-
-        x_axis:
-          chartConfig.x,
-
-        y_axis:
-          JSON.stringify(
-            chartConfig.y
-          ),
-
-        settings,
-
-        chart_config:
-          chartConfig,
-      });
-
-    if (!saved?.id) {
-      throw new Error(
-        "Chart could not be saved before publishing."
-      );
-    }
-
-    // =========================
-    // 4. PUBLISH CHART
-    // =========================
-
-    const publishResult =
-      await apiRequest(
-        `/charts/${saved.id}/publish`,
-        {
-          method: "PUT",
-        }
-      );
-
-    console.log(
-      "Published chart:",
-      publishResult
-    );
-
-    // =========================
-    // 5. OPEN PUBLIC PAGE
-    // =========================
-
-    navigate(
-      `/published/${saved.id}`
-    );
-
-  } catch (error) {
-    console.error(
-      "Publish failed:",
-      error
-    );
-
-    alert(
-      error.message ||
-        "Chart could not be published."
-    );
-  }
-};
 
 
   useEffect(() => {

@@ -6,8 +6,6 @@ import React, {
 } from "react";
 
 import { useParams, useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import Header from "../components/Header";
 import useHistoryState from "../hooks/useHistoryState";
 
@@ -18,8 +16,16 @@ import StoryAnnotationsSidebar from "../components/story/StoryAnnotationsSidebar
 import StoryExportSlides from "../components/story/StoryExportSlides";
 import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal";
 import useStoryPersistence from "../hooks/story/useStoryPersistence";
-
+import useStoryExport
+  from "../hooks/story/useStoryExport";
+import useStorySlides
+  from "../hooks/story/useStorySlides";
 import { apiRequest } from "../api/client";
+import {
+  SLIDE_HEIGHT,
+  SLIDE_WIDTH,
+} from "../utils/story/storyConstants";
+
 const DEFAULT_CHART_ASPECT_RATIO = 16 / 9;
 
 function createChartItem(
@@ -54,8 +60,6 @@ function createChartItem(
 function NewStory() {
   const { storyId } = useParams();
   const navigate = useNavigate();
-  const SLIDE_WIDTH = 1280;
-  const SLIDE_HEIGHT = 720;
   const isSlideActionRef = useRef(false);
 
 const createInitialStoryState =
@@ -78,8 +82,7 @@ const createInitialStoryState =
     [],
   );
 
-  const [isExporting, setIsExporting] =
-    useState(false);
+
   const [availableProjects, setAvailableProjects] = useState([]);
   const [search, setSearch] = useState("");
 
@@ -203,119 +206,7 @@ useEffect(() => {
   storyStateRef.current =
     storyHistoryState;
 }, [storyHistoryState]);
-const exportStoryPDF = async () => {
-  try {
-    setIsExporting(true);
 
-    let slideElements = [];
-
-    for (
-      let attempt = 0;
-      attempt < 30;
-      attempt++
-    ) {
-      slideElements = Array.from(
-        document.querySelectorAll(
-          ".export-slide",
-        ),
-      );
-
-      if (
-        slideElements.length ===
-        slides.length
-      ) {
-        break;
-      }
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, 50);
-      });
-    }
-
-    if (!slideElements.length) {
-      throw new Error(
-        "Export slides were not rendered",
-      );
-    }
-
-    const images =
-      slideElements.flatMap((slide) =>
-        Array.from(
-          slide.querySelectorAll("img"),
-        ),
-      );
-
-    await Promise.all(
-      images.map(
-        (image) =>
-          new Promise((resolve) => {
-            if (image.complete) {
-              resolve();
-              return;
-            }
-
-            image.onload = resolve;
-            image.onerror = resolve;
-          }),
-      ),
-    );
-
-    const pdf = new jsPDF(
-      "landscape",
-      "pt",
-      [SLIDE_WIDTH, SLIDE_HEIGHT],
-    );
-
-    for (
-      let index = 0;
-      index < slideElements.length;
-      index++
-    ) {
-      const canvas =
-        await html2canvas(
-          slideElements[index],
-          {
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor:
-              "#ffffff",
-            logging: false,
-          },
-        );
-
-      const imageData =
-  canvas.toDataURL("image/png");
-
-      if (index > 0) {
-        pdf.addPage(
-          [1280, 720],
-          "landscape",
-        );
-      }
-
-      pdf.addImage(
-  imageData,
-  "PNG",
-  0,
-  0,
-  SLIDE_WIDTH,
-  SLIDE_HEIGHT
-);
-    }
-
-    pdf.save(
-      `${storyName || "story"}.pdf`,
-    );
-  } catch (error) {
-    console.error(
-      "PDF export failed:",
-      error,
-    );
-  } finally {
-    setIsExporting(false);
-  }
-};
   // Observe canvas wrapper resizes to recalculate rendering points on the fly
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -329,101 +220,18 @@ const exportStoryPDF = async () => {
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [activeSlideIndex, currentSlide.content]);
+  }, [activeSlideIndex,setActiveSlideIndex, currentSlide.content]);
 
 
- const waitForExportSlide = async (
-  attempts = 20,
-) => {
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    const exportSlide =
-      document.querySelector(
-        ".export-slide",
-      );
+const {
+  isExporting,
+  exportStoryPDF,
+  makeStoryPreview,
+} = useStoryExport({
+  slides,
+  storyName,
+});
 
-    if (exportSlide) {
-      return exportSlide;
-    }
-
-    await new Promise((resolve) => {
-      setTimeout(resolve, 50);
-    });
-  }
-
-  return null;
-};
-
-const makeStoryPreview = async () => {
-  try {
-    /*
-     * Temporarily mount the hidden export slide.
-     */
-    setIsExporting(true);
-
-    /*
-     * Wait for React to render the export slide.
-     */
-    const firstSlide =
-      await waitForExportSlide();
-
-    if (!firstSlide) {
-      throw new Error(
-        "First export slide was not rendered",
-      );
-    }
-
-    /*
-     * Wait for images inside the slide.
-     */
-    const images = Array.from(
-      firstSlide.querySelectorAll("img"),
-    );
-
-    await Promise.all(
-      images.map((image) => {
-        if (image.complete) {
-          return Promise.resolve();
-        }
-
-        return new Promise((resolve) => {
-          image.onload = resolve;
-          image.onerror = resolve;
-        });
-      }),
-    );
-
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(resolve);
-      });
-    });
-
-    const canvas = await html2canvas(
-      firstSlide,
-      {
-        scale: 0.7,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-      },
-    );
-
-    return canvas.toDataURL(
-      "image/jpeg",
-      0.8,
-    );
-  } catch (error) {
-    console.error(
-      "Story preview generation failed:",
-      error,
-    );
-
-    return null;
-  } finally {
-    setIsExporting(false);
-  }
-};
 const {
   saveStory,
   publishStory,
@@ -447,228 +255,27 @@ const {
 
   navigate,
 });
+const {
+  addSlide,
+  reorderSlides,
+  duplicateSlide,
+  deleteSlide,
+} = useStorySlides({
+  storyId,
 
-  const addSlide = () => {
-    const newSlide = {
-      id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      content: [],
-      description: "",
-      annotations: [],
-    };
+  slides,
+  setSlides,
 
-    setSlides((prev) => {
-      const updated = [...prev, newSlide];
-      setActiveSlideIndex(updated.length - 1);
-      return updated;
-    });
+  setActiveSlideIndex,
+  setSelectedAnnoId,
+  setSelectedChartId,
 
-    setSelectedAnnoId(null);
-    setSelectedChartId(null);
-  };
-
-const reorderSlides = (
-  fromIndex,
-  toIndex
-) => {
-  if (
-    fromIndex === toIndex ||
-    fromIndex < 0 ||
-    toIndex < 0 ||
-    fromIndex >= slides.length ||
-    toIndex >= slides.length
-  ) {
-    return;
-  }
-
-  const activeSlideId =
-    slides[activeSlideIndex]?.id;
-
-  setSlides((previousSlides) => {
-    const reordered =
-      [...previousSlides];
-
-    const [movedSlide] =
-      reordered.splice(
-        fromIndex,
-        1
-      );
-
-    reordered.splice(
-      toIndex,
-      0,
-      movedSlide
-    );
-
-    return reordered;
-  });
-
-  // Keep the same slide selected
-  // after its position changes.
-  const reorderedPreview =
-    [...slides];
-
-  const [movedSlide] =
-    reorderedPreview.splice(
-      fromIndex,
-      1
-    );
-
-  reorderedPreview.splice(
-    toIndex,
-    0,
-    movedSlide
-  );
-
-  const newActiveIndex =
-    reorderedPreview.findIndex(
-      (slide) =>
-        slide.id === activeSlideId
-    );
-
-  if (newActiveIndex !== -1) {
-    setActiveSlideIndex(
-      newActiveIndex
-    );
-  }
-
-  setSelectedAnnoId(null);
-  setSelectedChartId(null);
-};
-
-  const duplicateSlide = async (index) => {
-  const sourceSlide = slides[index];
-
-  if (!sourceSlide) {
-    console.error(
-      "Cannot duplicate: slide does not exist",
-      index,
-    );
-    return;
-  }
-
-  try {
-
-    const actualStoryId = await saveStory();
-const storyData = await apiRequest(
-  `/stories/${actualStoryId}`,
-);
-    const canonicalSlides =
-      normalizeStorySlides(storyData);
-
-    const canonicalSourceSlide =
-      canonicalSlides[index];
-
-    if (!canonicalSourceSlide?.id) {
-      throw new Error(
-        "The saved slide has no database ID",
-      );
-    }
-
-    isSlideActionRef.current = true;
-
-await apiRequest(
-  `/stories/${actualStoryId}/slides/${canonicalSourceSlide.id}/duplicate`,
-  {
-    method: "POST",
-  },
-);
-
-const updatedStory =
-  await reloadSavedStory(
-    actualStoryId,
-  );
-
-    const duplicatedIndex = Math.min(
-      index + 1,
-      (updatedStory.slides || []).length - 1,
-    );
-
-    setActiveSlideIndex(duplicatedIndex);
-    setSelectedAnnoId(null);
-    setSelectedChartId(null);
-  } catch (error) {
-    console.error(
-      "Duplicate slide error:",
-      error,
-    );
-  } finally {
-    setTimeout(() => {
-      isSlideActionRef.current = false;
-    }, 300);
-  }
-};
-
-
-const deleteSlide = async (index) => {
-  const targetSlide = slides[index];
-
-  if (!targetSlide) return;
-
-  const slideId = targetSlide.id;
-
-  const removeSlideLocally = () => {
-    setSlides((prev) => {
-      const updated = prev.filter(
-        (slide) =>
-          String(slide.id) !== String(slideId)
-      );
-
-      return updated.length
-        ? updated
-        : [
-            {
-              id: `temp-${Date.now()}-${crypto.randomUUID()}`,
-              content: [],
-              description: "",
-              annotations: [],
-            },
-          ];
-    });
-
-    setActiveSlideIndex((current) => {
-      const nextLength = Math.max(slides.length - 1, 1);
-
-      if (current > index) {
-        return current - 1;
-      }
-
-      if (current === index) {
-        return Math.min(index, nextLength - 1);
-      }
-
-      return current;
-    });
-
-    setSelectedAnnoId(null);
-    setSelectedChartId(null);
-  };
-
-  if (String(slideId).startsWith("temp-")) {
-    removeSlideLocally();
-    return;
-  }
-
-  try {
-    isSlideActionRef.current = true;
-
-    await apiRequest(
-      `/stories/${storyId}/slides/${slideId}`,
-      {
-        method: "DELETE",
-      },
-    );
-
-    removeSlideLocally();
-  } catch (err) {
-    console.error("Delete slide error:", err);
-  } finally {
-    setTimeout(() => {
-      isSlideActionRef.current = false;
-    }, 500);
-  }
-};
-
-
+  saveStory,
+  reloadSavedStory,
+  normalizeStorySlides,
+  activeSlideIndex,
+  isSlideActionRef,
+});
   const arrangeCharts = (items = []) => {
     const count = items.length;
     const gap = 1.5;
