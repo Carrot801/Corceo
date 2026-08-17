@@ -1,215 +1,226 @@
 const pool = require("../db");
 
-// 1. CREATE A NEW STORY WITH ANNOTATIONS
-
-
-const createStory = async (req, res, next) => {
-  const { name, slides,folder_id, image_url } = req.body;
-  const client = await pool.connect();
-
+const storyService =
+  require("../services/storyService");
+const createStory = async (
+  req,
+  res,
+  next
+) => {
   try {
-    await client.query("BEGIN");
+    const {
+      name,
+      slides,
+      folder_id,
+      image_url,
+    } = req.body;
 
-    const userId = req.user.userId;
+    const userId =
+      req.user.userId;
 
-    let folderId = null;
+    // =========================
+    // BASIC VALIDATION
+    // =========================
 
-if (
-  folder_id !== null &&
-  folder_id !== undefined
-) {
-  folderId =
-    Number(folder_id);
-
-  if (
-    !Number.isInteger(folderId)
-  ) {
-    await client.query(
-      "ROLLBACK"
-    );
-
-    return res
-      .status(400)
-      .json({
-        error:
-          "Invalid folder ID",
-      });
-  }
-
-  const folder =
-    await client.query(
-      `
-      SELECT id
-      FROM folders
-      WHERE id = $1
-        AND user_id = $2
-      `,
-      [
-        folderId,
-        userId,
-      ]
-    );
-
-  if (
-    folder.rows.length === 0
-  ) {
-    await client.query(
-      "ROLLBACK"
-    );
-
-    return res
-      .status(404)
-      .json({
-        error:
-          "Folder not found",
-      });
-  }
-}
-    const storyRes = await client.query(
-      "INSERT INTO stories (name, user_id, folder_id, image_url) VALUES ($1, $2, $3, $4) RETURNING id",
-      [name, userId, folderId, image_url]
-    );
-    const storyId = storyRes.rows[0].id;
-
-    for (let i = 0; i < slides.length; i++) {
-      const slideRes = await client.query(
-        "INSERT INTO slides (story_id, position, description, user_id) VALUES ($1, $2, $3, $4) RETURNING id",
-        [storyId, i, slides[i].description || "",userId]
-      );
-      const slideId = slideRes.rows[0].id;
-
-      // Save Slide Content (Charts)
-      if (slides[i].content && Array.isArray(slides[i].content)) {
-        for (let j = 0; j < slides[i].content.length; j++) {
-          const item = slides[i].content[j];
-          await client.query(
-            "INSERT INTO slide_content (slide_id, chart_id, position, layout, user_id) VALUES ($1, $2, $3, $4::jsonb, $5)",
-            [
-              slideId,
-              item.chartId,
-              j,
-              JSON.stringify({
-                x: item.x ?? 0,
-                y: item.y ?? 0,
-                width: item.width ?? 100,
-                height: item.height ?? 100,
-                zIndex: item.zIndex ?? j + 1,
-              }),
-              userId,
-            ]
-          );
-        }
-      }
-
-      // Save Slide Annotations (Puncts / Shapes)
-      if (slides[i].annotations && Array.isArray(slides[i].annotations)) {
-        for (let k = 0; k < slides[i].annotations.length; k++) {
-          const anno = slides[i].annotations[k];
-          await client.query(
-            "INSERT INTO slide_annotations (slide_id, annotation, user_id) VALUES ($1, $2, $3)",
-            [slideId, JSON.stringify(anno), userId]
-          );
-        }
-      }
+    if (
+      !Array.isArray(
+        slides
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Slides must be an array",
+        });
     }
 
-    await client.query("COMMIT");
-    res.json({ id: storyId, message: "Story created successfully" });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    next(err);
-  } finally {
-    client.release();
+    const story =
+      await storyService.createStory({
+        userId,
+
+        name,
+
+        slides,
+
+        folderId:
+          folder_id,
+
+        imageUrl:
+          image_url,
+      });
+
+    return res.json({
+      id:
+        story.id,
+
+      message:
+        "Story created successfully",
+    });
+
+  } catch (error) {
+    if (
+      error.statusCode
+    ) {
+      return res
+        .status(
+          error.statusCode
+        )
+        .json({
+          error:
+            error.message,
+        });
+    }
+
+    next(error);
   }
 };
+
 const updateStory = async (
   req,
   res,
   next
 ) => {
-  const { storyId } =
-    req.params;
-
-  const {
-    name,
-    slides,
-    image_url,
-  } = req.body;
-
-  const userId =
-    req.user.userId;
-
-  // =========================
-  // VALIDATION
-  // =========================
-
-  if (
-    !storyId ||
-    Number.isNaN(
-      Number(storyId)
-    )
-  ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Invalid storyId",
-      });
-  }
-
-  if (
-    !Array.isArray(slides)
-  ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Slides must be an array",
-      });
-  }
-
-  const client =
-    await pool.connect();
-
   try {
-    await client.query(
-      "BEGIN"
-    );
-
-    // =========================
-    // UPDATE STORY
-    // + VERIFY OWNERSHIP
-    // =========================
-
-    const storyUpdate =
-      await client.query(
-        `
-        UPDATE stories
-        SET
-          name = $1,
-          image_url = $4
-        WHERE id = $2
-          AND user_id = $3
-        RETURNING id
-        `,
-        [
-          name,
-          storyId,
-          userId,
-          image_url ?? null,
-        ]
+    const storyId =
+      Number(
+        req.params.storyId
       );
 
-    // Story does not exist
-    // OR belongs to another user
+    const userId =
+      req.user.userId;
+
+    const {
+      name,
+      slides,
+      image_url,
+    } = req.body;
+
+    // =========================
+    // VALIDATION
+    // =========================
+
     if (
-      storyUpdate.rows.length ===
-      0
+      !Number.isInteger(
+        storyId
+      )
     ) {
-      await client.query(
-        "ROLLBACK"
-      );
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid storyId",
+        });
+    }
 
+    if (
+      !Array.isArray(
+        slides
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Slides must be an array",
+        });
+    }
+
+    await storyService.updateStory({
+      storyId,
+      userId,
+
+      name,
+      slides,
+
+      imageUrl:
+        image_url ??
+        null,
+    });
+
+    return res.json({
+      message:
+        "Story updated successfully",
+    });
+
+  } catch (error) {
+    if (
+      error.statusCode
+    ) {
+      return res
+        .status(
+          error.statusCode
+        )
+        .json({
+          error:
+            error.message,
+        });
+    }
+
+    next(error);
+  }
+};
+
+
+
+const getStories = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const userId =
+      req.user.userId;
+
+    const folderId =
+      req.query.folder_id ||
+      null;
+
+    const stories =
+      await storyService.getStories({
+        userId,
+        folderId,
+      });
+
+    return res.json(
+      stories
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+const getStory = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const storyId =
+      Number(req.params.id);
+
+    const userId =
+      req.user.userId;
+
+    if (
+      !Number.isInteger(
+        storyId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid story ID",
+        });
+    }
+
+    const story =
+      await storyService.getStory({
+        storyId,
+        userId,
+      });
+
+    if (!story) {
       return res
         .status(404)
         .json({
@@ -218,825 +229,174 @@ const updateStory = async (
         });
     }
 
-    // =========================
-    // DELETE OLD ANNOTATIONS
-    // =========================
+    return res.json(
+      story
+    );
+  } catch (error) {
+    next(error);
+  }
+};
 
-    await client.query(
-      `
-      DELETE FROM slide_annotations
-      WHERE slide_id IN (
-        SELECT id
-        FROM slides
-        WHERE story_id = $1
-          AND user_id = $2
+const getPublicStory = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const storyId =
+      Number(
+        req.params.id
+      );
+
+    if (
+      !Number.isInteger(
+        storyId
       )
-      `,
-      [
-        storyId,
-        userId,
-      ]
-    );
-
-    // =========================
-    // DELETE OLD SLIDES
-    // slide_content cascades
-    // =========================
-
-    await client.query(
-      `
-      DELETE FROM slides
-      WHERE story_id = $1
-        AND user_id = $2
-      `,
-      [
-        storyId,
-        userId,
-      ]
-    );
-
-    // =========================
-    // RECREATE SLIDES
-    // =========================
-
-    for (
-      let i = 0;
-      i < slides.length;
-      i++
     ) {
-      const slide =
-        slides[i];
-
-      const slideRes =
-        await client.query(
-          `
-          INSERT INTO slides (
-            story_id,
-            position,
-            description,
-            user_id
-          )
-          VALUES (
-            $1,
-            $2,
-            $3,
-            $4
-          )
-          RETURNING id
-          `,
-          [
-            storyId,
-            i,
-            slide.description ||
-              "",
-            userId,
-          ]
-        );
-
-      const slideId =
-        slideRes.rows[0].id;
-
-      // =========================
-      // RECREATE CONTENT
-      // =========================
-
-      if (
-        Array.isArray(
-          slide.content
-        )
-      ) {
-        for (
-          let j = 0;
-          j <
-          slide.content.length;
-          j++
-        ) {
-          const item =
-            slide.content[j];
-
-          await client.query(
-            `
-            INSERT INTO slide_content (
-              slide_id,
-              chart_id,
-              position,
-              layout,
-              user_id
-            )
-            VALUES (
-              $1,
-              $2,
-              $3,
-              $4::jsonb,
-              $5
-            )
-            `,
-            [
-              slideId,
-              item.chartId,
-              j,
-
-              JSON.stringify({
-                x: Number(
-                  item.x ?? 0
-                ),
-
-                y: Number(
-                  item.y ?? 0
-                ),
-
-                width: Number(
-                  item.width ??
-                    100
-                ),
-
-                height: Number(
-                  item.height ??
-                    100
-                ),
-
-                zIndex: Number(
-                  item.zIndex ??
-                    j + 1
-                ),
-              }),
-
-              userId,
-            ]
-          );
-        }
-      }
-
-      // =========================
-      // RECREATE ANNOTATIONS
-      // =========================
-
-      if (
-        Array.isArray(
-          slide.annotations
-        )
-      ) {
-        for (
-          let k = 0;
-          k <
-          slide.annotations
-            .length;
-          k++
-        ) {
-          const annotation =
-            slide.annotations[k];
-
-          await client.query(
-            `
-            INSERT INTO slide_annotations (
-              slide_id,
-              annotation,
-              user_id
-            )
-            VALUES (
-              $1,
-              $2,
-              $3
-            )
-            `,
-            [
-              slideId,
-
-              JSON.stringify(
-                annotation
-              ),
-
-              userId,
-            ]
-          );
-        }
-      }
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid story ID",
+        });
     }
 
-    // =========================
-    // SUCCESS
-    // =========================
+    const story =
+      await storyService
+        .getPublicStory({
+          storyId,
+        });
 
-    await client.query(
-      "COMMIT"
+    if (!story) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Story not found or not published",
+        });
+    }
+
+    return res.json(
+      story
     );
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+const publishStory = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const storyId =
+      Number(
+        req.params.storyId
+      );
+
+    const userId =
+      req.user.userId;
+
+    if (
+      !Number.isInteger(
+        storyId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid story ID",
+        });
+    }
+
+    const story =
+      await storyService.publishStory({
+        storyId,
+        userId,
+      });
+
+    if (!story) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Story not found",
+        });
+    }
 
     return res.json({
       message:
-        "Story updated successfully",
-    });
+        "Story published",
 
-  } catch (err) {
-    try {
-      await client.query(
-        "ROLLBACK"
+      url:
+        `/publishedStory/${storyId}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const duplicateStory = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const storyId =
+      Number(
+        req.params.id
       );
-    } catch (
-      rollbackError
+
+    const userId =
+      req.user.userId;
+
+    if (
+      !Number.isInteger(
+        storyId
+      )
     ) {
-      console.error(
-        "Story rollback failed:",
-        rollbackError
-      );
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid story ID",
+        });
     }
 
-    next(err);
+    const duplicatedStory =
+      await storyService
+        .duplicateStory({
+          storyId,
+          userId,
+        });
 
-  } finally {
-    client.release();
+    return res.json(
+      duplicatedStory
+    );
+
+  } catch (error) {
+    if (
+      error.statusCode
+    ) {
+      return res
+        .status(
+          error.statusCode
+        )
+        .json({
+          error:
+            error.message,
+        });
+    }
+
+    next(error);
   }
 };
-const getStories = async (req, res, next) => {
-  try {
-    const userId = req.user.userId;
-    const folder_id = req.query.folder_id || null;
-
-    let result;
-
-    if (folder_id) {
-      result = await pool.query(
-        `
-        SELECT *
-        FROM stories
-        WHERE user_id = $1
-        AND folder_id = $2
-        ORDER BY id DESC
-        `,
-        [userId, folder_id]
-      );
-    } else {
-      result = await pool.query(
-        `
-        SELECT *
-        FROM stories
-        WHERE user_id = $1
-        AND folder_id IS NULL
-        ORDER BY id DESC
-        `,
-        [userId]
-      );
-    }
-
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// 3. FETCH AND ASSEMBLE STORY HIERARCHY
-const getStory = async (req, res,next) => {
-  try {
-    const { id } = req.params;
-
-    const userId = req.user.userId;
-    // Fetch the parent story
-    const storyResult = await pool.query("SELECT * FROM stories WHERE id = $1 AND user_id = $2", [id, userId]);
-    if (storyResult.rows.length === 0) return res.status(404).json({ error: "Story not found" });
-
-    // Fetch slides and charts configuration
-    const slidesResult = await pool.query(
-      `
-      SELECT
-        s.id AS slide_id,
-        s.position AS slide_position,
-        s.description,
-
-        sc.id AS slide_content_id,
-        sc.chart_id,
-        sc.position AS content_position,
-        sc.layout,
-
-        p.name AS chart_name,
-        p.image_url AS chart_image_url
-
-      FROM slides s
-      LEFT JOIN slide_content sc
-        ON sc.slide_id = s.id
-
-      LEFT JOIN charts c
-        ON c.id = sc.chart_id
-
-      LEFT JOIN projects p
-        ON p.id = c.project_id
-      WHERE s.story_id = $1
-      ORDER BY s.position, sc.position
-      `,
-      [id]
-    );
-
-    // Fetch all annotations for this story separately to prevent SQL Cartesian duplication side effects
-    const annotationsResult = await pool.query(
-      `
-      SELECT sa.slide_id, sa.annotation 
-      FROM slide_annotations sa
-      JOIN slides s ON s.id = sa.slide_id
-      WHERE s.story_id = $1
-      `,
-      [id]
-    );
-
-    // Map slides and inner charts array properties
-    const slidesMap = {};
-    slidesResult.rows.forEach(row => {
-      if (!slidesMap[row.slide_id]) {
-        slidesMap[row.slide_id] = { 
-          id: row.slide_id, 
-          description: row.description, 
-          content: [],
-          annotations: [] // Placeholder array ready to receive shapes
-        };
-      }
-        if (row.chart_id) {
-          slidesMap[row.slide_id].content.push({
-            id:
-              row.slide_content_id ??
-              `${row.slide_id}-${row.chart_id}`,
-
-            type: "chart",
-            chartId: row.chart_id,
-            name: row.chart_name || "Chart",
-
-            imageUrl:
-              row.chart_image_url || null,
-
-            x: Number(row.layout?.x ?? 0),
-            y: Number(row.layout?.y ?? 0),
-            width: Number(row.layout?.width ?? 100),
-            height: Number(row.layout?.height ?? 100),
-            zIndex: Number(
-              row.layout?.zIndex ??
-              row.content_position + 1,
-            ),
-          });
-        }
-    });
-
-    // Merge the isolated annotations directly into their respective parent slides
-    annotationsResult.rows.forEach(row => {
-      if (slidesMap[row.slide_id]) {
-        slidesMap[row.slide_id].annotations.push(row.annotation);
-      }
-    });
-
-    res.json({
-      ...storyResult.rows[0],
-      slides: Object.values(slidesMap)
-    });
-
-  } catch (err) {
-    next(err);
-  }
-};
-const getPublicStory = async (req, res, next) => {
-  try {
-    const storyId = Number(req.params.id);
-
-    // =========================
-    // VALIDATE STORY ID
-    // =========================
-
-    if (!Number.isInteger(storyId)) {
-      return res.status(400).json({
-        error: "Invalid story ID",
-      });
-    }
-
-    // =========================
-    // 1. GET PUBLISHED STORY
-    // =========================
-
-    const storyResult = await pool.query(
-      `
-      SELECT
-        id,
-        name,
-        image_url,
-        created_at,
-        is_published
-      FROM stories
-      WHERE id = $1
-        AND is_published = TRUE
-      `,
-      [storyId]
-    );
-
-    if (storyResult.rows.length === 0) {
-      return res.status(404).json({
-        error: "Story not found or not published",
-      });
-    }
-
-    // =========================
-    // 2. GET SLIDES + CONTENT
-    // =========================
-
-    const slidesResult = await pool.query(
-      `
-      SELECT
-        s.id AS slide_id,
-        s.position AS slide_position,
-        s.description,
-
-        sc.id AS slide_content_id,
-        sc.chart_id,
-        sc.position AS content_position,
-        sc.layout,
-
-        p.name AS chart_name
-
-      FROM slides s
-
-      LEFT JOIN slide_content sc
-        ON sc.slide_id = s.id
-
-      LEFT JOIN charts c
-        ON c.id = sc.chart_id
-
-      LEFT JOIN projects p
-        ON p.id = c.project_id
-
-      WHERE s.story_id = $1
-
-      ORDER BY
-        s.position,
-        sc.position
-      `,
-      [storyId]
-    );
-
-    // =========================
-    // 3. GET ANNOTATIONS
-    // =========================
-
-    const annotationsResult = await pool.query(
-      `
-      SELECT
-        sa.slide_id,
-        sa.annotation
-
-      FROM slide_annotations sa
-
-      JOIN slides s
-        ON s.id = sa.slide_id
-
-      WHERE s.story_id = $1
-      `,
-      [storyId]
-    );
-
-    // =========================
-    // 4. GET CHART IDS USED
-    //    IN THIS STORY
-    // =========================
-
-    const chartIds = [
-      ...new Set(
-        slidesResult.rows
-          .map((row) => row.chart_id)
-          .filter((id) => id != null)
-      ),
-    ];
-
-    let charts = [];
-
-    // =========================
-    // 5. GET CHART CONFIGS
-    // =========================
-
-    if (chartIds.length > 0) {
-      const chartsResult = await pool.query(
-        `
-        SELECT
-          c.id,
-          c.dataset_id,
-          c.chart_type,
-          c.x_axis,
-          c.y_axis,
-          c.settings,
-          c.chart_config
-
-        FROM charts c
-
-        WHERE c.id = ANY($1::int[])
-
-          AND EXISTS (
-            SELECT 1
-
-            FROM slide_content sc
-
-            JOIN slides s
-              ON s.id = sc.slide_id
-
-            JOIN stories st
-              ON st.id = s.story_id
-
-            WHERE sc.chart_id = c.id
-              AND st.id = $2
-              AND st.is_published = TRUE
-          )
-        `,
-        [chartIds, storyId]
-      );
-
-      charts = chartsResult.rows;
-    }
-
-    // =========================
-    // 6. GET DATASET IDS
-    // =========================
-
-    const datasetIds = [
-      ...new Set(
-        charts
-          .map((chart) => chart.dataset_id)
-          .filter((id) => id != null)
-      ),
-    ];
-
-    let rawRows = [];
-
-    // =========================
-    // 7. GET DATASET ROWS
-    // =========================
-
-    if (datasetIds.length > 0) {
-      const rowsResult = await pool.query(
-        `
-        SELECT
-          dataset_id,
-          data
-        FROM rows
-
-        WHERE dataset_id = ANY($1::int[])
-
-        ORDER BY id
-        `,
-        [datasetIds]
-      );
-
-      rawRows = rowsResult.rows;
-    }
-
-    // =========================
-    // 8. GROUP ROWS BY DATASET
-    // =========================
-
-    const rowsByDataset = {};
-
-    rawRows.forEach((row) => {
-      if (!rowsByDataset[row.dataset_id]) {
-        rowsByDataset[row.dataset_id] = [];
-      }
-
-      rowsByDataset[row.dataset_id].push(
-        row.data
-      );
-    });
-
-    // =========================
-    // 9. GROUP CHARTS BY ID
-    // =========================
-
-    const chartsById = {};
-
-    charts.forEach((chart) => {
-      chartsById[chart.id] = {
-        ...chart,
-
-        rows:
-          rowsByDataset[
-            chart.dataset_id
-          ] || [],
-      };
-    });
-
-    // =========================
-    // 10. BUILD SLIDES
-    // =========================
-
-    const slidesMap = {};
-
-    slidesResult.rows.forEach((row) => {
-      if (!slidesMap[row.slide_id]) {
-        slidesMap[row.slide_id] = {
-          id: row.slide_id,
-
-          description:
-            row.description,
-
-          content: [],
-
-          annotations: [],
-        };
-      }
-
-      if (!row.chart_id) {
-        return;
-      }
-
-      const chart =
-        chartsById[row.chart_id];
-
-      if (!chart) {
-        return;
-      }
-
-      slidesMap[
-        row.slide_id
-      ].content.push({
-        id:
-          row.slide_content_id ??
-          `${row.slide_id}-${row.chart_id}`,
-
-        type: "chart",
-
-        chartId:
-          row.chart_id,
-
-        name:
-          row.chart_name ||
-          "Chart",
-
-        // =====================
-        // PUBLIC CHART DATA
-        // =====================
-
-        chart,
-
-        rows:
-          chart.rows || [],
-
-        // =====================
-        // LAYOUT
-        // =====================
-
-        x: Number(
-          row.layout?.x ?? 0
-        ),
-
-        y: Number(
-          row.layout?.y ?? 0
-        ),
-
-        width: Number(
-          row.layout?.width ?? 100
-        ),
-
-        height: Number(
-          row.layout?.height ?? 100
-        ),
-
-        zIndex: Number(
-          row.layout?.zIndex ??
-            row.content_position + 1
-        ),
-      });
-    });
-
-    // =========================
-    // 11. ADD ANNOTATIONS
-    // =========================
-
-    annotationsResult.rows.forEach(
-      (row) => {
-        if (
-          slidesMap[row.slide_id]
-        ) {
-          slidesMap[
-            row.slide_id
-          ].annotations.push(
-            row.annotation
-          );
-        }
-      }
-    );
-
-    // =========================
-    // 12. RETURN STORY
-    // =========================
-
-    return res.json({
-      ...storyResult.rows[0],
-
-      slides:
-        Object.values(
-          slidesMap
-        ),
-    });
-
-  } catch (err) {
-    next(err);
-  }
-};
-
-const publishStory = async (req, res, next) => {
-  try {
-    const { storyId } = req.params;
-    const userId = req.user.userId;
-
-    const result = await pool.query(
-      `
-      UPDATE stories
-      SET is_published = true
-      WHERE id = $1
-      AND user_id = $2
-      RETURNING id
-      `,
-      [storyId, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Story not found" });
-    }
-
-    res.json({
-      message: "Story published",
-      url: `/publishedStory/${storyId}`,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-const duplicateStory = async (req, res, next) => {
-  const userId = req.user.userId;
-  const storyId = req.params.id;
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const storyRes = await client.query(
-      `
-      INSERT INTO stories (name, folder_id, user_id, image_url)
-      SELECT name || ' Copy', folder_id, user_id, image_url
-      FROM stories
-      WHERE id = $1 AND user_id = $2
-      RETURNING *
-      `,
-      [storyId, userId]
-    );
-
-    if (storyRes.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Story not found" });
-    }
-
-    const newStory = storyRes.rows[0];
-
-    const slidesRes = await client.query(
-      `
-      SELECT *
-      FROM slides
-      WHERE story_id = $1 AND user_id = $2
-      ORDER BY position
-      `,
-      [storyId, userId]
-    );
-
-    for (const slide of slidesRes.rows) {
-      const newSlideRes = await client.query(
-        `
-        INSERT INTO slides (story_id, position, description, user_id)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id
-        `,
-        [newStory.id, slide.position, slide.description, userId]
-      );
-
-      const newSlideId = newSlideRes.rows[0].id;
-
-      await client.query(
-        `
-        INSERT INTO slide_content (slide_id, chart_id, position,layout, user_id)
-        SELECT $1, chart_id, position, layout, user_id
-        FROM slide_content
-        WHERE slide_id = $2 AND user_id = $3
-        `,
-        [newSlideId, slide.id, userId]
-      );
-
-      await client.query(
-        `
-        INSERT INTO slide_annotations (slide_id, annotation, user_id)
-        SELECT $1, annotation, user_id
-        FROM slide_annotations
-        WHERE slide_id = $2 AND user_id = $3
-        `,
-        [newSlideId, slide.id, userId]
-      );
-    }
-
-    await client.query("COMMIT");
-
-    res.json(newStory);
-  } catch (err) {
-    await client.query("ROLLBACK");
-    next(err);
-  } finally {
-    client.release();
-  }
-};
-
 const deleteStory = async (req, res, next) => {
   const client = await pool.connect();
 

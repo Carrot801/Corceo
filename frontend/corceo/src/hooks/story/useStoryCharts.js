@@ -1,263 +1,440 @@
 import {
   useCallback,
-  useState,
 } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+
 import {
-  SLIDE_HEIGHT,
-  SLIDE_WIDTH,
-} from "../../utils/story/storyConstants";
+  arrangeCharts,
+  createChartItem,
+} from "../../utils/story/storyLayout";
 
-function wait(milliseconds) {
-  return new Promise((resolve) =>
-    setTimeout(resolve, milliseconds),
-  );
-}
 
-async function waitForImages(
-  rootElements,
-) {
-  const images = rootElements.flatMap(
-    (root) =>
-      Array.from(
-        root.querySelectorAll("img"),
-      ),
-  );
+export default function useStoryCharts({
+  activeSlideIndex,
 
-  await Promise.all(
-    images.map(
-      (image) =>
-        new Promise((resolve) => {
-          if (image.complete) {
-            resolve();
-            return;
-          }
+  setSlides,
 
-          image.onload = resolve;
-          image.onerror = resolve;
-        }),
-    ),
-  );
-}
-
-export default function useStoryExport({
-  slides,
-  storyName,
+  setSelectedChartId,
+  setSelectedAnnoId,
+  setShowPicker,
 }) {
-  const [
-    isExporting,
-    setIsExporting,
-  ] = useState(false);
+  // =========================
+  // ADD CHART
+  // =========================
 
-  const waitForExportSlides =
+  const addChartToSlide =
     useCallback(
-      async (
-        expectedCount,
-        attempts = 30,
+      (
+        chartId,
+        name,
+        imageUrl
       ) => {
-        for (
-          let attempt = 0;
-          attempt < attempts;
-          attempt++
-        ) {
-          const elements =
-            Array.from(
-              document.querySelectorAll(
-                ".export-slide",
-              ),
-            );
+        let newItemId =
+          null;
 
-          if (
-            elements.length ===
-            expectedCount
-          ) {
-            return elements;
-          }
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
 
-          await wait(50);
+                const content =
+                  slide.content ||
+                  [];
+
+                const newItem =
+                  createChartItem(
+                    chartId,
+                    name,
+                    imageUrl,
+                    content.length
+                  );
+
+                newItemId =
+                  newItem.id;
+
+                return {
+                  ...slide,
+
+                  content:
+                    arrangeCharts([
+                      ...content,
+                      newItem,
+                    ]),
+                };
+              }
+            )
+        );
+
+        if (newItemId) {
+          setSelectedChartId(
+            newItemId
+          );
         }
 
-        return [];
+        setSelectedAnnoId(
+          null
+        );
+
+        setShowPicker?.(
+          false
+        );
       },
-      [],
+      [
+        activeSlideIndex,
+        setSelectedAnnoId,
+        setSelectedChartId,
+        setShowPicker,
+        setSlides,
+      ]
     );
 
-  const exportStoryPDF =
-    useCallback(async () => {
-      try {
-        setIsExporting(true);
 
-        const slideElements =
-          await waitForExportSlides(
-            slides.length,
-          );
+  // =========================
+  // UPDATE CHART
+  // =========================
 
-        if (
-          !slideElements.length
-        ) {
-          throw new Error(
-            "Export slides were not rendered",
+  const updateChartItem =
+    useCallback(
+      (
+        itemId,
+        updates,
+        options
+      ) => {
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
+
+                return {
+                  ...slide,
+
+                  content: (
+                    slide.content ||
+                    []
+                  ).map(
+                    (item) =>
+                      item.id ===
+                      itemId
+                        ? {
+                            ...item,
+                            ...updates,
+                          }
+                        : item
+                  ),
+                };
+              }
+            ),
+          options
+        );
+      },
+      [
+        activeSlideIndex,
+        setSlides,
+      ]
+    );
+
+
+  // =========================
+  // DELETE CHART
+  // =========================
+
+  const deleteChartItem =
+    useCallback(
+      (itemId) => {
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
+
+                const remaining =
+                  (
+                    slide.content ||
+                    []
+                  ).filter(
+                    (item) =>
+                      item.id !==
+                      itemId
+                  );
+
+                return {
+                  ...slide,
+
+                  content:
+                    arrangeCharts(
+                      remaining
+                    ),
+                };
+              }
+            )
+        );
+
+        setSelectedChartId(
+          (current) =>
+            current ===
+            itemId
+              ? null
+              : current
+        );
+      },
+      [
+        activeSlideIndex,
+        setSelectedChartId,
+        setSlides,
+      ]
+    );
+
+
+  // =========================
+  // DUPLICATE CHART
+  // =========================
+
+  const duplicateChartItem =
+    useCallback(
+      (itemId) => {
+        let duplicatedId =
+          null;
+
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
+
+                const content =
+                  slide.content ||
+                  [];
+
+                const sourceItem =
+                  content.find(
+                    (item) =>
+                      item.id ===
+                      itemId
+                  );
+
+                if (!sourceItem) {
+                  return slide;
+                }
+
+                duplicatedId =
+                  `chart-${crypto.randomUUID()}`;
+
+                const duplicate = {
+                  ...sourceItem,
+
+                  id:
+                    duplicatedId,
+
+                  name:
+                    `${
+                      sourceItem.name ||
+                      "Chart"
+                    } copy`,
+                };
+
+                return {
+                  ...slide,
+
+                  content:
+                    arrangeCharts([
+                      ...content,
+                      duplicate,
+                    ]),
+                };
+              }
+            )
+        );
+
+        if (duplicatedId) {
+          setSelectedChartId(
+            duplicatedId
           );
         }
 
-        await waitForImages(
-          slideElements,
+        setSelectedAnnoId(
+          null
         );
+      },
+      [
+        activeSlideIndex,
+        setSelectedAnnoId,
+        setSelectedChartId,
+        setSlides,
+      ]
+    );
 
-        if (
-          document.fonts?.ready
-        ) {
-          await document.fonts.ready;
-        }
 
-        const pdf = new jsPDF(
-          "landscape",
-          "pt",
-          [
-            SLIDE_WIDTH,
-            SLIDE_HEIGHT,
-          ],
+  // =========================
+  // BRING TO FRONT
+  // =========================
+
+  const bringChartToFront =
+    useCallback(
+      (
+        itemId,
+        options
+      ) => {
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
+
+                const content =
+                  slide.content ||
+                  [];
+
+                const highest =
+                  Math.max(
+                    0,
+                    ...content.map(
+                      (item) =>
+                        item.zIndex ||
+                        0
+                    )
+                  );
+
+                return {
+                  ...slide,
+
+                  content:
+                    content.map(
+                      (item) =>
+                        item.id ===
+                        itemId
+                          ? {
+                              ...item,
+
+                              zIndex:
+                                highest +
+                                1,
+                            }
+                          : item
+                    ),
+                };
+              }
+            ),
+          options
         );
+      },
+      [
+        activeSlideIndex,
+        setSlides,
+      ]
+    );
 
-        for (
-          let index = 0;
-          index <
-          slideElements.length;
-          index++
-        ) {
-          const canvas =
-            await html2canvas(
-              slideElements[index],
-              {
-                scale: 2,
-                useCORS: true,
-                allowTaint: false,
-                backgroundColor:
-                  "#ffffff",
-                logging: false,
-                width:
-                  SLIDE_WIDTH,
-                height:
-                  SLIDE_HEIGHT,
-              },
-            );
 
-          const imageData =
-            canvas.toDataURL(
-              "image/png",
-            );
+  // =========================
+  // SEND TO BACK
+  // =========================
 
-          if (index > 0) {
-            pdf.addPage(
-              [
-                SLIDE_WIDTH,
-                SLIDE_HEIGHT,
-              ],
-              "landscape",
-            );
-          }
+  const sendChartToBack =
+    useCallback(
+      (itemId) => {
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
 
-          pdf.addImage(
-            imageData,
-            "PNG",
-            0,
-            0,
-            SLIDE_WIDTH,
-            SLIDE_HEIGHT,
-          );
-        }
+                const content =
+                  slide.content ||
+                  [];
 
-        pdf.save(
-          `${
-            storyName ||
-            "story"
-          }.pdf`,
+                const lowest =
+                  Math.min(
+                    0,
+                    ...content.map(
+                      (item) =>
+                        item.zIndex ||
+                        0
+                    )
+                  );
+
+                return {
+                  ...slide,
+
+                  content:
+                    content.map(
+                      (item) =>
+                        item.id ===
+                        itemId
+                          ? {
+                              ...item,
+
+                              zIndex:
+                                lowest -
+                                1,
+                            }
+                          : item
+                    ),
+                };
+              }
+            )
         );
-      } finally {
-        setIsExporting(false);
-      }
-    }, [
-      slides.length,
-      storyName,
-      waitForExportSlides,
-    ]);
+      },
+      [
+        activeSlideIndex,
+        setSlides,
+      ]
+    );
 
-  const makeStoryPreview =
-    useCallback(async () => {
-      try {
-        setIsExporting(true);
-
-        const elements =
-          await waitForExportSlides(
-            slides.length,
-          );
-
-        const firstSlide =
-          elements[0];
-
-        if (!firstSlide) {
-          throw new Error(
-            "First export slide was not rendered",
-          );
-        }
-
-        await waitForImages([
-          firstSlide,
-        ]);
-
-        if (
-          document.fonts?.ready
-        ) {
-          await document.fonts.ready;
-        }
-
-        await new Promise(
-          (resolve) => {
-            requestAnimationFrame(
-              () =>
-                requestAnimationFrame(
-                  resolve,
-                ),
-            );
-          },
-        );
-
-        const canvas =
-          await html2canvas(
-            firstSlide,
-            {
-              scale: 0.7,
-              useCORS: true,
-              allowTaint: false,
-              backgroundColor:
-                "#ffffff",
-              logging: false,
-            },
-          );
-
-        return canvas.toDataURL(
-          "image/jpeg",
-          0.82,
-        );
-      } catch (error) {
-        console.error(
-          "Story preview generation failed:",
-          error,
-        );
-
-        return null;
-      } finally {
-        setIsExporting(false);
-      }
-    }, [
-      slides.length,
-      waitForExportSlides,
-    ]);
 
   return {
-    isExporting,
-    exportStoryPDF,
-    makeStoryPreview,
+    addChartToSlide,
+    updateChartItem,
+    deleteChartItem,
+    duplicateChartItem,
+    bringChartToFront,
+    sendChartToBack,
   };
-}
+}3

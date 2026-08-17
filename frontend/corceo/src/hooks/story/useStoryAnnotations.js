@@ -1,357 +1,239 @@
 import {
   useCallback,
-  useRef,
 } from "react";
 
-export default function useStoryInteractions({
-  canvasRef,
-  updateChartItem,
-  setSelectedChartId,
+
+export default function useStoryAnnotations({
+  activeSlideIndex,
+
+  currentSlide,
+
+  setSlides,
+
+  selectedAnnoId,
   setSelectedAnnoId,
-  storyStateRef,
-  commitStoryHistory,
 }) {
-  const chartInteractionRef =
-    useRef(null);
 
   // =========================
-  // HANDLE MOUSE MOVE
+  // ADD ANNOTATION
   // =========================
 
-  const handleMove =
-    useCallback(
-      (event) => {
-        const interaction =
-          chartInteractionRef.current;
-
-        const canvas =
-          canvasRef.current;
-
-        if (
-          !interaction ||
-          !canvas
-        ) {
-          return;
-        }
-
-        const rect =
-          canvas.getBoundingClientRect();
-
-        if (
-          !rect.width ||
-          !rect.height
-        ) {
-          return;
-        }
-
-        const deltaX =
-          ((event.clientX -
-            interaction.startClientX) /
-            rect.width) *
-          100;
-
-        const deltaY =
-          ((event.clientY -
-            interaction.startClientY) /
-            rect.height) *
-          100;
-
-        // =========================
-        // MOVE CHART
-        // =========================
-
-        if (
-          interaction.mode ===
-          "move"
-        ) {
-          updateChartItem(
-            interaction.itemId,
-            {
-              x: Math.max(
-                0,
-                Math.min(
-                  100 -
-                    interaction.startWidth,
-
-                  interaction.startX +
-                    deltaX
-                )
-              ),
-
-              y: Math.max(
-                0,
-                Math.min(
-                  100 -
-                    interaction.startHeight,
-
-                  interaction.startY +
-                    deltaY
-                )
-              ),
-            },
-            {
-              record: false,
-            }
-          );
-
-          return;
-        }
-
-        // =========================
-        // RESIZE CHART
-        // =========================
-
-        const minWidth = 18;
-        const minHeight = 18;
-
-        let x =
-          interaction.startX;
-
-        let y =
-          interaction.startY;
-
-        let width =
-          interaction.startWidth;
-
-        let height =
-          interaction.startHeight;
-
-        // RIGHT
-        if (
-          interaction.mode.includes(
-            "right"
-          )
-        ) {
-          width = Math.max(
-            minWidth,
-
-            Math.min(
-              100 -
-                interaction.startX,
-
-              interaction.startWidth +
-                deltaX
-            )
-          );
-        }
-
-        // BOTTOM
-        if (
-          interaction.mode.includes(
-            "bottom"
-          )
-        ) {
-          height = Math.max(
-            minHeight,
-
-            Math.min(
-              100 -
-                interaction.startY,
-
-              interaction.startHeight +
-                deltaY
-            )
-          );
-        }
-
-        // LEFT
-        if (
-          interaction.mode.includes(
-            "left"
-          )
-        ) {
-          const nextX =
-            Math.max(
-              0,
-
-              Math.min(
-                interaction.startX +
-                  interaction.startWidth -
-                  minWidth,
-
-                interaction.startX +
-                  deltaX
-              )
-            );
-
-          x = nextX;
-
-          width =
-            interaction.startWidth +
-            interaction.startX -
-            nextX;
-        }
-
-        // TOP
-        if (
-          interaction.mode.includes(
-            "top"
-          )
-        ) {
-          const nextY =
-            Math.max(
-              0,
-
-              Math.min(
-                interaction.startY +
-                  interaction.startHeight -
-                  minHeight,
-
-                interaction.startY +
-                  deltaY
-              )
-            );
-
-          y = nextY;
-
-          height =
-            interaction.startHeight +
-            interaction.startY -
-            nextY;
-        }
-
-        updateChartItem(
-          interaction.itemId,
-          {
-            x,
-            y,
-            width,
-            height,
-          },
-          {
-            record: false,
-          }
-        );
-      },
-      [
-        canvasRef,
-        updateChartItem,
-      ]
-    );
-
-  // =========================
-  // STOP INTERACTION
-  // =========================
-
-  const stopInteraction =
+  const addAnnotation =
     useCallback(() => {
-      const interaction =
-        chartInteractionRef.current;
+      const newId =
+        `anno-${crypto.randomUUID()}`;
 
-      if (
-        interaction
-          ?.startingStoryState
-      ) {
-        commitStoryHistory(
-          interaction.startingStoryState,
-          storyStateRef.current
-        );
-      }
+      const count =
+        (
+          currentSlide
+            ?.annotations ||
+          []
+        ).length + 1;
 
-      chartInteractionRef.current =
-        null;
+      const newAnnotation = {
+        id:
+          newId,
 
-      // Mouseup listener uses
-      // { once: true }, so it removes
-      // itself automatically.
-      document.removeEventListener(
-        "mousemove",
-        handleMove
+        text:
+          `Annotation point #${count}`,
+
+        markerType:
+          "dot",
+
+        connectorType:
+          "curved",
+
+        x: 50,
+        y: 40,
+
+        textX: 55,
+        textY: 55,
+
+        width: 15,
+        height: 15,
+
+        fillColor:
+          "#3b82f6",
+
+        radius: 6,
+
+        labelWidth: 12,
+
+        textSize: 0.85,
+
+        textColor:
+          "#1e293b",
+
+        textBg:
+          "white",
+
+        fontWeight:
+          "normal",
+
+        textAlign:
+          "left",
+
+        lineWidth: 1.5,
+
+        lineColor:
+          "#64748b",
+      };
+
+      setSlides(
+        (previousSlides) =>
+          previousSlides.map(
+            (
+              slide,
+              index
+            ) => {
+              if (
+                index !==
+                activeSlideIndex
+              ) {
+                return slide;
+              }
+
+              return {
+                ...slide,
+
+                annotations: [
+                  ...(
+                    slide.annotations ||
+                    []
+                  ),
+
+                  newAnnotation,
+                ],
+              };
+            }
+          )
       );
+
+      setSelectedAnnoId(
+        newId
+      );
+
     }, [
-      commitStoryHistory,
-      handleMove,
-      storyStateRef,
+      activeSlideIndex,
+      currentSlide,
+      setSelectedAnnoId,
+      setSlides,
     ]);
 
+
   // =========================
-  // START INTERACTION
+  // UPDATE ANNOTATION
   // =========================
 
-  const startInteraction =
+  const updateAnnotation =
     useCallback(
       (
-        event,
-        mode,
-        item
+        annotationId,
+        key,
+        value
       ) => {
-        event.preventDefault();
-        event.stopPropagation();
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
 
-        if (
-          !canvasRef.current
-        ) {
-          return;
-        }
+                return {
+                  ...slide,
 
-        setSelectedChartId(
-          item.id
-        );
+                  annotations: (
+                    slide.annotations ||
+                    []
+                  ).map(
+                    (annotation) =>
+                      annotation.id ===
+                      annotationId
+                        ? {
+                            ...annotation,
 
-        setSelectedAnnoId(
-          null
-        );
-
-        chartInteractionRef.current = {
-          mode,
-
-          itemId:
-            item.id,
-
-          startClientX:
-            event.clientX,
-
-          startClientY:
-            event.clientY,
-
-          startX:
-            item.x ?? 0,
-
-          startY:
-            item.y ?? 0,
-
-          startWidth:
-            item.width ?? 100,
-
-          startHeight:
-            item.height ?? 100,
-
-          startingStoryState:
-            structuredClone(
-              storyStateRef.current
-            ),
-        };
-
-        // Track movement until
-        // mouse is released.
-        document.addEventListener(
-          "mousemove",
-          handleMove
-        );
-
-        // "once" means the browser
-        // removes this listener after
-        // the first mouseup.
-        document.addEventListener(
-          "mouseup",
-          stopInteraction,
-          {
-            once: true,
-          }
+                            [key]:
+                              value,
+                          }
+                        : annotation
+                  ),
+                };
+              }
+            )
         );
       },
       [
-        canvasRef,
-        handleMove,
-        setSelectedAnnoId,
-        setSelectedChartId,
-        stopInteraction,
-        storyStateRef,
+        activeSlideIndex,
+        setSlides,
       ]
     );
 
+
+  // =========================
+  // REMOVE ANNOTATION
+  // =========================
+
+  const removeAnnotation =
+    useCallback(
+      (annotationId) => {
+        setSlides(
+          (previousSlides) =>
+            previousSlides.map(
+              (
+                slide,
+                index
+              ) => {
+                if (
+                  index !==
+                  activeSlideIndex
+                ) {
+                  return slide;
+                }
+
+                return {
+                  ...slide,
+
+                  annotations: (
+                    slide.annotations ||
+                    []
+                  ).filter(
+                    (annotation) =>
+                      annotation.id !==
+                      annotationId
+                  ),
+                };
+              }
+            )
+        );
+
+        if (
+          selectedAnnoId ===
+          annotationId
+        ) {
+          setSelectedAnnoId(
+            null
+          );
+        }
+      },
+      [
+        activeSlideIndex,
+        selectedAnnoId,
+        setSelectedAnnoId,
+        setSlides,
+      ]
+    );
+
+
   return {
-    startChartInteraction:
-      startInteraction,
+    addAnnotation,
+    updateAnnotation,
+    removeAnnotation,
   };
 }
