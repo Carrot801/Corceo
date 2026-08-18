@@ -1473,6 +1473,35 @@ async function duplicateStory({
     client.release();
   }
 }
+async function setStoryFavorite({
+  storyId,
+  userId,
+  isFavorite,
+}) {
+  const result =
+    await pool.query(
+      `
+        UPDATE stories
+
+        SET is_favorite = $1
+
+        WHERE id = $2
+          AND user_id = $3
+
+        RETURNING *
+      `,
+      [
+        isFavorite,
+        storyId,
+        userId,
+      ]
+    );
+
+  return (
+    result.rows[0] ||
+    null
+  );
+}
 
 module.exports = {
   createStory,
@@ -1485,4 +1514,6 @@ module.exports = {
   publishStory,
 
   duplicateStory,
+
+  setStoryFavorite
 };

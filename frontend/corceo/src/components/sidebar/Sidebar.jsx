@@ -29,7 +29,7 @@ function Sidebar({
   chartConfig,
   setChartConfig,
 }) {
-  const [openSection, setOpenSection] = useState("colors");
+  const [openSection, setOpenSection] = useState(null);
 
   const yKeys = Array.isArray(chartConfig.y)
     ? chartConfig.y

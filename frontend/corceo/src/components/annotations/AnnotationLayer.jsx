@@ -35,7 +35,7 @@ function AnnotationLayer({
           pointer-events-none
           absolute
           inset-0
-          z-20
+          z-[40]
         "
         width={width}
         height={height}
@@ -54,22 +54,21 @@ function AnnotationLayer({
 
               return (
                 <marker
-                  key={markerId}
-                  id={markerId}
-                  viewBox="0 0 10 10"
-                  refX="6"
-                  refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
-                  orient="auto-start-reverse"
+                id={markerId}
+                viewBox="0 0 10 10"
+                refX="6"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
                 >
-                  <path
+                <path
                     d="M 0 2 L 8 5 L 0 8 z"
                     fill={
-                      annotation.lineColor ||
-                      "#64748b"
+                    annotation.lineColor ||
+                    "#64748b"
                     }
-                  />
+                />
                 </marker>
               );
             },
@@ -110,7 +109,7 @@ function AnnotationLayer({
                 pointer-events-none
                 absolute
                 inset-0
-                z-30
+                z-50
               "
             >
               <AnnotationShape

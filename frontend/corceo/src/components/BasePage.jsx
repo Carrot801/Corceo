@@ -547,6 +547,43 @@ const sortProjects = (projectList) => {
     },
   );
 };
+
+const sortStories = (
+  storyList
+) => {
+  return [...storyList].sort(
+    (
+      first,
+      second
+    ) => {
+      const favoriteDifference =
+        Number(
+          Boolean(
+            second.is_favorite
+          )
+        ) -
+        Number(
+          Boolean(
+            first.is_favorite
+          )
+        );
+
+      if (
+        favoriteDifference !==
+        0
+      ) {
+        return favoriteDifference;
+      }
+
+      return (
+        Number(second.id) -
+        Number(first.id)
+      );
+    }
+  );
+};
+
+
 const toggleProjectFavorite = async (
   project,
 ) => {
@@ -670,6 +707,153 @@ const nextFavorite =
   }
 };
 
+const toggleStoryFavorite = async (
+  story
+) => {
+  const nextFavorite =
+    !story.is_favorite;
+
+  const updateLocalStory = (
+    storyList,
+    favoriteValue
+  ) =>
+    sortStories(
+      storyList.map(
+        (item) =>
+          item.id ===
+          story.id
+            ? {
+                ...item,
+
+                is_favorite:
+                  favoriteValue,
+              }
+            : item
+      )
+    );
+
+  // Optimistic UI
+  setStories(
+    (previous) =>
+      updateLocalStory(
+        previous,
+        nextFavorite
+      )
+  );
+
+  setTreeStories(
+    (previous) =>
+      updateLocalStory(
+        previous,
+        nextFavorite
+      )
+  );
+
+  setSearchResults(
+    (previous) => ({
+      ...previous,
+
+      stories:
+        updateLocalStory(
+          previous.stories ||
+            [],
+          nextFavorite
+        ),
+    })
+  );
+
+  try {
+    const updatedStory =
+      await apiRequest(
+        `/stories/${story.id}/favorite`,
+        {
+          method:
+            "PATCH",
+
+          body:
+            JSON.stringify({
+              is_favorite:
+                nextFavorite,
+            }),
+        }
+      );
+
+    const applyServerStory =
+      (storyList) =>
+        sortStories(
+          storyList.map(
+            (item) =>
+              item.id ===
+              updatedStory.id
+                ? updatedStory
+                : item
+          )
+        );
+
+    setStories(
+      applyServerStory
+    );
+
+    setTreeStories(
+      applyServerStory
+    );
+
+    setSearchResults(
+      (previous) => ({
+        ...previous,
+
+        stories:
+          applyServerStory(
+            previous.stories ||
+              []
+          ),
+      })
+    );
+
+  } catch (error) {
+    console.error(
+      "Story favorite update failed:",
+      error
+    );
+
+    // Roll back optimistic UI
+    setStories(
+      (previous) =>
+        updateLocalStory(
+          previous,
+          Boolean(
+            story.is_favorite
+          )
+        )
+    );
+
+    setTreeStories(
+      (previous) =>
+        updateLocalStory(
+          previous,
+          Boolean(
+            story.is_favorite
+          )
+        )
+    );
+
+    setSearchResults(
+      (previous) => ({
+        ...previous,
+
+        stories:
+          updateLocalStory(
+            previous.stories ||
+              [],
+            Boolean(
+              story.is_favorite
+            )
+          ),
+      })
+    );
+  }
+};
+
 const deleteStory = async (storyId) => {
   try {
     await apiRequest(`/stories/${storyId}`, {
@@ -703,10 +887,20 @@ const deleteStory = async (storyId) => {
           )
         : projectSource;
 
-    const displayedStories = isSearching 
-      ? searchResults.stories 
-      : stories;
+    const storySource =
+      isSearching
+        ? searchResults.stories
+        : stories;
 
+    const displayedStories =
+      showFavoritesOnly
+        ? storySource.filter(
+            (story) =>
+              Boolean(
+                story.is_favorite
+              )
+          )
+        : storySource;
     const displayedFolders = isSearching
       ? (searchResults.folders || [])
       : (folders || []).filter(f => f.parent_id === activeFolder);
@@ -758,20 +952,26 @@ const deleteStory = async (storyId) => {
         >
           ★ Favorites
         </button>
-        <div className="flex flex-col gap-2 text-gray-600">
-            
+        <div className="app-text-secondary flex flex-col gap-2">            
             <span className="font-semibold">Projects</span>
             <button
-              onClick={() => {
-                setActiveFolder(null);
+            onClick={() => {
+              setActiveFolder(null);
               getProjects(null);
               getStories(null);
               loadTreeItemsForFolder(null);
-              }}
-              className="bg-gray-200 text-sm text-left text-gray-700 py-2 rounded"
-            >
-              My projects
-            </button>
+            }}
+            className="
+              app-hover
+              app-text
+              rounded
+              py-2
+              text-left
+              text-sm
+            "
+          >
+            My projects
+          </button>
             <div className="left-5 relative">
               {renderFolders(null)}
               {addingFolder ? (
@@ -792,8 +992,16 @@ const deleteStory = async (storyId) => {
 
                 <button
                   onClick={() => setAddingFolder(true)}
-                  className="bg-transparent text-sm text-left app-text-muted py-2 rounded hover:text-gray-900"
-                >
+                  className="
+                    app-text-muted
+                    app-hover
+                    rounded
+                    bg-transparent
+                    py-2
+                    text-left
+                    text-sm
+                  " 
+              >
                   + Add new folder
                 </button>
 
@@ -849,33 +1057,133 @@ const deleteStory = async (storyId) => {
 
           {/* 2. Map through displayedFolders (either current folder or search results) */}
           {displayedFolders.map((folder) => (
+          <div
+            key={folder.id}
+            onClick={() => {
+              setActiveFolder(folder.id);
+
+              setOpenFolders((prev) => ({
+                ...prev,
+                [folder.id]: true,
+              }));
+
+              getProjects(folder.id);
+              getStories(folder.id);
+              loadTreeItemsForFolder(folder.id);
+            }}
+            className="
+              app-card
+              group
+              flex
+              aspect-square
+              w-full
+              max-w-[280px]
+              cursor-pointer
+              flex-col
+              overflow-hidden
+              rounded-lg
+              border
+              transition-all
+              hover:-translate-y-0.5
+              hover:shadow-md
+            "
+          >
             <div
-              key={folder.id}
-              onClick={() => {
-                setActiveFolder(folder.id);
-
-                setOpenFolders((prev) => ({
-                  ...prev,
-                  [folder.id]: true,
-                }));
-
-                getProjects(folder.id);
-                getStories(folder.id);
-                loadTreeItemsForFolder(folder.id);
-              }}
-              className="app-card aspect-square w-full max-w-[280px]flex justify-center p-4 rounded-lg border hover:shadow cursor-pointer"
-            
+              className="
+                app-surface
+                app-border
+                flex
+                flex-1
+                items-center
+                justify-center
+                border-b
+              "
             >
-              <div className="text-lg app-text font-semibold">
+              <span
+                className="
+                  text-6xl
+                  transition-transform
+                  duration-200
+                  group-hover:scale-105
+                "
+              >
+                📁
+              </span>
+            </div>
+
+            <div className="p-3">
+              <div
+                className="
+                  app-text
+                  truncate
+                  text-base
+                  font-semibold
+                "
+                title={folder.name}
+              >
                 {folder.name}
               </div>
+
+              <div className="app-text-muted mt-1 text-xs">
+                Folder
+              </div>
             </div>
-          ))}
+          </div>
+        ))}
           {displayedStories.map((story) => (
             <div
               key={story.id}
               className="app-card relative aspect-square w-full max-w-[280px]rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
             >
+              <button
+              type="button"
+              aria-label={
+                story.is_favorite
+                  ? "Remove story from favorites"
+                  : "Add story to favorites"
+              }
+              title={
+                story.is_favorite
+                  ? "Remove from favorites"
+                  : "Add to favorites"
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+
+                toggleStoryFavorite(
+                  story
+                );
+              }}
+              className="
+                absolute
+                left-2
+                top-2
+                z-30
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-full
+                text-xl
+                shadow-sm
+                transition
+                hover:bg-black/5
+                dark:hover:bg-white/10
+              "
+            >
+              <span
+                className={
+                  story.is_favorite
+                    ? "text-amber-500"
+                    : "text-slate-400"
+                }
+              >
+                {story.is_favorite
+                  ? "★"
+                  : "☆"}
+              </span>
+</button>
               <div className="absolute top- right-2 z-20">
                 <button
                   onClick={(e) => {
@@ -986,7 +1294,8 @@ const deleteStory = async (storyId) => {
                   text-xl
                   shadow-sm
                   transition
-                  hover:bg-white
+                  hover:bg-black/5
+                  dark:hover:bg-white/10
                 "
               >
                 <span

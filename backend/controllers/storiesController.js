@@ -812,6 +812,74 @@ const deleteSlide = async (
   }
 };
 
+const toggleStoryFavorite = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const storyId =
+      Number(req.params.id);
+
+    const userId =
+      req.user.userId;
+
+    const {
+      is_favorite,
+    } = req.body;
+
+    if (
+      !Number.isInteger(
+        storyId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid story ID",
+        });
+    }
+
+    if (
+      typeof is_favorite !==
+      "boolean"
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "is_favorite must be boolean",
+        });
+    }
+
+    const story =
+      await storyService
+        .setStoryFavorite({
+          storyId,
+          userId,
+
+          isFavorite:
+            is_favorite,
+        });
+
+    if (!story) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Story not found",
+        });
+    }
+
+    return res.json(
+      story
+    );
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 module.exports = { createStory, 
@@ -823,5 +891,6 @@ module.exports = { createStory,
   duplicateSlide,
   deleteSlide,
   duplicateStory,
-  deleteStory
+  deleteStory,
+  toggleStoryFavorite
  };

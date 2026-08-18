@@ -40,16 +40,15 @@ const [
     width: 0,
     height: 0,
   });
-const [
-  hoveredChartId,
-  setHoveredChartId,
-] = useState(null);
+
+
   const canvasRef =
     useRef(null);
 
   // =========================
   // LOAD STORY
   // =========================
+
 useEffect(() => {
   let cancelled = false;
 
@@ -76,21 +75,10 @@ useEffect(() => {
       setStory(publicStory);
       return;
 
-    } catch (privateError) {
-      if (cancelled) {
-        return;
-      }
-
-      console.error(
-        "Story load failed:",
-        privateError
-      );
-
-      setLoadError(
-        "This story does not exist, is private, or you do not have permission to view it."
-      );
+    } catch {
+      // Story may simply be unpublished.
+      // Try authenticated owner access below.
     }
-
 
     // =========================
     // 2. TRY PRIVATE OWNER VIEW
@@ -130,6 +118,8 @@ useEffect(() => {
     cancelled = true;
   };
 }, [storyId]);
+
+
   // =========================
   // OBSERVE CANVAS SIZE
   // =========================
@@ -174,6 +164,8 @@ useEffect(() => {
     story,
     activeSlideIndex,
   ]);
+
+  
 
   // =========================
   // LOADING
@@ -233,6 +225,14 @@ useEffect(() => {
       activeSlideIndex
     ];
 
+    const slideTitle =
+  currentSlide?.description?.trim() ||
+  story?.name?.trim() ||
+  "";
+
+const showSlideTitle =
+  slideTitle &&
+  slideTitle !== "Untitled Story";
   // =========================
   // NAVIGATION
   // =========================
@@ -281,18 +281,13 @@ useEffect(() => {
         p-8
         shadow-xl
       ">
-        {/* ================= */}
-        {/* SLIDE TITLE */}
-        {/* ================= */}
 
-        <h1 className="mb-6 text-3xl font-bold">
-          {currentSlide?.description ||
-            story.name}
-        </h1>
 
-        {/* ================= */}
-        {/* SLIDE CANVAS */}
-        {/* ================= */}
+        {showSlideTitle && (
+          <h1 className="mb-6 text-3xl font-bold">
+            {slideTitle}
+          </h1>
+        )}
 
         <div
           ref={canvasRef}
@@ -322,18 +317,6 @@ useEffect(() => {
         overflow-visible
       "
 
-      onMouseEnter={() => {
-        setHoveredChartId(
-          item.id
-        );
-      }}
-
-      onMouseLeave={() => {
-        setHoveredChartId(
-          null
-        );
-      }}
-
       style={{
         left:
           `${
@@ -360,11 +343,7 @@ useEffect(() => {
           }%`,
 
         zIndex:
-          hoveredChartId ===
-          item.id
-            ? 10000
-            : item.zIndex ??
-              1,
+  item.zIndex ?? 1,
       }}
     >
                 <div className="relative h-full w-full overflow-visible bg-white">

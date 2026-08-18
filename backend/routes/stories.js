@@ -11,7 +11,8 @@ const {
   duplicateSlide,
   deleteSlide,
   duplicateStory,
-  deleteStory
+  deleteStory,
+  toggleStoryFavorite,
 } = require("../controllers/storiesController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -19,6 +20,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 router.get("/public/:id", getPublicStory);
 router.post("/",authMiddleware, createStory);
 router.get("/",authMiddleware, getStories);
+router.patch("/:id/favorite",authMiddleware,toggleStoryFavorite);
 router.get("/:id",authMiddleware, getStory);
 router.put("/:storyId",authMiddleware, updateStory);
 router.put("/:storyId/publish", authMiddleware, publishStory);

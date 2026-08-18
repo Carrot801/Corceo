@@ -320,14 +320,19 @@ useEffect(() => {
   );
   }
   return (
-    <div 
-    className="w-full p-4 overflow-auto"
+  <div
+    className="
+      app-surface
+      app-text
+      w-full
+      overflow-auto
+      p-4
+    "
     onDrop={handleDrop}
     onDragOver={handleDragOver}
   >
 
-      <table className="w-full border text-sm">
-
+<table className="app-border w-full border text-sm">
         <thead>
           <tr>
             {columns.map(col => (
@@ -353,10 +358,17 @@ useEffect(() => {
                 });
               }}
               className={`
-                border px-2 py-1 cursor-pointer
-                ${selectedColumn === col
-                  ? "bg-blue-600 text-white"
-                  : "bg-black text-white"
+                app-border
+                cursor-pointer
+                border
+                px-2
+                py-1
+                transition-colors
+
+                ${
+                  selectedColumn === col
+                    ? "bg-blue-600 text-white"
+                    : "app-surface app-text hover:bg-black/5 dark:hover:bg-white/10"
                 }
               `}
             >
@@ -402,7 +414,7 @@ useEffect(() => {
                       }
 
                     }}
-                    className="text-black px-1"
+                    className="app-input app-text w-full px-1"
                   />
                 ) : (
                   col.startsWith("__new_")
@@ -421,7 +433,12 @@ useEffect(() => {
               {columns.map(col => (
                 <td
                   key={col}
-                  className="border px-2 py-1"
+                  className="
+                    app-border
+                    border
+                    px-2
+                    py-1
+                  "
                 >
                   <input
                     value={row[col]}
@@ -432,7 +449,12 @@ useEffect(() => {
                         e.target.value
                       )
                     }
-                    className="w-full bg-transparent"
+                    className="
+                      app-text
+                      w-full
+                      bg-transparent
+                      outline-none
+                    "
                   />
                 </td>
               ))}
@@ -448,14 +470,30 @@ useEffect(() => {
       )}
       {contextMenu.visible && (
       <div
-        className="fixed bg-white border rounded shadow-lg z-50"
+        className="
+          app-surface
+          app-border
+          app-text
+          fixed
+          z-50
+          rounded
+          border
+          shadow-lg
+        "
         style={{
           left: contextMenu.x,
           top: contextMenu.y,
         }}
       >
         <button
-          className="block w-full text-left px-4 py-2 hover:bg-red-50"
+          className="
+            block
+            w-full
+            px-4
+            py-2
+            text-left
+            hover:bg-red-500/10
+          "
           onClick={() => {
             deleteColumn(contextMenu.column);
 
@@ -468,7 +506,15 @@ useEffect(() => {
         </button>
 
         <button
-          className="block w-full text-left px-4 py-2 hover:bg-slate-100"
+          className="
+            block
+            w-full
+            px-4
+            py-2
+            text-left
+            hover:bg-black/5
+            dark:hover:bg-white/10
+          "
           onClick={() => {
             setEditingColumn(contextMenu.column);
             setNewColumnName(contextMenu.column);
@@ -481,7 +527,14 @@ useEffect(() => {
           Rename Column
         </button>
         <button
-          className="block w-full text-left px-4 py-2 hover:bg-green-50"
+        className="
+          block
+          w-full
+          px-4
+          py-2
+          text-left
+          hover:bg-green-500/10
+        "
           onClick={() => {
             addColumn();
             setContextMenu({
