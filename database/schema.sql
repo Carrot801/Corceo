@@ -288,6 +288,8 @@ CREATE TABLE stories (
     is_published BOOLEAN
         NOT NULL
         DEFAULT FALSE,
+    
+    is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
 
     image_url TEXT,
 
@@ -463,39 +465,3 @@ ON slide_annotations(slide_id);
 
 CREATE INDEX idx_slide_annotations_user_id
 ON slide_annotations(user_id);
-
-
--- =========================================
--- STORY CHART INSTANCES
--- =========================================
-
-CREATE TABLE story_chart_instances (
-    id SERIAL PRIMARY KEY,
-
-    story_id INTEGER NOT NULL,
-
-    chart_id INTEGER NOT NULL,
-
-    override_settings JSONB,
-
-    override_data JSONB,
-
-    CONSTRAINT story_chart_instances_story_id_fkey
-        FOREIGN KEY (story_id)
-        REFERENCES stories(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT story_chart_instances_chart_id_fkey
-        FOREIGN KEY (chart_id)
-        REFERENCES charts(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT story_chart_instances_story_chart_unique
-        UNIQUE (story_id, chart_id)
-);
-
-
-
-
-CREATE INDEX idx_story_chart_instances_chart_id
-ON story_chart_instances(chart_id);
