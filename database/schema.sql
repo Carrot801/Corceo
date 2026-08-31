@@ -87,10 +87,6 @@ CREATE TABLE projects (
 
     image_url TEXT,
 
-    search_vector TSVECTOR,
-
-    last_opened_at TIMESTAMP,
-
     is_favorite BOOLEAN
         NOT NULL
         DEFAULT FALSE,
@@ -112,9 +108,6 @@ CREATE TABLE projects (
 CREATE INDEX idx_projects_name
 ON projects(name);
 
-CREATE INDEX idx_projects_search
-ON projects
-USING GIN(search_vector);
 
 CREATE INDEX idx_projects_user_id
 ON projects(user_id);
@@ -378,14 +371,6 @@ CREATE TABLE slide_content (
 
     position INTEGER,
 
-    content_type VARCHAR(50),
-
-    text_content TEXT,
-
-    image_url TEXT,
-
-    annotations JSONB
-        DEFAULT '[]'::jsonb,
 
     user_id INTEGER NOT NULL,
 
