@@ -25,8 +25,7 @@ The application allows users to import and edit tabular data, create configurabl
 - Presentation builder
 - Slide annotations
 - Chart positioning and resizing
-- Publisshing charts and stories through public links
-- Public presentation publishing
+- Publishing charts and stories through public links
 - PNG chart export
 - PDF presentation export
 - Undo and redo for visualization changes
@@ -42,7 +41,6 @@ Corceo supports the following visualization types:
 - Donut chart
 - Scatter plot
 - Radar chart
-- Funnel chart
 - Heatmap
 - Treemap
 - Waterfall chart
