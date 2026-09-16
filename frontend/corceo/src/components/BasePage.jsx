@@ -20,10 +20,19 @@ function BasePage() {
   const [openMenu, setOpenMenu] = useState(null);
   const [renamingProject, setRenamingProject] = useState(null);
   const [newProjectName, setNewProjectName] = useState("");
+  const [renamingFolder, setRenamingFolder] =useState(null);
+  const [newFolderName, setNewFolderName] =useState("");
+  const [folderRenameSource, setFolderRenameSource] =useState(null);
   const [search, setSearch] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] =
   useState(false);
-  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    folderId: null,
+    folderName: "",
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchResults, setSearchResults] = useState({
   folders: [],
@@ -149,6 +158,103 @@ const createFolder = async () => {
       console.error("getProjects failed:", err);
     }
   };
+  const handleDeleteFolder = async (folder_id, folderName) => {
+  if (!folder_id) {
+    console.error(
+      "Cannot delete folder: missing folder ID",
+      {
+        folderId: folder_id,
+        folderName,
+      }
+    );
+
+    return;
+  }
+    const confirmed = window.confirm(
+    `Delete "${folderName}"?\n\nProjects and stories inside this folder will not be deleted.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await apiRequest(`/folders/${folder_id}`, {
+      method: "DELETE",
+    });
+
+    if (activeFolder === folder_id) {
+      setActiveFolder(null);
+      await getProjects(null);
+      await getStories(null);
+    }
+
+    await getFolders();
+
+    setOpenMenu(null);
+
+  } catch (error) {
+    console.error(
+      "Failed to delete folder:",
+      error
+    );
+  }
+};
+const renameFolder = async (
+  folderId
+) => {
+  const trimmedName =
+    newFolderName.trim();
+
+  if (!trimmedName) {
+    return;
+  }
+
+  try {
+    const updatedFolder =
+      await apiRequest(
+        `/folders/${folderId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            name: trimmedName,
+          }),
+        }
+      );
+
+    setFolders((prev) =>
+      prev.map((folder) =>
+        folder.id === folderId
+          ? updatedFolder
+          : folder
+      )
+    );
+
+    setSearchResults((prev) => ({
+      ...prev,
+      folders: (
+        prev.folders || []
+      ).map((folder) =>
+        folder.id === folderId
+          ? updatedFolder
+          : folder
+      ),
+    }));
+
+    setRenamingFolder(null);
+    setNewFolderName("");
+    setFolderRenameSource(null);
+
+  } catch (error) {
+    console.error(
+      "Failed to rename folder:",
+      error
+    );
+
+    alert("Failed to rename folder.");
+  }
+};
+
    const getStories = async (folderId) => {
     try {
 
@@ -176,9 +282,21 @@ const createFolder = async () => {
       {currentFolders.map((folder) => (
         <div key={`folder-${folder.id}`}>
           {/* FOLDER ROW */}
-          <div 
+          <div
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              setContextMenu({
+                visible: true,
+                x: e.clientX,
+                y: e.clientY,
+                folderId: folder.id,
+                folderName: folder.name,
+              });
+            }}
             className={`flex items-center gap-1 py-1.5 text-sm transition-colors cursor-pointer
-            ${activeFolder === folder.id 
+            ${activeFolder === folder.id
               ? "app-active"
               : "app-text-secondary app-hover"
             }`}
@@ -205,6 +323,13 @@ const createFolder = async () => {
             onClick={(e) => {
               e.stopPropagation();
 
+              if (
+                renamingFolder === folder.id &&
+                folderRenameSource === "tree"
+              ) {
+                return;
+              }
+
               setActiveFolder(folder.id);
 
               setOpenFolders((prev) => ({
@@ -218,7 +343,48 @@ const createFolder = async () => {
             }}
           >
             <span>📁</span>
-            {folder.name}
+
+            {renamingFolder === folder.id &&
+            folderRenameSource === "tree" ? (
+              <input
+                autoFocus
+                value={newFolderName}
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+                onChange={(e) =>
+                  setNewFolderName(
+                    e.target.value
+                  )
+                }
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+
+                  if (e.key === "Enter") {
+                    renameFolder(folder.id);
+                  }
+
+                  if (e.key === "Escape") {
+                    setRenamingFolder(null);
+                    setNewFolderName("");
+                    setFolderRenameSource(null);
+                  }
+                }}
+                className="
+                  app-input
+                  min-w-0
+                  flex-1
+                  rounded
+                  px-1
+                  py-0.5
+                  text-sm
+                "
+              />
+            ) : (
+              <span className="truncate">
+                {folder.name}
+              </span>
+            )}
           </div>
           </div>
 
@@ -1075,6 +1241,7 @@ const deleteStory = async (storyId) => {
               app-card
               group
               flex
+              relative
               aspect-square
               w-full
               max-w-[280px]
@@ -1088,6 +1255,66 @@ const deleteStory = async (storyId) => {
               hover:shadow-md
             "
           >
+            {/* FOLDER MENU */}
+            <div className="absolute top-1 right-2 z-20">
+              <button
+                type="button"
+                className="app-icon-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+
+                  setOpenMenu(
+                    openMenu === `folder-${folder.id}`
+                      ? null
+                      : `folder-${folder.id}`
+                  );
+                }}
+              >
+                ⋮
+              </button>
+
+              {openMenu === `folder-${folder.id}` && (
+              <div
+                className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+              >
+                <button
+                  className="app-menu-item"
+                  onClick={() => {
+                    setRenamingFolder(
+                      folder.id
+                    );
+
+                    setNewFolderName(
+                      folder.name
+                    );
+
+                    setFolderRenameSource(
+                      "card"
+                    );
+
+                    setOpenMenu(null);
+                  }}
+                >
+                  Rename
+                </button>
+
+                <button
+                  className="app-menu-item app-menu-danger"
+                  onClick={() =>
+                    handleDeleteFolder(
+                      folder.id,
+                      folder.name
+                    )
+                  }
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+            </div>
             <div
               className="
                 app-surface
@@ -1099,6 +1326,7 @@ const deleteStory = async (storyId) => {
                 border-b
               "
             >
+              
               <span
                 className="
                   text-6xl
@@ -1112,17 +1340,62 @@ const deleteStory = async (storyId) => {
             </div>
 
             <div className="p-3">
-              <div
-                className="
-                  app-text
-                  truncate
-                  text-base
-                  font-semibold
-                "
-                title={folder.name}
-              >
-                {folder.name}
-              </div>
+              {renamingFolder === folder.id &&
+                folderRenameSource === "card" ? (
+                <input
+                  autoFocus
+                  value={newFolderName}
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                  onChange={(e) =>
+                    setNewFolderName(
+                      e.target.value
+                    )
+                  }
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+
+                    if (e.key === "Enter") {
+                      renameFolder(
+                        folder.id
+                      );
+                    }
+
+                    if (e.key === "Escape") {
+                      setRenamingFolder(null);
+                      setNewFolderName("");
+                      setFolderRenameSource(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    setRenamingFolder(null);
+                    setNewFolderName("");
+                    setFolderRenameSource(null);
+                  }}
+                  className="
+                    app-input
+                    w-full
+                    rounded
+                    border
+                    p-1
+                    text-base
+                    font-semibold
+                  "
+                />
+              ) : (
+                <div
+                  className="
+                    app-text
+                    truncate
+                    text-base
+                    font-semibold
+                  "
+                  title={folder.name}
+                >
+                  {folder.name}
+                </div>
+              )}
 
               <div className="app-text-muted mt-1 text-xs">
                 Folder
@@ -1424,33 +1697,87 @@ const deleteStory = async (storyId) => {
 
       </div>
       {contextMenu.visible && (
-          <div
-            className="app-card fixed border shadow-xl rounded-lg p-3 z-50 w-48 "
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-            onMouseLeave={() =>
+        <div
+          className="
+            app-menu
+            fixed
+            z-50
+            w-44
+            rounded-lg
+            py-1
+            shadow-xl
+          "
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+          onClick={(e) =>
+            e.stopPropagation()
+          }
+          onMouseLeave={() =>
+            setContextMenu((prev) => ({
+              ...prev,
+              visible: false,
+            }))
+          }
+        >
+        <button
+          type="button"
+          className="
+            app-menu-item
+            w-full
+            text-left
+          "
+          onClick={() => {
+            const folderId =
+              contextMenu.folderId;
+
+            const folderName =
+              contextMenu.folderName;
+
+            setRenamingFolder(folderId);
+            setNewFolderName(folderName);
+
+            setFolderRenameSource("tree");
+
+            setContextMenu((prev) => ({
+              ...prev,
+              visible: false,
+            }));
+          }}
+        >
+          Rename
+        </button>
+          <button
+            type="button"
+            className="
+              app-menu-item
+              app-menu-danger
+              w-full
+              text-left
+            "
+            onClick={() => {
+              const folderId =
+                contextMenu.folderId;
+
+              const folderName =
+                contextMenu.folderName;
+
               setContextMenu((prev) => ({
                 ...prev,
                 visible: false,
-              }))
-            }
+              }));
+
+              handleDeleteFolder(
+                folderId,
+                folderName
+              );
+            }}
           >
-            <div className="text-xs font-bold mb-2 app-text uppercase">New Item</div>
-            <input
-              autoFocus
-              placeholder="Folder name..."
-              className="border rounded w-full p-1 mb-2 text-sm"
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  // You need to ensure your createFolder function accepts a parentId
-                  // logic: createFolder(contextMenu.folderId)
-                  createFolderWithParent(contextMenu.folderId);
-                }
-              }}
-            />
-          </div>
-        )}
+            Delete
+          </button>
+        </div>
+      )}
 
       <AuthRequiredModal
         open={showAuthModal}

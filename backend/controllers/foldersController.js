@@ -1,6 +1,8 @@
 const {
   getFolders,
   createFolder,
+  deleteFolderById,
+  renameFolderById,
 } = require("../models/foldersModel");
 
 const {
@@ -117,7 +119,106 @@ const addFolder = async (
   }
 };
 
+// =========================
+// DELETE FOLDER
+// =========================
+
+const deleteFolder = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const userId =
+      req.user.userId;
+
+    const folderId =
+      parsePositiveInt(
+        req.params.folderId,
+        "folder_id"
+      );
+
+    const deletedFolder =
+      await deleteFolderById(
+        folderId,
+        userId
+      );
+
+    if (!deletedFolder) {
+      return res
+        .status(404)
+        .json({
+          error: "Folder not found",
+        });
+    }
+
+    return res.json({
+      message:
+        "Folder deleted successfully",
+      folder: deletedFolder,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// =========================
+// RENAME FOLDER
+// =========================
+
+const renameFolder = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const userId =
+      req.user.userId;
+
+    const folderId =
+      parsePositiveInt(
+        req.params.folderId,
+        "folder_id"
+      );
+
+    const name =
+      requireString(
+        req.body.name,
+        "name",
+        {
+          min: 1,
+          max: 120,
+        }
+      );
+
+    const renamedFolder =
+      await renameFolderById(
+        folderId,
+        name,
+        userId
+      );
+
+    if (!renamedFolder) {
+      return res
+        .status(404)
+        .json({
+          error: "Folder not found",
+        });
+    }
+
+    return res.json(
+      renamedFolder
+    );
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   fetchFolders,
   addFolder,
+  deleteFolder,
+  renameFolder,
 };
