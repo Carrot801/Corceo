@@ -14,8 +14,8 @@ function ChartTypeSection({
   openSection,
   toggleSection,
 }) {
-    const isOpen =
-  openSection === "chart";
+    const isOpen = openSection === "chart";
+
   return (
     <div className="app-border border-b">
         <button
@@ -139,23 +139,43 @@ function ChartTypeSection({
             <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                 Sort
             </label>
+
             <div className="app-surface-secondary app-border grid grid-cols-3 gap-1 p-1 rounded-xl border">
-                {["none", "asc", "desc"].map((val) => (
-                <button
+                {["none", "asc", "desc"].map(
+                (val) => (
+                    <button
                     key={val}
-                    onClick={() => setChartConfig(prev => ({ ...prev, sort: val }))}
+                    type="button"
+                    onClick={() =>
+                        setChartConfig((prev) => ({
+                        ...prev,
+
+                        sorting: {
+                            ...prev.sorting,
+                            direction: val,
+                        },
+                        }))
+                    }
                     className={`py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
-                    chartConfig.sort === val
+                        chartConfig.sorting
+                        ?.direction === val
                         ? "app-surface text-[rgb(var(--color-primary))] shadow-sm border border-[rgb(var(--color-primary))]"
                         : "app-text-muted hover:text-[rgb(var(--color-text))]"
                     }`}
-                >
-                    {val === "none" ? "None" : val === "asc" ? "Asc" : "Desc"}
-                </button>
-                ))}
+                    >
+                    {val === "none"
+                        ? "None"
+                        : val === "asc"
+                        ? "Asc"
+                        : "Desc"}
+                    </button>
+                )
+                )}
             </div>
             </div>
+
         </div>
+        
         )}
     </div>
   );

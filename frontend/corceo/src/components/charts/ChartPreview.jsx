@@ -8,7 +8,6 @@ import DonutChartView from "./DonutChartView";
 import ScatterChartView from "./ScatterChartView";
 import HeatmapChartView from "./HeatmapChartView";
 import RadarChartView from "./RadarChartView";
-import FunnelChartView from "./FunnelChartView";
 import ComposedChartView from "./ComposedChartView";
 import TreemapChartView from "./TreemapChartView";
 import AreaChartView from "./AreaChartView";
@@ -40,7 +39,6 @@ function ChartPreview({
     scatter: ScatterChartView,
     radar: RadarChartView,
     composed: ComposedChartView,
-    funnel: FunnelChartView,
     heatmap: HeatmapChartView,
     treemap: TreemapChartView,
     waterfall: WaterfallChartView,

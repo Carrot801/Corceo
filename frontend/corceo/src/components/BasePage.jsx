@@ -1051,7 +1051,7 @@ const deleteStory = async (storyId) => {
               className="app-create-card flex aspect-square w-full max-w-[280px] cursor-pointer items-center justify-center rounded-lg"
               onClick={createProject}
             >
-              + Create project
+              + Create visualization
             </div>
           )}
 

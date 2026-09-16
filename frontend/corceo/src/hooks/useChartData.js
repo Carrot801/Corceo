@@ -105,6 +105,177 @@ function applyFilters(rawData, filters = []) {
     });
   });
 }
+
+function applyDateRange(
+  rawData,
+  dateRange
+) {
+  if (
+    !dateRange?.field ||
+    (!dateRange?.from && !dateRange?.to)
+  ) {
+    return rawData;
+  }
+
+  const field = dateRange.field;
+
+  const fromDate =
+    dateRange.from
+      ? new Date(`${dateRange.from}T00:00:00`)
+      : null;
+
+  const toDate =
+    dateRange.to
+      ? new Date(`${dateRange.to}T23:59:59.999`)
+      : null;
+
+  return rawData.filter((row) => {
+    const rawValue = row[field];
+
+    if (
+      rawValue === null ||
+      rawValue === undefined ||
+      rawValue === ""
+    ) {
+      return false;
+    }
+
+    const rowDate = new Date(rawValue);
+
+    if (Number.isNaN(rowDate.getTime())) {
+      return false;
+    }
+
+    if (
+      fromDate &&
+      rowDate < fromDate
+    ) {
+      return false;
+    }
+
+    if (
+      toDate &&
+      rowDate > toDate
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function groupDateData(
+  rawData,
+  grouping
+) {
+  if (
+    !grouping?.enabled ||
+    !grouping?.field ||
+    !grouping?.unit
+  ) {
+    return rawData;
+  }
+
+  const {
+    field,
+    unit,
+  } = grouping;
+
+  return rawData.map((row) => {
+    const rawValue = row[field];
+
+    if (
+      rawValue === null ||
+      rawValue === undefined ||
+      rawValue === ""
+    ) {
+      return row;
+    }
+
+    const date = new Date(rawValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return row;
+    }
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    let groupedValue;
+
+    switch (unit) {
+      case "day": {
+        groupedValue =
+          `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+        break;
+      }
+
+      case "week": {
+        const start = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate()
+        );
+
+        const weekday =
+          start.getDay() || 7;
+
+        start.setDate(
+          start.getDate() -
+            weekday +
+            1
+        );
+
+        groupedValue =
+          `${start.getFullYear()}-${String(
+            start.getMonth() + 1
+          ).padStart(2, "0")}-${String(
+            start.getDate()
+          ).padStart(2, "0")}`;
+
+        break;
+      }
+
+      case "quarter": {
+        const quarter =
+          Math.floor(
+            (month - 1) / 3
+          ) + 1;
+
+        groupedValue =
+          `${year} Q${quarter}`;
+
+        break;
+      }
+
+      case "year": {
+        groupedValue =
+          String(year);
+
+        break;
+      }
+
+      case "month":
+      default: {
+        groupedValue =
+          `${year}-${String(month).padStart(
+            2,
+            "0"
+          )}`;
+
+        break;
+      }
+    }
+
+    return {
+      ...row,
+      [field]: groupedValue,
+    };
+  });
+}
+
 function aggregateData(
   rawData,
   xField,
@@ -359,14 +530,36 @@ const filteredRawData = applyFilters(
   chartConfig.filters
 );
 
+const rangeFilteredData =
+  applyDateRange(
+    filteredRawData,
+    chartConfig.dateRange
+  );
+
+const groupedRawData = groupDateData(
+  rangeFilteredData,
+  chartConfig.grouping
+);
+
 const tooltipExtraFields =
   settings.tooltipExtraFields ?? [];
 
+const xField =
+  chartConfig.grouping?.enabled &&
+  chartConfig.grouping?.field
+    ? chartConfig.grouping.field
+    : chartConfig.x;
+
+const aggregationMode =
+  chartConfig.grouping?.enabled
+    ? "sum"
+    : chartConfig.aggregation;
+
 let rows = aggregateData(
-  filteredRawData,
-  chartConfig.x,
+  groupedRawData,
+  xField,
   yKeys,
-  chartConfig.aggregation,
+  aggregationMode,
   tooltipExtraFields
 );
 
@@ -405,6 +598,8 @@ rows = applyRanking(
   chartConfig.sorting,
   chartConfig.ranking,
   chartConfig.filters,
+  chartConfig.grouping,
+  chartConfig.dateRange,
   settings.hideZeros,
   settings.tooltipExtraFields,
 ]);

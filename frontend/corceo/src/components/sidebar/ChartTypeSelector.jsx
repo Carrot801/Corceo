@@ -78,7 +78,7 @@ function ChartTypeSelector({
   };
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="grid grid-cols-2 gap-2 p-2">
       {chartTypes.map((type) => {
         const isActive = chartConfig?.type === type.id;
         const Icon = type.Icon;
@@ -89,8 +89,8 @@ function ChartTypeSelector({
             key={type.id}
             onClick={() => handleTypeChange(type.id)}
             className={`
-              flex w-full items-center justify-between
-              rounded-xl border px-3 py-2
+              flex min-w-0 items-center gap-2
+              rounded-lg border px-2 py-2
               transition-all
               ${
                 isActive
@@ -114,7 +114,7 @@ function ChartTypeSelector({
             <div className="flex items-center gap-3">
               <div
                 className={`
-                  flex h-10 w-10
+                  flex h-8 w-8 shrink-0
                   items-center justify-center
                   rounded-lg
                   transition-colors
@@ -132,43 +132,26 @@ function ChartTypeSelector({
                 `}
               >
                 {Icon ? (
-                  <Icon size={24} strokeWidth={2} />
+                  <Icon size={18} strokeWidth={2} />
                 ) : (
                   previews[type.id] ?? null
                 )}
               </div>
 
-              <div className="text-left">
-                <div
-                  className={`
-                    text-sm font-semibold
-                    ${
-                      isActive
-                        ? "text-[rgb(var(--color-primary))]"
-                        : "text-[rgb(var(--color-text))]"
-                    }
-                  `}
-                >
-                  {type.label}
-                </div>
-
-                <div className="text-[11px] text-[rgb(var(--color-text-muted))]">
-                  {type.id} chart
-                </div>
+              <div
+                className={`
+                  min-w-0 truncate text-xs font-semibold
+                  ${
+                    isActive
+                      ? "text-[rgb(var(--color-primary))]"
+                      : "text-[rgb(var(--color-text))]"
+                  }
+                `}
+              >
+                {type.label}
               </div>
             </div>
 
-            {/* RIGHT */}
-            <div
-              className={`
-                h-2 w-2 rounded-full
-                ${
-                  isActive
-                    ? "bg-[rgb(var(--color-primary))]"
-                    : "bg-[rgb(var(--color-border-strong))]"
-                }
-              `}
-            />
           </button>
         );
       })}

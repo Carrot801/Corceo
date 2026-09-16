@@ -2,38 +2,38 @@
 
 Corceo is a web application for creating interactive data visualizations and data-driven stories from CSV and XLSX files.
 
-The application allows users to import tabular data, edit datasets, configure interactive charts, organize projects, create presentation-style stories, add annotations, export charts as PNG images, and publish charts or stories through public links.
+The application allows users to import and edit tabular data, create configurable visualizations, filter and group data, organize projects, build presentation-style data stories, add annotations, export charts as PNG images, and publish charts or stories through public links.
 
 ## Main Features
 
 - User registration and authentication
 - JWT-based authorization
-- CSV import
-- XLSX import
+- CSV and XLSX import
 - Editable datasets
 - Automatic field type detection
 - Multiple chart types
 - Data aggregation
 - Sorting and filtering
-- Ranking and Top N
-- Date grouping and date hierarchy
+- Date range filtering
+- Time grouping by day, week, month, quarter, or year
+- Ranking by highest or lowest values
 - Number formatting
 - Conditional formatting
 - Chart appearance customization
 - Project management
 - Folder management
-- Story builder
-- Multiple slides
+- Presentation builder
 - Slide annotations
 - Chart positioning and resizing
-- Public chart publishing
-- Public story publishing
-- PNG export
+- Publisshing charts and stories through public links
+- Public presentation publishing
+- PNG chart export
+- PDF presentation export
 - Undo and redo for visualization changes
 
 ## Supported Visualizations
 
-Corceo supports several visualization types, including:
+Corceo supports the following visualization types:
 
 - Bar chart
 - Line chart
@@ -58,6 +58,8 @@ Corceo supports several visualization types, including:
 - Tailwind CSS
 - Recharts
 - html-to-image
+- html2canvas
+- jsPDF
 
 ### Backend
 
@@ -67,7 +69,7 @@ Corceo supports several visualization types, including:
 ### Database
 
 - PostgreSQL
-- JSONB for flexible dataset storage
+- JSONB for flexible storage of dataset rows and visualization configuration
 
 ### Authentication
 
@@ -78,7 +80,6 @@ Corceo supports several visualization types, including:
 
 Corceo uses a client-server architecture.
 
-```text
 User
   |
   v

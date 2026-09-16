@@ -9,7 +9,6 @@ import {
   ScatterChart,
   Radar,
   ChartNoAxesColumnIncreasing,
-  Funnel,
   LayoutGrid,
   Grid3X3,
 } from "lucide-react";
@@ -22,12 +21,15 @@ import TooltipSection from "./sections/TooltipSection";
 import LegendSection from "./sections/LegendSection";
 import ValueFormattingSection from "./sections/ValueFormattingSection";
 import ConditionalFormattingSection from "./sections/ConditionalFormattingSection";
+import DataSettingsSection from "./sections/DataSettingsSection";
 
 function Sidebar({
   settings,
   updateSetting,
   chartConfig,
   setChartConfig,
+  columns,
+  types,
 }) {
   const [openSection, setOpenSection] = useState(null);
 
@@ -147,7 +149,6 @@ function Sidebar({
       label: "Composed",
       Icon: ChartNoAxesColumnIncreasing,
     },
-    { id: "funnel", label: "Funnel", Icon: Funnel },
     {
       id: "treemap",
       label: "Treemap",
@@ -198,6 +199,14 @@ function Sidebar({
         chartConfig={chartConfig}
         setChartConfig={setChartConfig}
         chartTypes={chartTypes}
+      />
+
+      <DataSettingsSection
+        {...sharedSectionProps}
+        chartConfig={chartConfig}
+        setChartConfig={setChartConfig}
+        columns={columns}
+        types={types}
       />
 
       <AppearanceSection

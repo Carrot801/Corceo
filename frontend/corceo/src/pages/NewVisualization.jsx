@@ -13,7 +13,6 @@ import ChartPreview from "../components/charts/ChartPreview";
 import FieldsPanel from "../components/data/FieldsPanel";
 import useProjectData from "../hooks/useProjectData";
 import useChartData from "../hooks/useChartData";
-import ChartFiltersPanel from "../components/charts/ChartFiltersPanel";
 import Header from "../components/Header";
 import ActiveFilterChips from "../components/ActiveFilterChips";
 import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
@@ -476,47 +475,6 @@ const handleChartItemClick = (item) => {
 };
 
 
-useEffect(() => {
-  if (!data || data.length === 0) return;
-  if (!chartConfig.dateHierarchySource) return;
-
-  const field = chartConfig.dateHierarchySource;
-
-  const newFields = [
-    `${field}_Year`,
-    `${field}_Quarter`,
-    `${field}_Month`,
-  ];
-
-  const alreadyExists = newFields.every((f) => columns.includes(f));
-  if (alreadyExists) return;
-
-  setColumns((prev) => [...new Set([...prev, ...newFields])]);
-
-  setData((prevData) =>
-    prevData.map((row) => {
-      const date = new Date(row[field]);
-      if (isNaN(date)) return row;
-
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const quarter = `Q${Math.floor((month - 1) / 3) + 1}`;
-
-      return {
-        ...row,
-        [`${field}_Year`]: String(year),
-        [`${field}_Quarter`]: `${year} ${quarter}`,
-        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`,
-      };
-    })
-  );
-}, [
-  chartConfig.dateHierarchySource,
-  columns,
-  data,
-  setColumns,
-  setData,
-]);
 
 
   useEffect(() => {
@@ -938,29 +896,25 @@ useEffect(() => {
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-    <div className="app-surface app-border w-64 border-r">
-      <FieldsPanel
-        columns={columns}
-        setColumns={setColumns}
-        data={data}
-        setData={setData}
-        types={columnTypes}
-        setChartConfig={setChartConfig}
-        isUsed={isUsed}
-        onDragStart={(e, col) => {
-          e.dataTransfer.setData("col", col);
-        }}
+    <div className="app-surface app-border w-64 border-r flex flex-col overflow-hidden">
 
-      />
-      <div className="max-h-[55%] overflow-y-auto">
-        <ChartFiltersPanel
-          chartConfig={chartConfig}
-          setChartConfig={setChartConfig}
-          columns={columns}
-          types={columnTypes}
-        />
-      </div>
-    </div>
+  {/* Fields */}
+  <div className="flex-1 min-h-0 overflow-y-auto">
+    <FieldsPanel
+      columns={columns}
+      setColumns={setColumns}
+      data={data}
+      setData={setData}
+      types={columnTypes}
+      setChartConfig={setChartConfig}
+      isUsed={isUsed}
+      onDragStart={(e, col) => {
+        e.dataTransfer.setData("col", col);
+      }}
+    />
+  </div>
+
+</div>
 
     <div className="app-page flex-1 p-4">
 
@@ -1147,6 +1101,8 @@ useEffect(() => {
       updateSetting={updateSetting}
       chartConfig={chartConfig}
       setChartConfig={setChartConfig}
+      columns={columns}
+      types={columnTypes}
     />
 
   </div>

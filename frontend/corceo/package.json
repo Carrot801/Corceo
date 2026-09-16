@@ -16,6 +16,7 @@
     "chroma-js": "^3.2.0",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.9.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
@@ -38,6 +39,6 @@
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
     "vite": "^7.3.1",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.1"
   }
 }
