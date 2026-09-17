@@ -4,7 +4,6 @@ import {
   useRef,
 } from "react";
 
-
 export default function useStoryChartInteractions({
   canvasRef,
   chartInteractionRef,
@@ -18,45 +17,43 @@ export default function useStoryChartInteractions({
   storyStateRef,
   commitStoryHistory,
 }) {
-  /*
-   * updateChartItem and bringChartToFront
-   * can receive new function identities
-   * after NewStory re-renders.
-   *
-   * Store their latest versions in refs
-   * so the active mousemove handler remains
-   * stable throughout the whole interaction.
-   */
+  // =========================
+  // LATEST FUNCTION REFS
+  // =========================
+
   const updateChartItemRef =
     useRef(updateChartItem);
 
   const bringChartToFrontRef =
     useRef(bringChartToFront);
 
-
   useEffect(() => {
     updateChartItemRef.current =
       updateChartItem;
-  }, [
-    updateChartItem,
-  ]);
-
+  }, [updateChartItem]);
 
   useEffect(() => {
     bringChartToFrontRef.current =
       bringChartToFront;
-  }, [
-    bringChartToFront,
-  ]);
-
+  }, [bringChartToFront]);
 
   // =========================
-  // CHART INTERACTION MOVE
+  // ANIMATION FRAME
   // =========================
 
-  const handleChartInteractionMove =
+  const animationFrameRef =
+    useRef(null);
+
+  const latestMousePositionRef =
+    useRef(null);
+
+  // =========================
+  // APPLY CHART INTERACTION
+  // =========================
+
+  const applyChartInteractionMove =
     useCallback(
-      (event) => {
+      (clientX, clientY) => {
         const interaction =
           chartInteractionRef.current;
 
@@ -80,7 +77,6 @@ export default function useStoryChartInteractions({
           return;
         }
 
-
         // =========================
         // MOUSE DELTA %
         // =========================
@@ -88,7 +84,7 @@ export default function useStoryChartInteractions({
         const deltaX =
           (
             (
-              event.clientX -
+              clientX -
               interaction.startClientX
             ) /
             rect.width
@@ -98,13 +94,12 @@ export default function useStoryChartInteractions({
         const deltaY =
           (
             (
-              event.clientY -
+              clientY -
               interaction.startClientY
             ) /
             rect.height
           ) *
           100;
-
 
         // =========================
         // MOVE
@@ -117,48 +112,40 @@ export default function useStoryChartInteractions({
           updateChartItemRef.current(
             interaction.itemId,
             {
-              x:
-                Math.max(
-                  0,
-                  Math.min(
-                    100 -
-                      interaction.startWidth,
-
-                    interaction.startX +
-                      deltaX
-                  )
+              x: Math.max(
+                0,
+                Math.min(
+                  100 -
+                    interaction.startWidth,
+                  interaction.startX +
+                    deltaX,
                 ),
+              ),
 
-              y:
-                Math.max(
-                  0,
-                  Math.min(
-                    100 -
-                      interaction.startHeight,
-
-                    interaction.startY +
-                      deltaY
-                  )
+              y: Math.max(
+                0,
+                Math.min(
+                  100 -
+                    interaction.startHeight,
+                  interaction.startY +
+                    deltaY,
                 ),
+              ),
             },
             {
               record: false,
-            }
+            },
           );
 
           return;
         }
 
-
         // =========================
         // RESIZE
         // =========================
 
-        const minWidth =
-          18;
-
-        const minHeight =
-          18;
+        const minWidth = 18;
+        const minHeight = 18;
 
         let x =
           interaction.startX;
@@ -172,30 +159,25 @@ export default function useStoryChartInteractions({
         let height =
           interaction.startHeight;
 
-
         // =========================
         // RIGHT
         // =========================
 
         if (
           interaction.mode.includes(
-            "right"
+            "right",
           )
         ) {
-          width =
-            Math.max(
-              minWidth,
-
-              Math.min(
-                100 -
-                  interaction.startX,
-
-                interaction.startWidth +
-                  deltaX
-              )
-            );
+          width = Math.max(
+            minWidth,
+            Math.min(
+              100 -
+                interaction.startX,
+              interaction.startWidth +
+                deltaX,
+            ),
+          );
         }
-
 
         // =========================
         // BOTTOM
@@ -203,23 +185,19 @@ export default function useStoryChartInteractions({
 
         if (
           interaction.mode.includes(
-            "bottom"
+            "bottom",
           )
         ) {
-          height =
-            Math.max(
-              minHeight,
-
-              Math.min(
-                100 -
-                  interaction.startY,
-
-                interaction.startHeight +
-                  deltaY
-              )
-            );
+          height = Math.max(
+            minHeight,
+            Math.min(
+              100 -
+                interaction.startY,
+              interaction.startHeight +
+                deltaY,
+            ),
+          );
         }
-
 
         // =========================
         // LEFT
@@ -227,25 +205,22 @@ export default function useStoryChartInteractions({
 
         if (
           interaction.mode.includes(
-            "left"
+            "left",
           )
         ) {
-          const nextX =
-            Math.max(
-              0,
+          const nextX = Math.max(
+            0,
+            Math.min(
+              interaction.startX +
+                interaction.startWidth -
+                minWidth,
 
-              Math.min(
-                interaction.startX +
-                  interaction.startWidth -
-                  minWidth,
+              interaction.startX +
+                deltaX,
+            ),
+          );
 
-                interaction.startX +
-                  deltaX
-              )
-            );
-
-          x =
-            nextX;
+          x = nextX;
 
           width =
             interaction.startWidth +
@@ -253,39 +228,34 @@ export default function useStoryChartInteractions({
             nextX;
         }
 
-
         // =========================
         // TOP
         // =========================
 
         if (
           interaction.mode.includes(
-            "top"
+            "top",
           )
         ) {
-          const nextY =
-            Math.max(
-              0,
+          const nextY = Math.max(
+            0,
+            Math.min(
+              interaction.startY +
+                interaction.startHeight -
+                minHeight,
 
-              Math.min(
-                interaction.startY +
-                  interaction.startHeight -
-                  minHeight,
+              interaction.startY +
+                deltaY,
+            ),
+          );
 
-                interaction.startY +
-                  deltaY
-              )
-            );
-
-          y =
-            nextY;
+          y = nextY;
 
           height =
             interaction.startHeight +
             interaction.startY -
             nextY;
         }
-
 
         // =========================
         // APPLY RESIZE
@@ -301,57 +271,151 @@ export default function useStoryChartInteractions({
           },
           {
             record: false,
-          }
+          },
         );
       },
       [
         canvasRef,
         chartInteractionRef,
-      ]
+      ],
     );
 
+  // =========================
+  // CHART INTERACTION MOVE
+  // =========================
+
+  const handleChartInteractionMove =
+    useCallback(
+      (event) => {
+        /*
+         * Store only coordinates rather
+         * than the complete browser event.
+         */
+        latestMousePositionRef.current = {
+          clientX: event.clientX,
+          clientY: event.clientY,
+        };
+
+        /*
+         * If a frame is already waiting,
+         * don't schedule another one.
+         *
+         * The latest mouse position will
+         * be used when that frame runs.
+         */
+        if (
+          animationFrameRef.current !==
+          null
+        ) {
+          return;
+        }
+
+        animationFrameRef.current =
+          requestAnimationFrame(() => {
+            animationFrameRef.current =
+              null;
+
+            const position =
+              latestMousePositionRef.current;
+
+            if (!position) {
+              return;
+            }
+
+            applyChartInteractionMove(
+              position.clientX,
+              position.clientY,
+            );
+          });
+      },
+      [
+        applyChartInteractionMove,
+      ],
+    );
 
   // =========================
   // STOP INTERACTION
   // =========================
 
   const stopChartInteraction =
-    useCallback(() => {
-      const interaction =
-        chartInteractionRef.current;
+    useCallback(
+      (event) => {
+        const interaction =
+          chartInteractionRef.current;
 
-      document.removeEventListener(
-        "mousemove",
-        handleChartInteractionMove
-      );
-
-      /*
-       * mouseup is registered with
-       * { once: true }, so the browser
-       * removes that listener automatically.
-       */
-
-      if (
-        interaction
-          ?.startingStoryState
-      ) {
-        commitStoryHistory(
-          interaction
-            .startingStoryState,
-
-          storyStateRef.current
+        document.removeEventListener(
+          "mousemove",
+          handleChartInteractionMove,
         );
-      }
 
-      chartInteractionRef.current =
-        null;
-    }, [
-      chartInteractionRef,
-      commitStoryHistory,
-      handleChartInteractionMove,
-      storyStateRef,
-    ]);
+        // Cancel a frame that has not
+        // executed yet.
+        if (
+          animationFrameRef.current !==
+          null
+        ) {
+          cancelAnimationFrame(
+            animationFrameRef.current,
+          );
 
+          animationFrameRef.current =
+            null;
+        }
+
+        /*
+         * Apply the final mouse position
+         * immediately so the chart ends
+         * exactly where the mouse was
+         * released.
+         */
+        if (
+          interaction &&
+          event &&
+          typeof event.clientX ===
+            "number" &&
+          typeof event.clientY ===
+            "number"
+        ) {
+          applyChartInteractionMove(
+            event.clientX,
+            event.clientY,
+          );
+        }
+
+        // =========================
+        // HISTORY
+        // =========================
+
+        if (
+          interaction
+            ?.startingStoryState
+        ) {
+          commitStoryHistory(
+            interaction
+              .startingStoryState,
+
+            storyStateRef.current,
+          );
+        }
+
+        // =========================
+        // RESET
+        // =========================
+
+        chartInteractionRef.current =
+          null;
+
+        latestMousePositionRef.current =
+          null;
+      },
+      [
+        chartInteractionRef,
+        commitStoryHistory,
+        handleChartInteractionMove,
+        applyChartInteractionMove,
+        storyStateRef,
+      ],
+    );
 
   // =========================
   // START INTERACTION
@@ -362,7 +426,7 @@ export default function useStoryChartInteractions({
       (
         event,
         mode,
-        item
+        item,
       ) => {
         event.preventDefault();
         event.stopPropagation();
@@ -373,29 +437,26 @@ export default function useStoryChartInteractions({
           return;
         }
 
-
         // =========================
         // HISTORY SNAPSHOT
         // =========================
 
         const startingStoryState =
           structuredClone(
-            storyStateRef.current
+            storyStateRef.current,
           );
-
 
         // =========================
         // SELECTION
         // =========================
 
         setSelectedChartId(
-          item.id
+          item.id,
         );
 
         setSelectedAnnoId(
-          null
+          null,
         );
-
 
         // =========================
         // Z-INDEX
@@ -405,9 +466,8 @@ export default function useStoryChartInteractions({
           item.id,
           {
             record: false,
-          }
+          },
         );
-
 
         // =========================
         // INTERACTION CONTEXT
@@ -426,24 +486,26 @@ export default function useStoryChartInteractions({
             event.clientY,
 
           startX:
-            item.x ??
-            0,
+            item.x ?? 0,
 
           startY:
-            item.y ??
-            0,
+            item.y ?? 0,
 
           startWidth:
-            item.width ??
-            100,
+            item.width ?? 100,
 
           startHeight:
-            item.height ??
-            100,
+            item.height ?? 100,
 
           startingStoryState,
         };
 
+        latestMousePositionRef.current = {
+          clientX:
+            event.clientX,
+          clientY:
+            event.clientY,
+        };
 
         // =========================
         // DOCUMENT EVENTS
@@ -451,7 +513,7 @@ export default function useStoryChartInteractions({
 
         document.addEventListener(
           "mousemove",
-          handleChartInteractionMove
+          handleChartInteractionMove,
         );
 
         document.addEventListener(
@@ -459,7 +521,7 @@ export default function useStoryChartInteractions({
           stopChartInteraction,
           {
             once: true,
-          }
+          },
         );
       },
       [
@@ -470,9 +532,8 @@ export default function useStoryChartInteractions({
         setSelectedChartId,
         stopChartInteraction,
         storyStateRef,
-      ]
+      ],
     );
-
 
   // =========================
   // CLEANUP
@@ -482,19 +543,27 @@ export default function useStoryChartInteractions({
     return () => {
       document.removeEventListener(
         "mousemove",
-        handleChartInteractionMove
+        handleChartInteractionMove,
       );
 
       document.removeEventListener(
         "mouseup",
-        stopChartInteraction
+        stopChartInteraction,
       );
+
+      if (
+        animationFrameRef.current !==
+        null
+      ) {
+        cancelAnimationFrame(
+          animationFrameRef.current,
+        );
+      }
     };
   }, [
     handleChartInteractionMove,
     stopChartInteraction,
   ]);
-
 
   return {
     startChartInteraction,

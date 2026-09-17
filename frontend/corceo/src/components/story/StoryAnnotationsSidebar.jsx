@@ -199,33 +199,120 @@ function StoryAnnotationsSidebar({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="app-text-secondary text-[10px] font-semibold">Background</label>
-                                <select 
-                                  value={anno.textBg || "white"} 
-                                  onChange={(e) => updateAnnotation(anno.id, "textBg", e.target.value)}
-                                  className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
-                                >
-                                  <option value="transparent">Transparent</option>
-                                  <option value="#ffffff">Solid White</option>
-                                  <option value="#f1f5f9">Light Gray</option>
-                                  <option value="outline">Outline Border</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="app-text-secondary text-[10px] font-semibold">Alignment</label>
-                                <select 
-                                  value={anno.textAlign || "left"} 
-                                  onChange={(e) => updateAnnotation(anno.id, "textAlign", e.target.value)}
-                                  className="app-input w-full h-7 rounded-md mt-1 text-[11px] px-1 py-1"
-                                >
-                                  <option value="left">Left</option>
-                                  <option value="center">Center</option>
-                                  <option value="right">Right</option>
-                                </select>
-                              </div>
-                            </div>
+                            <div className="flex flex-col gap-3">
+
+  {/* BACKGROUND */}
+  <div className="flex flex-col gap-2">
+    <label className="app-text-secondary text-[10px] font-semibold">
+      Background
+    </label>
+
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={
+          anno.textBgEnabled !==
+          false
+        }
+        onChange={(e) =>
+          updateAnnotation(
+            anno.id,
+            "textBgEnabled",
+            e.target.checked
+          )
+        }
+      />
+
+      <span className="app-text-secondary text-[11px]">
+        Show background
+      </span>
+    </label>
+
+    {anno.textBgEnabled !==
+      false && (
+      <input
+        type="color"
+        value={
+          anno.textBgColor ||
+          "#ffffff"
+        }
+        onChange={(e) =>
+          updateAnnotation(
+            anno.id,
+            "textBgColor",
+            e.target.value
+          )
+        }
+        className="
+          app-surface
+          app-border
+          h-8
+          w-full
+          cursor-pointer
+          rounded-md
+          border
+          p-0.5
+        "
+      />
+    )}
+  </div>
+
+  {/* BORDER */}
+  <div className="flex flex-col gap-2">
+    <label className="app-text-secondary text-[10px] font-semibold">
+      Border
+    </label>
+
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={
+          anno.textBorderEnabled ??
+          false
+        }
+        onChange={(e) =>
+          updateAnnotation(
+            anno.id,
+            "textBorderEnabled",
+            e.target.checked
+          )
+        }
+      />
+
+      <span className="app-text-secondary text-[11px]">
+        Show border
+      </span>
+    </label>
+
+    {anno.textBorderEnabled && (
+      <input
+        type="color"
+        value={
+          anno.textBorderColor ||
+          "#1e293b"
+        }
+        onChange={(e) =>
+          updateAnnotation(
+            anno.id,
+            "textBorderColor",
+            e.target.value
+          )
+        }
+        className="
+          app-surface
+          app-border
+          h-8
+          w-full
+          cursor-pointer
+          rounded-md
+          border
+          p-0.5
+        "
+      />
+    )}
+  </div>
+
+</div>
                           </div>
 
                           {/* Direct Line / Arrow style toggles */}

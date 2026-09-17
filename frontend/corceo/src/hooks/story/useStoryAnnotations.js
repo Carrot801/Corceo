@@ -64,8 +64,15 @@ export default function useStoryAnnotations({
         textColor:
           "#1e293b",
 
-        textBg:
-          "white",
+        textBgEnabled:
+         true,
+        textBgColor:
+         "#ffffff",
+
+        textBorderEnabled:
+         false,
+        textBorderColor:
+         "#1e293b",
 
         fontWeight:
           "normal",

@@ -270,11 +270,21 @@ function SlideThumbnail({
                     "#1e293b",
 
                   backgroundColor:
-                    annotation.textBg ===
-                    "transparent"
-                      ? "transparent"
-                      : annotation.textBg ||
-                        "#ffffff",
+  annotation.textBgEnabled === false
+    ? "transparent"
+    : annotation.textBgColor ||
+      "#ffffff",
+
+border:
+  annotation.textBorderEnabled
+    ? `1px solid ${
+        annotation.textBorderColor ||
+        "#1e293b"
+      }`
+    : "none",
+
+boxSizing:
+  "border-box",
                 }}
               >
                 {annotation.text ||

@@ -11,8 +11,8 @@ function useStoryExport({
   slides,
   storyName,
 
-  slideWidth = 1280,
-  slideHeight = 720,
+  activeSlideIndex,
+  setActiveSlideIndex,
 }) {
   const [
     isExporting,
@@ -209,164 +209,219 @@ function useStoryExport({
   // =========================
   // EXPORT STORY PDF
   // =========================
+const exportStoryPDF =
+  useCallback(
+    async () => {
+      const originalSlideIndex =
+        activeSlideIndex;
 
-  const exportStoryPDF =
-    useCallback(
-      async () => {
-        try {
-          setIsExporting(true);
+      try {
+        setIsExporting(true);
 
-          let slideElements =
-            [];
+        /*
+         * Remove selection before capture
+         * by clicking nothing / changing slide.
+         *
+         * Give React time to update.
+         */
+        await waitForPaint();
+
+        let pdf = null;
+
+        for (
+          let index = 0;
+          index < slides.length;
+          index++
+        ) {
+          // =========================
+          // SHOW REAL SLIDE
+          // =========================
+
+          setActiveSlideIndex(
+            index
+          );
 
           /*
-           * Wait until every hidden
-           * export slide is rendered.
+           * Wait for React to render
+           * the newly selected slide.
            */
-          for (
-            let attempt = 0;
-            attempt < 30;
-            attempt++
-          ) {
-            slideElements =
-              Array.from(
-                document.querySelectorAll(
-                  ".export-slide"
-                )
-              );
+          await waitForPaint();
 
-            if (
-              slideElements.length ===
-              slides.length
-            ) {
-              break;
-            }
+          /*
+           * StoryChart loads data
+           * asynchronously, so two frames
+           * are not always enough.
+           */
+          await new Promise(
+            (resolve) =>
+              setTimeout(
+                resolve,
+                500
+              )
+          );
 
-            await new Promise(
-              (resolve) => {
-                setTimeout(
-                  resolve,
-                  50
-                );
-              }
+          const slideElement =
+            document.querySelector(
+              ".story-pdf-slide"
             );
-          }
 
-          if (
-            !slideElements.length
-          ) {
+          if (!slideElement) {
             throw new Error(
-              "Export slides were not rendered"
+              `Visible slide ${
+                index + 1
+              } was not found`
             );
           }
 
-          /*
-           * Wait for images in every
-           * export slide.
-           */
-          await Promise.all(
-            slideElements.map(
-              (slide) =>
-                waitForImages(
-                  slide
-                )
-            )
+          await waitForImages(
+            slideElement
           );
 
           await waitForPaint();
 
-          const pdf =
-            new jsPDF(
-              "landscape",
-              "pt",
-              [
-                slideWidth,
-                slideHeight,
-              ]
+          // =========================
+          // CAPTURE
+          // =========================
+
+          const canvas =
+            await html2canvas(
+              slideElement,
+              {
+                scale: 2,
+
+                useCORS: true,
+
+                allowTaint: false,
+
+                backgroundColor:
+                  "#ffffff",
+
+                logging: false,
+
+                onclone: (
+                  clonedDocument
+                ) => {
+                  /*
+                   * Hide editor-only controls
+                   * in the captured clone.
+                   *
+                   * This does NOT modify
+                   * the real editor.
+                   */
+                  clonedDocument
+                    .querySelectorAll(
+                      '[data-pdf-hide="true"]'
+                    )
+                    .forEach(
+                      (element) => {
+                        element.style.display =
+                          "none";
+                      }
+                    );
+
+                  /*
+                   * Remove selection rings,
+                   * hover UI etc. if needed.
+                   */
+                },
+              }
             );
 
-          for (
-            let index = 0;
-            index <
-            slideElements.length;
-            index++
-          ) {
-            const canvas =
-              await html2canvas(
-                slideElements[
-                  index
+          const imageData =
+            canvas.toDataURL(
+              "image/png"
+            );
+
+          const pageWidth =
+            slideElement
+              .getBoundingClientRect()
+              .width;
+
+          const pageHeight =
+            slideElement
+              .getBoundingClientRect()
+              .height;
+
+          // =========================
+          // CREATE PDF
+          // =========================
+
+          if (!pdf) {
+            pdf =
+              new jsPDF({
+                orientation:
+                  pageWidth >=
+                  pageHeight
+                    ? "landscape"
+                    : "portrait",
+
+                unit: "pt",
+
+                format: [
+                  pageWidth,
+                  pageHeight,
                 ],
-                {
-                  scale: 2,
-
-                  useCORS:
-                    true,
-
-                  allowTaint:
-                    false,
-
-                  backgroundColor:
-                    "#ffffff",
-
-                  logging:
-                    false,
-                }
-              );
-
-            const imageData =
-              canvas.toDataURL(
-                "image/png"
-              );
-
-            if (
-              index > 0
-            ) {
-              pdf.addPage(
-                [
-                  slideWidth,
-                  slideHeight,
-                ],
-                "landscape"
-              );
-            }
-
-            pdf.addImage(
-              imageData,
-              "PNG",
-              0,
-              0,
-              slideWidth,
-              slideHeight
+              });
+          } else {
+            pdf.addPage(
+              [
+                pageWidth,
+                pageHeight,
+              ],
+              pageWidth >=
+                pageHeight
+                ? "landscape"
+                : "portrait"
             );
           }
 
+          pdf.addImage(
+            imageData,
+            "PNG",
+            0,
+            0,
+            pageWidth,
+            pageHeight
+          );
+        }
+
+        if (pdf) {
           pdf.save(
             `${
               storyName ||
               "story"
             }.pdf`
           );
-
-        } catch (error) {
-          console.error(
-            "PDF export failed:",
-            error
-          );
-
-        } finally {
-          setIsExporting(false);
         }
-      },
-      [
-        slideHeight,
-        slides,
-        slideWidth,
-        storyName,
-        waitForImages,
-        waitForPaint,
-      ]
-    );
 
+      } catch (error) {
+        console.error(
+          "PDF export failed:",
+          error
+        );
+
+      } finally {
+        /*
+         * Return user to the slide
+         * they were viewing before
+         * export started.
+         */
+        setActiveSlideIndex(
+          originalSlideIndex
+        );
+
+        setIsExporting(false);
+      }
+    },
+    [
+      activeSlideIndex,
+      slides,
+      storyName,
+      setActiveSlideIndex,
+      waitForImages,
+      waitForPaint,
+    ]
+  );
 
   return {
     isExporting,

@@ -249,12 +249,16 @@ const setChartHeight = (
   chartHeight,
 } = visualizationState;
 
+
 const {
   startChartResize,
 } = useChartResize({
   chartHeight,
 
   setChartHeight,
+
+  chartElementRef:
+    visibleChartRef,
 
   visualizationState,
 

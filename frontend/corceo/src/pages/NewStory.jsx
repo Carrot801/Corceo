@@ -213,6 +213,9 @@ const {
 } = useStoryExport({
   slides,
   storyName,
+
+  activeSlideIndex,
+  setActiveSlideIndex,
 });
 
 const {

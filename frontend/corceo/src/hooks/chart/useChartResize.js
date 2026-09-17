@@ -7,12 +7,18 @@ import {
 function useChartResize({
   chartHeight,
   setChartHeight,
+  chartElementRef,
+
   visualizationState,
   commitVisualizationHistory,
 
   minHeight = 320,
   maxHeight = 1200,
 }) {
+  // =========================
+  // RESIZE STATE
+  // =========================
+
   const resizeRef = useRef({
     resizing: false,
     startY: 0,
@@ -20,15 +26,21 @@ function useChartResize({
     latestHeight: chartHeight,
   });
 
+  // =========================
+  // LATEST VISUALIZATION STATE
+  // =========================
+
   const visualizationStateRef =
     useRef(visualizationState);
 
-  // Keep the latest visualization state available
-  // to document-level mouse handlers.
   useEffect(() => {
     visualizationStateRef.current =
       visualizationState;
   }, [visualizationState]);
+
+  // =========================
+  // RESIZE MOVE
+  // =========================
 
   const handleResizeMove =
     useCallback(
@@ -50,26 +62,44 @@ function useChartResize({
             Math.min(
               maxHeight,
               resizeState.startHeight +
-                difference
-            )
+                difference,
+            ),
           );
 
         resizeState.latestHeight =
           nextHeight;
 
-        setChartHeight(
-          nextHeight,
-          {
-            record: false,
-          }
-        );
+        /*
+         * IMPORTANT:
+         *
+         * Do not update React state here.
+         *
+         * Updating chartHeight on every
+         * mousemove would cause the whole
+         * visualization and ChartPreview
+         * to rerender continuously.
+         *
+         * During dragging we only change
+         * the DOM height.
+         */
+        const chartElement =
+          chartElementRef?.current;
+
+        if (chartElement) {
+          chartElement.style.height =
+            `${nextHeight}px`;
+        }
       },
       [
+        chartElementRef,
         maxHeight,
         minHeight,
-        setChartHeight,
-      ]
+      ],
     );
+
+  // =========================
+  // STOP RESIZE
+  // =========================
 
   const stopResize =
     useCallback(() => {
@@ -80,7 +110,8 @@ function useChartResize({
         return;
       }
 
-      resizeState.resizing = false;
+      resizeState.resizing =
+        false;
 
       const startHeight =
         resizeState.startHeight;
@@ -88,9 +119,30 @@ function useChartResize({
       const finalHeight =
         resizeState.latestHeight;
 
+      document.removeEventListener(
+        "mousemove",
+        handleResizeMove,
+      );
+
+      // =========================
+      // COMMIT FINAL HEIGHT
+      // =========================
+
       if (
-        startHeight !== finalHeight
+        startHeight !==
+        finalHeight
       ) {
+        /*
+         * Update React only once,
+         * after resizing has finished.
+         */
+        setChartHeight(
+          finalHeight,
+          {
+            record: false,
+          },
+        );
+
         const currentState =
           visualizationStateRef.current;
 
@@ -104,23 +156,41 @@ function useChartResize({
             ...currentState,
             chartHeight:
               finalHeight,
-          }
+          },
         );
       }
-
-      document.removeEventListener(
-        "mousemove",
-        handleResizeMove
-      );
-    }, [
+    },
+    [
       commitVisualizationHistory,
       handleResizeMove,
-    ]);
+      setChartHeight,
+    ],
+  );
+
+  // =========================
+  // START RESIZE
+  // =========================
 
   const startChartResize =
     useCallback(
       (event) => {
         event.preventDefault();
+
+        const chartElement =
+          chartElementRef?.current;
+
+        /*
+         * Use the real current DOM height.
+         *
+         * This prevents a mismatch between
+         * React state and the visible chart.
+         */
+        const currentHeight =
+          chartElement
+            ? chartElement
+                .getBoundingClientRect()
+                .height
+            : chartHeight;
 
         resizeRef.current = {
           resizing: true,
@@ -129,50 +199,88 @@ function useChartResize({
             event.clientY,
 
           startHeight:
-            chartHeight,
+            currentHeight,
 
           latestHeight:
-            chartHeight,
+            currentHeight,
         };
+
+        // Prevent accidental text selection
+        // while dragging.
+        document.body.style.userSelect =
+          "none";
+
+        document.body.style.cursor =
+          "row-resize";
 
         document.addEventListener(
           "mousemove",
-          handleResizeMove
+          handleResizeMove,
         );
 
-        /*
-         * The browser automatically removes
-         * this listener after the mouse is
-         * released once.
-         */
         document.addEventListener(
           "mouseup",
           stopResize,
           {
             once: true,
-          }
+          },
         );
       },
       [
+        chartElementRef,
         chartHeight,
         handleResizeMove,
         stopResize,
-      ]
+      ],
     );
 
-  // Safety cleanup if the editor is closed
-  // during a resize operation.
+  // =========================
+  // RESTORE BODY
+  // =========================
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      document.body.style.userSelect =
+        "";
+
+      document.body.style.cursor =
+        "";
+    };
+
+    document.addEventListener(
+      "mouseup",
+      handleMouseUp,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mouseup",
+        handleMouseUp,
+      );
+    };
+  }, []);
+
+  // =========================
+  // CLEANUP
+  // =========================
+
   useEffect(() => {
     return () => {
       document.removeEventListener(
         "mousemove",
-        handleResizeMove
+        handleResizeMove,
       );
 
       document.removeEventListener(
         "mouseup",
-        stopResize
+        stopResize,
       );
+
+      document.body.style.userSelect =
+        "";
+
+      document.body.style.cursor =
+        "";
     };
   }, [
     handleResizeMove,

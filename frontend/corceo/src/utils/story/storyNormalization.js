@@ -5,20 +5,32 @@ export const DEFAULT_ANNOTATION = {
   text: "Annotation",
   markerType: "dot",
   connectorType: "curved",
+
   x: 50,
   y: 40,
+
   textX: 55,
   textY: 55,
+
   width: 15,
   height: 15,
+
   fillColor: "#3b82f6",
   radius: 6,
+
   labelWidth: 12,
   textSize: 0.85,
   textColor: "#1e293b",
-  textBg: "white",
+
+  textBgEnabled: true,
+  textBgColor: "#ffffff",
+
+  textBorderEnabled: false,
+  textBorderColor: "#1e293b",
+
   fontWeight: "normal",
   textAlign: "left",
+
   lineWidth: 1.5,
   lineColor: "#64748b",
 };

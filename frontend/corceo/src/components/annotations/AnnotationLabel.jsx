@@ -100,23 +100,21 @@ function AnnotationLabel({
           "left",
 
         backgroundColor:
-          annotation.textBg ===
-          "transparent"
-            ? "transparent"
-            : annotation.textBg ||
-              "#ffffff",
+  annotation.textBgEnabled === false
+    ? "transparent"
+    : annotation.textBgColor ||
+      "#ffffff",
 
-        border:
-          annotation.textBg ===
-          "outline"
-            ? `1px solid ${
-                annotation.textColor ||
-                "#1e293b"
-              }40`
-            : selected &&
-                interactive
-              ? "1px solid #3b82f6"
-              : "none",
+border:
+  annotation.textBorderEnabled
+    ? `1px solid ${
+        annotation.textBorderColor ||
+        "#1e293b"
+      }`
+    : "none",
+
+boxSizing:
+  "border-box",
       }}
     >
       <div className="break-words leading-snug">
