@@ -66,6 +66,7 @@ function ScatterChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const appearance =
     chartConfig.appearance || {};
@@ -594,9 +595,7 @@ function ScatterChartView({
           <Scatter
             data={data}
             dataKey="y"
-            isAnimationActive={
-              animate
-            }
+            isAnimationActive={!exportMode}
             animationDuration={
               appearance.animationDuration ??
               500

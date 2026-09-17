@@ -347,6 +347,7 @@ const data = [
         <Treemap
           data={data}
           dataKey="size"
+          isAnimationActive={!exportMode}
           nameKey="name"
           content={
   <TreemapContent

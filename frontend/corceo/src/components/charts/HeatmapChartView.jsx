@@ -148,6 +148,7 @@ function HeatmapChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const appearance =
     chartConfig.appearance || {};
@@ -523,10 +524,7 @@ function HeatmapChartView({
 
           <Scatter
             data={data}
-            isAnimationActive={
-              appearance.animate !==
-              false
-            }
+            isAnimationActive={!exportMode}
             shape={(props) => {
               const entry =
                 props.payload;

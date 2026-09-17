@@ -27,6 +27,7 @@ function PieChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const appearance =
     chartConfig.appearance || {};
@@ -242,6 +243,9 @@ function PieChartView({
             outerRadius={
               outerRadius
             }
+            isAnimationActive={
+              !exportMode
+            }
             paddingAngle={
               paddingAngle
             }
@@ -350,21 +354,25 @@ function PieChartView({
                       outline:
                         "none",
                       transform:
-                        isSelected &&
-                        selectedChartValues.length >
-                          0 &&
-                        selectedOffset >
-                          0
-                          ? `scale(${
-                              1 +
-                              selectedOffset /
-                                100
-                            })`
-                          : "scale(1)",
+                        exportMode
+                          ? "none"
+                          : isSelected &&
+                              selectedChartValues.length >
+                                0 &&
+                              selectedOffset >
+                                0
+                            ? `scale(${
+                                1 +
+                                selectedOffset /
+                                  100
+                              })`
+                            : "scale(1)",
                       transformOrigin:
                         "center",
                       transition:
-                        "opacity 150ms ease, transform 150ms ease",
+                        exportMode
+                          ? "none"
+                          : "opacity 150ms ease, transform 150ms ease",
                     }}
                   />
                 );

@@ -24,6 +24,7 @@ function DonutChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const appearance =
     chartConfig.appearance || {};
@@ -226,6 +227,7 @@ function DonutChartView({
             data={chartData}
             dataKey={yKey}
             nameKey="x"
+            isAnimationActive={!exportMode}
             innerRadius={
               innerRadius
             }

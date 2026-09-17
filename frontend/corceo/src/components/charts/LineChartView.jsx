@@ -172,6 +172,7 @@ function LineChartView({
   visibleYKeys,
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const yKeys =
     visibleYKeys ??
@@ -687,6 +688,7 @@ function LineChartView({
                   }
                   dataKey={key}
                   name={key}
+                  isAnimationActive={!exportMode}
                   stroke={color}
                   strokeWidth={
                     lineWidth

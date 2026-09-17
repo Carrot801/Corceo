@@ -19,6 +19,7 @@ function AreaChartView({
   generatedColors = [],
   settings = {},
   chartConfig = {},
+  exportMode = false,
 }) {
   const yKey = getYKey(chartConfig);
   const total = getTotal(chartData, yKey);
@@ -64,6 +65,7 @@ function AreaChartView({
               key={key}
               type="monotone"
               dataKey={key}
+              isAnimationActive={!exportMode}
               name={key}
               stroke={generatedColors[index] || "#3b82f6"}
               fill={generatedColors[index] || "#3b82f6"}

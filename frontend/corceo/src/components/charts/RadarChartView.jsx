@@ -66,6 +66,7 @@ function RadarChartView({
   visibleYKeys,
   onChartItemClick,
   selectedChartValues = [],
+  exportMode = false,
 }) {
   const appearance =
     chartConfig.appearance || {};
@@ -271,6 +272,7 @@ function RadarChartView({
                   key={key}
                   dataKey={key}
                   name={key}
+                  isAnimationActive={!exportMode}
                   stroke={color}
                   fill={color}
                   strokeWidth={lineWidth}

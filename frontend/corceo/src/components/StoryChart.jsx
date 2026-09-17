@@ -393,20 +393,21 @@ const rows =
   }
 
   const preview = (
-    <ChartPreview
-  chartData={chartData}
-  chartConfig={chartConfig}
-  generatedColors={generatedColors}
-  visibleYKeys={visibleYKeys}
-  rawData={rows}
-  exportMode={exportMode}
-  settings={{
-    ...parsedSettings,
-  }}
+  <ChartPreview
+    chartData={chartData}
+    chartConfig={chartConfig}
+    generatedColors={generatedColors}
+    visibleYKeys={visibleYKeys}
+    rawData={rows}
 
-  storyMode={storyMode}
-  tooltipPortal={tooltipPortal}
-/>
+    settings={{
+      ...parsedSettings,
+      exportMode: exportMode,
+    }}
+
+    storyMode={storyMode}
+    tooltipPortal={tooltipPortal}
+  />
   );
 
   if (storyMode) {

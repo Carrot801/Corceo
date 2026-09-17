@@ -25,7 +25,7 @@ function BarChartView({
   visibleYKeys,
   onChartItemClick,
   selectedChartValues = [],
-  
+  exportMode = false,
 }) {
   const yKeys =
     visibleYKeys ??
@@ -406,6 +406,7 @@ const yMax =
   key={key}
   dataKey={key}
   name={key}
+  isAnimationActive={!exportMode}
   onClick={(data) => {
     const clickedItem =
       data?.payload ||
