@@ -100,6 +100,7 @@ function StoryChart({
   storyMode = false,
   initialChart = null,
   initialRows = null,
+  exportMode = false,
 }) {
 const [
   loadedChart,
@@ -398,6 +399,7 @@ const rows =
   generatedColors={generatedColors}
   visibleYKeys={visibleYKeys}
   rawData={rows}
+  exportMode={exportMode}
   settings={{
     ...parsedSettings,
   }}

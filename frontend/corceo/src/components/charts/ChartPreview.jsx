@@ -338,6 +338,7 @@ function ChartPreview({
               chartData={
                 processedData
               }
+              exportMode={isExport}
               generatedColors={
                 filteredColors
               }

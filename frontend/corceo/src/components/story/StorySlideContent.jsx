@@ -13,6 +13,7 @@ function StorySlideContent({
   slideIndex = 0,
 
   interactive = false,
+  exportMode = false,
 
   canvasRef: externalCanvasRef = null,
 
@@ -385,6 +386,7 @@ function StorySlideContent({
                       chartId={
                         item.chartId
                       }
+                      exportMode={exportMode}
                       storyMode
                     />
                   </div>
@@ -590,6 +592,7 @@ function StorySlideContent({
             .length > 0 && (
             <button
               type="button"
+              data-pdf-hide="true"
               onClick={(
                 event
               ) => {

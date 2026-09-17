@@ -10,10 +10,8 @@ import jsPDF from "jspdf";
 function useStoryExport({
   slides,
   storyName,
-  setSelectedAnnoId,
-  setSelectedChartId,
-  activeSlideIndex,
-  setActiveSlideIndex,
+  slideWidth = 1280,
+  slideHeight = 720,
 }) {
   const [
     isExporting,
@@ -213,76 +211,136 @@ function useStoryExport({
 const exportStoryPDF =
   useCallback(
     async () => {
-      const originalSlideIndex =
-        activeSlideIndex;
-
       try {
+        // Render hidden export slides
         setIsExporting(true);
 
+        let slideElements = [];
+
+        // =========================
+        // WAIT FOR ALL SLIDES
+        // =========================
+
+        for (
+          let attempt = 0;
+          attempt < 40;
+          attempt++
+        ) {
+          slideElements =
+            Array.from(
+              document.querySelectorAll(
+                ".export-slide"
+              )
+            );
+
+          if (
+            slideElements.length ===
+            slides.length
+          ) {
+            break;
+          }
+
+          await new Promise(
+            (resolve) => {
+              setTimeout(
+                resolve,
+                50
+              );
+            }
+          );
+        }
+
+        if (
+          slideElements.length !==
+          slides.length
+        ) {
+          throw new Error(
+            "Not all export slides were rendered"
+          );
+        }
+
+
+        // =========================
+        // WAIT FOR IMAGES
+        // =========================
+
+        await Promise.all(
+          slideElements.map(
+            (element) =>
+              waitForImages(
+                element
+              )
+          )
+        );
+
+
+        // =========================
+        // WAIT FOR CHARTS
+        // =========================
+
         /*
-         * Remove selection before capture
-         * by clicking nothing / changing slide.
+         * StoryChart loads data
+         * asynchronously.
          *
-         * Give React time to update.
+         * Give every hidden chart
+         * time to finish rendering.
          */
+        await new Promise(
+          (resolve) => {
+            setTimeout(
+              resolve,
+              1000
+            );
+          }
+        );
+
         await waitForPaint();
 
-        let pdf = null;
+
+        // =========================
+        // CREATE FIXED PDF
+        // =========================
+
+        const pdf =
+          new jsPDF({
+            orientation:
+              "landscape",
+
+            unit: "pt",
+
+            format: [
+              slideWidth,
+              slideHeight,
+            ],
+          });
+
+
+        // =========================
+        // CAPTURE EACH SLIDE
+        // =========================
 
         for (
           let index = 0;
-          index < slides.length;
+          index <
+          slideElements.length;
           index++
         ) {
-          // =========================
-          // SHOW REAL SLIDE
-          // =========================
-
-          setActiveSlideIndex(
-            index
-          );
-
-          /*
-           * Wait for React to render
-           * the newly selected slide.
-           */
-          await waitForPaint();
-
-          /*
-           * StoryChart loads data
-           * asynchronously, so two frames
-           * are not always enough.
-           */
-          await new Promise(
-            (resolve) =>
-              setTimeout(
-                resolve,
-                500
-              )
-          );
-
           const slideElement =
-            document.querySelector(
-              ".story-pdf-slide"
-            );
+            slideElements[
+              index
+            ];
 
-          if (!slideElement) {
-            throw new Error(
-              `Visible slide ${
-                index + 1
-              } was not found`
-            );
-          }
 
-          await waitForImages(
-            slideElement
-          );
-
-          await waitForPaint();
-
-          // =========================
-          // CAPTURE
-          // =========================
+          /*
+           * Important:
+           *
+           * Every page is ALWAYS
+           * slideWidth × slideHeight.
+           *
+           * We do not use
+           * getBoundingClientRect()
+           * for PDF dimensions.
+           */
 
           const canvas =
             await html2canvas(
@@ -292,114 +350,99 @@ const exportStoryPDF =
 
                 useCORS: true,
 
-                allowTaint: false,
+                allowTaint:
+                  false,
 
                 backgroundColor:
                   "#ffffff",
 
                 logging: false,
 
+                width:
+                  slideWidth,
+
+                height:
+                  slideHeight,
+
+                windowWidth:
+                  slideWidth,
+
+                windowHeight:
+                  slideHeight,
+
                 onclone: (
                   clonedDocument
                 ) => {
+                  const clonedSlides =
+                    clonedDocument
+                      .querySelectorAll(
+                        ".export-slide"
+                      );
+
                   const clonedSlide =
-                    clonedDocument.querySelector(
-                      ".story-pdf-slide"
-                    );
+                    clonedSlides[
+                      index
+                    ];
 
-                  if (clonedSlide) {
+                  if (
                     clonedSlide
-                      .querySelectorAll("svg")
-                      .forEach((svg) => {
-                        svg.style.overflow =
-                          "visible";
-                      });
+                  ) {
+                    clonedSlide
+                      .querySelectorAll(
+                        "svg"
+                      )
+                      .forEach(
+                        (svg) => {
+                          svg.style.overflow =
+                            "visible";
+                        }
+                      );
                   }
-                  clonedDocument
-                    .querySelectorAll(
-                      '[data-pdf-hide="true"]'
-                    )
-                    .forEach(
-                      (element) => {
-                        element.style.display =
-                          "none";
-                      }
-                    );
-
-                  /*
-                   * Remove selection rings,
-                   * hover UI etc. if needed.
-                   */
                 },
               }
             );
+
 
           const imageData =
             canvas.toDataURL(
               "image/png"
             );
 
-          const pageWidth =
-            slideElement
-              .getBoundingClientRect()
-              .width;
 
-          const pageHeight =
-            slideElement
-              .getBoundingClientRect()
-              .height;
-
-          // =========================
-          // CREATE PDF
-          // =========================
-
-          if (!pdf) {
-            pdf =
-              new jsPDF({
-                orientation:
-                  pageWidth >=
-                  pageHeight
-                    ? "landscape"
-                    : "portrait",
-
-                unit: "pt",
-
-                format: [
-                  pageWidth,
-                  pageHeight,
-                ],
-              });
-          } else {
+          if (index > 0) {
             pdf.addPage(
               [
-                pageWidth,
-                pageHeight,
+                slideWidth,
+                slideHeight,
               ],
-              pageWidth >=
-                pageHeight
-                ? "landscape"
-                : "portrait"
+              "landscape"
             );
           }
+
 
           pdf.addImage(
             imageData,
             "PNG",
+
             0,
             0,
-            pageWidth,
-            pageHeight
+
+            slideWidth,
+            slideHeight
           );
         }
 
-        if (pdf) {
-          pdf.save(
-            `${
-              storyName ||
-              "story"
-            }.pdf`
-          );
-        }
+
+        // =========================
+        // SAVE
+        // =========================
+
+        pdf.save(
+          `${
+            storyName ||
+            "story"
+          }.pdf`
+        );
 
       } catch (error) {
         console.error(
@@ -408,27 +451,16 @@ const exportStoryPDF =
         );
 
       } finally {
-        /*
-         * Return user to the slide
-         * they were viewing before
-         * export started.
-         */
-        setActiveSlideIndex(
-          originalSlideIndex
-        );
-
         setIsExporting(false);
       }
     },
     [
-      activeSlideIndex,
+      slideHeight,
       slides,
+      slideWidth,
       storyName,
-      setActiveSlideIndex,
       waitForImages,
       waitForPaint,
-      setSelectedAnnoId,
-      setSelectedChartId,
     ]
   );
 

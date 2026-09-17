@@ -214,11 +214,11 @@ const {
   slides,
   storyName,
 
-  activeSlideIndex,
-  setActiveSlideIndex,
+  slideWidth:
+    SLIDE_WIDTH,
 
-  setSelectedAnnoId,
-  setSelectedChartId,
+  slideHeight:
+  SLIDE_HEIGHT,
 });
 
 const {

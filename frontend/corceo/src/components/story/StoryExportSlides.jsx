@@ -7,8 +7,8 @@ import StorySlideContent
 function StoryExportSlides({
   isExporting,
   slides = [],
-  SLIDE_WIDTH,
-  SLIDE_HEIGHT,
+  SLIDE_WIDTH = 1280,
+  SLIDE_HEIGHT = 720,
 }) {
   if (!isExporting) {
     return null;
@@ -19,6 +19,7 @@ function StoryExportSlides({
       aria-hidden="true"
       style={{
         position: "fixed",
+
         left: "-10000px",
         top: 0,
 
@@ -26,6 +27,8 @@ function StoryExportSlides({
           `${SLIDE_WIDTH}px`,
 
         pointerEvents: "none",
+
+        visibility: "visible",
       }}
     >
       {slides.map(
@@ -48,17 +51,19 @@ function StoryExportSlides({
               height:
                 `${SLIDE_HEIGHT}px`,
 
-              padding: "48px",
-
               boxSizing:
                 "border-box",
 
-              display: "flex",
+              padding:
+                "36px 48px",
+
+              display:
+                "flex",
 
               flexDirection:
                 "column",
 
-              gap: "16px",
+              gap: "18px",
 
               overflow:
                 "hidden",
@@ -70,42 +75,42 @@ function StoryExportSlides({
                 "#0f172a",
             }}
           >
-            {/* ========================= */}
-            {/* SLIDE TITLE */}
-            {/* ========================= */}
+            {/* ===================== */}
+            {/* TITLE */}
+            {/* ===================== */}
 
             <div
               style={{
-                height: "56px",
+                height: "48px",
 
                 flexShrink: 0,
 
-                padding:
-                  "6px 0",
+                display:
+                  "flex",
 
-                boxSizing:
-                  "border-box",
+                alignItems:
+                  "center",
 
                 fontFamily:
                   "Arial, sans-serif",
 
                 fontSize:
-                  "34px",
+                  "30px",
 
                 fontWeight:
                   700,
 
                 lineHeight:
-                  "44px",
+                  1.2,
 
                 color:
                   "#0f172a",
 
-                whiteSpace:
-                  "nowrap",
-
                 overflow:
                   "hidden",
+
+                whiteSpace:
+                  "nowrap",
 
                 textOverflow:
                   "ellipsis",
@@ -118,9 +123,9 @@ function StoryExportSlides({
             </div>
 
 
-            {/* ========================= */}
-            {/* SHARED SLIDE CONTENT */}
-            {/* ========================= */}
+            {/* ===================== */}
+            {/* CANVAS */}
+            {/* ===================== */}
 
             <div
               style={{
@@ -132,18 +137,16 @@ function StoryExportSlides({
                 flex: 1,
 
                 minHeight: 0,
+
+                overflow:
+                  "hidden",
               }}
             >
               <StorySlideContent
                 slide={slide}
-
-                slideIndex={
-                  slideIndex
-                }
-
-                interactive={
-                  false
-                }
+                slideIndex={slideIndex}
+                interactive={false}
+                exportMode={true}
               />
             </div>
           </div>
