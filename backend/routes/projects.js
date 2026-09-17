@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchProjects, addProject,renameProject, deleteProject, duplicateProject, fetchAllProjects, getProjectChart,updateProjectFavorite } = require("../controllers/projectsController");
+const { fetchProjects, addProject, renameProject, deleteProject, duplicateProject, fetchAllProjects, getProjectChart, updateProjectFavorite } = require("../controllers/projectsController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 router.get("/", authMiddleware, fetchProjects);

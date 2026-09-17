@@ -1,7 +1,7 @@
 function ActiveFilterChips({
   filters = [],
   onRemoveFilterValue,
-  onClearFilters,
+  onClearFilters
 }) {
   if (!filters.length) {
     return null;
@@ -14,15 +14,15 @@ function ActiveFilterChips({
       </span>
 
       {filters.flatMap((filter, filterIndex) => {
-        const values = Array.isArray(filter.value)
-          ? filter.value
-          : [filter.value];
+        const values = Array.isArray(filter.value) ?
+        filter.value :
+        [filter.value];
 
-        return values.map((value) => (
-          <div
-            key={`${filter.field}-${String(value)}`}
-            className="app-surface app-border flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
-          >
+        return values.map((value) =>
+        <div
+          key={`${filter.field}-${String(value)}`}
+          className="app-surface app-border flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
+          
             <span className="font-semibold">
               {filter.field}
             </span>
@@ -32,28 +32,28 @@ function ActiveFilterChips({
             <span>{String(value)}</span>
 
             <button
-              type="button"
-              onClick={() =>
-                onRemoveFilterValue(filterIndex, value)
-              }
-              className="ml-1 font-bold text-red-500 hover:text-red-700"
-              title={`Remove ${value}`}
-            >
+            type="button"
+            onClick={() =>
+            onRemoveFilterValue(filterIndex, value)
+            }
+            className="ml-1 font-bold text-red-500 hover:text-red-700"
+            title={`Remove ${value}`}>
+            
               ×
             </button>
           </div>
-        ));
+        );
       })}
 
       <button
         type="button"
         onClick={onClearFilters}
-        className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-      >
+        className="text-xs font-semibold text-blue-600 hover:text-blue-800">
+        
         Clear all
       </button>
-    </div>
-  );
+    </div>);
+
 }
 
 export default ActiveFilterChips;

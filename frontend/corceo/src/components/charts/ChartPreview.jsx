@@ -24,11 +24,11 @@ function ChartPreview({
   settings = {},
   onChartItemClick,
   selectedChartValues = [],
-  storyMode = false,
+  storyMode = false
 }) {
-  // =========================
-  // CHART COMPONENTS
-  // =========================
+
+
+
 
   const chartViews = {
     bar: BarChartView,
@@ -41,132 +41,132 @@ function ChartPreview({
     composed: ComposedChartView,
     heatmap: HeatmapChartView,
     treemap: TreemapChartView,
-    waterfall: WaterfallChartView,
+    waterfall: WaterfallChartView
   };
 
   const ActiveChart =
-    chartViews[chartConfig.type] ||
-    BarChartView;
+  chartViews[chartConfig.type] ||
+  BarChartView;
 
 
-  // =========================
-  // PROCESSED DATA
-  // =========================
+
+
+
 
   const processedData =
-    React.useMemo(() => {
-      if (!Array.isArray(chartData)) {
-        return [];
-      }
+  React.useMemo(() => {
+    if (!Array.isArray(chartData)) {
+      return [];
+    }
 
-      return chartData
-        .map((item, index) => ({
-          ...item,
+    return chartData.
+    map((item, index) => ({
+      ...item,
 
-          x:
-            item.x !== null &&
-            item.x !== undefined
-              ? String(item.x).trim()
-              : "",
+      x:
+      item.x !== null &&
+      item.x !== undefined ?
+      String(item.x).trim() :
+      "",
 
-          color:
-            generatedColors[index] ||
-            "#3b82f6",
-        }))
-        .filter(
-          (item) =>
-            item.x !== ""
-        );
-    }, [
-      chartData,
-      generatedColors,
-    ]);
+      color:
+      generatedColors[index] ||
+      "#3b82f6"
+    })).
+    filter(
+      (item) =>
+      item.x !== ""
+    );
+  }, [
+  chartData,
+  generatedColors]
+  );
 
 
   const filteredColors =
-    React.useMemo(() => {
-      return processedData.map(
-        (item) => item.color
-      );
-    }, [processedData]);
+  React.useMemo(() => {
+    return processedData.map(
+      (item) => item.color
+    );
+  }, [processedData]);
 
 
-  // =========================
-  // LAYOUT FLAGS
-  // =========================
+
+
+
 
   const isSideLegend =
-    settings.showLegend &&
-    (
-      settings.legendPosition ===
-        "left" ||
-      settings.legendPosition ===
-        "right"
-    );
+  settings.showLegend && (
+
+  settings.legendPosition ===
+  "left" ||
+  settings.legendPosition ===
+  "right");
+
 
   const isTopBottomLegend =
-    settings.showLegend &&
-    (
-      settings.legendPosition ===
-        "top" ||
-      settings.legendPosition ===
-        "bottom"
-    );
+  settings.showLegend && (
+
+  settings.legendPosition ===
+  "top" ||
+  settings.legendPosition ===
+  "bottom");
+
 
   const isExport =
-    settings.exportMode === true;
+  settings.exportMode === true;
 
 
-  // =========================
-  // ROOT OVERFLOW
-  // =========================
 
-  /*
-   * Normal visualization:
-   * keeps the old scrolling behavior.
-   *
-   * Story:
-   * allows tooltip content to extend
-   * outside the individual chart.
-   *
-   * Export:
-   * allows everything to be captured.
-   */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const rootOverflowClass =
-    isExport
-      ? "h-auto overflow-visible"
-      : storyMode
-        ? "h-full overflow-visible"
-        : "h-full overflow-y-auto";
+  isExport ?
+  "h-auto overflow-visible" :
+  storyMode ?
+  "h-full overflow-visible" :
+  "h-full overflow-y-auto";
 
 
-  // =========================
-  // MAIN AREA OVERFLOW
-  // =========================
+
+
+
 
   const mainOverflowClass =
-    isExport
-      ? "h-auto overflow-visible"
-      : storyMode
-        ? "h-full overflow-visible"
-        : isSideLegend
-          ? "h-full overflow-hidden"
-          : "overflow-visible";
+  isExport ?
+  "h-auto overflow-visible" :
+  storyMode ?
+  "h-full overflow-visible" :
+  isSideLegend ?
+  "h-full overflow-hidden" :
+  "overflow-visible";
 
 
-  // =========================
-  // CHART VIEWPORT OVERFLOW
-  // =========================
+
+
+
 
   const viewportOverflowClass =
-    isExport
-      ? "h-auto overflow-visible"
-      : storyMode
-        ? "min-h-0 overflow-visible"
-        : isTopBottomLegend
-          ? ""
-          : "min-h-0 overflow-hidden";
+  isExport ?
+  "h-auto overflow-visible" :
+  storyMode ?
+  "min-h-0 overflow-visible" :
+  isTopBottomLegend ?
+  "" :
+  "min-h-0 overflow-hidden";
 
 
   return (
@@ -178,19 +178,19 @@ function ChartPreview({
         ${rootOverflowClass}
       `}
       style={
-        isExport
-          ? {
-              width: 1400,
-              height: "auto",
-              minHeight: "900px",
-              overflow: "visible",
-            }
-          : undefined
+      isExport ?
+      {
+        width: 1400,
+        height: "auto",
+        minHeight: "900px",
+        overflow: "visible"
+      } :
+      undefined
+      }>
+      
+      {
+
       }
-    >
-      {/* =========================
-          HEADER
-      ========================= */}
 
       <div
         className={`
@@ -201,39 +201,39 @@ function ChartPreview({
           flex-col
 
           ${
-            settings.headerAlign ===
-            "center"
-              ? "items-center text-center"
-              : settings.headerAlign ===
-                  "right"
-                ? "items-end text-right"
-                : "items-start text-left"
-          }
-        `}
-      >
-        {settings.title && (
-          <h1 className="text-2xl font-bold text-slate-800">
+        settings.headerAlign ===
+        "center" ?
+        "items-center text-center" :
+        settings.headerAlign ===
+        "right" ?
+        "items-end text-right" :
+        "items-start text-left"}
+        `
+        }>
+        
+        {settings.title &&
+        <h1 className="text-2xl font-bold text-slate-800">
             {settings.title}
           </h1>
-        )}
+        }
 
-        {settings.subtitle && (
-          <h2 className="mt-1 text-lg text-slate-500">
+        {settings.subtitle &&
+        <h2 className="mt-1 text-lg text-slate-500">
             {settings.subtitle}
           </h2>
-        )}
+        }
 
-        {settings.description && (
-          <p className="mt-3 max-w-2xl text-sm text-slate-600">
+        {settings.description &&
+        <p className="mt-3 max-w-2xl text-sm text-slate-600">
             {settings.description}
           </p>
-        )}
+        }
       </div>
 
 
-      {/* =========================
-          MAIN CONTAINER
-      ========================= */}
+      {
+
+      }
 
       <div
         className={`
@@ -243,190 +243,190 @@ function ChartPreview({
           ${mainOverflowClass}
 
           ${
-            isSideLegend
-              ? "flex-row"
-              : "flex-col"
-          }
-        `}
-      >
-        {/* =========================
-            TOP LEGEND
-        ========================= */}
+        isSideLegend ?
+        "flex-row" :
+        "flex-col"}
+        `
+        }>
+        
+        {
+
+        }
 
         {settings.showLegend &&
-          settings.legendPosition ===
-            "top" && (
-            <div className="mb-4 shrink-0">
+        settings.legendPosition ===
+        "top" &&
+        <div className="mb-4 shrink-0">
               <Legend
-                chartData={
-                  processedData
-                }
-                rawData={rawData}
-                generatedColors={
-                  filteredColors
-                }
-                settings={settings}
-                xField={
-                  chartConfig.x
-                }
-              />
+            chartData={
+            processedData
+            }
+            rawData={rawData}
+            generatedColors={
+            filteredColors
+            }
+            settings={settings}
+            xField={
+            chartConfig.x
+            } />
+          
             </div>
-          )}
+        }
 
 
-        {/* =========================
-            LEFT LEGEND
-        ========================= */}
+        {
+
+        }
 
         {settings.showLegend &&
-          settings.legendPosition ===
-            "left" && (
-            <div
-              className={`
+        settings.legendPosition ===
+        "left" &&
+        <div
+          className={`
                 w-32
                 shrink-0
                 p-4
 
                 ${
-                  isExport ||
-                  storyMode
-                    ? "h-auto overflow-visible"
-                    : "overflow-y-auto"
-                }
-              `}
-            >
+          isExport ||
+          storyMode ?
+          "h-auto overflow-visible" :
+          "overflow-y-auto"}
+              `
+          }>
+          
               <Legend
-                chartData={
-                  processedData
-                }
-                rawData={rawData}
-                generatedColors={
-                  filteredColors
-                }
-                xField={
-                  chartConfig.x
-                }
-                settings={settings}
-              />
+            chartData={
+            processedData
+            }
+            rawData={rawData}
+            generatedColors={
+            filteredColors
+            }
+            xField={
+            chartConfig.x
+            }
+            settings={settings} />
+          
             </div>
-          )}
+        }
 
 
-        {/* =========================
-            CHART VIEWPORT
-        ========================= */}
+        {
+
+        }
 
         <div
           className={`
             relative
             flex-1
             ${viewportOverflowClass}
-          `}
-        >
+          `}>
+          
           <div
             className={`
               w-full
 
               ${
-                isExport
-                  ? "h-[530px]"
-                  : "h-full min-h-0 flex flex-col"
-              }
-            `}
-          >
+            isExport ?
+            "h-[530px]" :
+            "h-full min-h-0 flex flex-col"}
+            `
+            }>
+            
             <ActiveChart
               chartData={
-                processedData
+              processedData
               }
               exportMode={isExport}
               generatedColors={
-                filteredColors
+              filteredColors
               }
               settings={settings}
               chartConfig={
-                chartConfig
+              chartConfig
               }
               visibleYKeys={
-                visibleYKeys
+              visibleYKeys
               }
               onChartItemClick={
-                onChartItemClick
+              onChartItemClick
               }
               selectedChartValues={
-                selectedChartValues
+              selectedChartValues
               }
               storyMode={
-                storyMode
-              }
-            />
+              storyMode
+              } />
+            
           </div>
         </div>
 
 
-        {/* =========================
-            BOTTOM LEGEND
-        ========================= */}
+        {
+
+        }
 
         {settings.showLegend &&
-          settings.legendPosition ===
-            "bottom" && (
-            <div className="mt-4 shrink-0">
+        settings.legendPosition ===
+        "bottom" &&
+        <div className="mt-4 shrink-0">
               <Legend
-                chartData={
-                  processedData
-                }
-                rawData={rawData}
-                generatedColors={
-                  filteredColors
-                }
-                xField={
-                  chartConfig.x
-                }
-                settings={settings}
-              />
+            chartData={
+            processedData
+            }
+            rawData={rawData}
+            generatedColors={
+            filteredColors
+            }
+            xField={
+            chartConfig.x
+            }
+            settings={settings} />
+          
             </div>
-          )}
+        }
 
 
-        {/* =========================
-            RIGHT LEGEND
-        ========================= */}
+        {
+
+        }
 
         {settings.showLegend &&
-          settings.legendPosition ===
-            "right" && (
-            <div
-              className={`
+        settings.legendPosition ===
+        "right" &&
+        <div
+          className={`
                 w-32
                 shrink-0
                 p-4
 
                 ${
-                  isExport ||
-                  storyMode
-                    ? "h-auto overflow-visible"
-                    : "overflow-y-auto"
-                }
-              `}
-            >
+          isExport ||
+          storyMode ?
+          "h-auto overflow-visible" :
+          "overflow-y-auto"}
+              `
+          }>
+          
               <Legend
-                chartData={
-                  processedData
-                }
-                rawData={rawData}
-                generatedColors={
-                  filteredColors
-                }
-                xField={
-                  chartConfig.x
-                }
-                settings={settings}
-              />
+            chartData={
+            processedData
+            }
+            rawData={rawData}
+            generatedColors={
+            filteredColors
+            }
+            xField={
+            chartConfig.x
+            }
+            settings={settings} />
+          
             </div>
-          )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default ChartPreview;

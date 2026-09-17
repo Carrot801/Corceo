@@ -10,11 +10,11 @@ function parseNumericValue(value) {
     return Number.isFinite(value) ? value : 0;
   }
 
-  const normalized = String(value)
-    .trim()
-    .replace(/,/g, "")
-    .replace(/[$€£]/g, "")
-    .replace(/%$/, "");
+  const normalized = String(value).
+  trim().
+  replace(/,/g, "").
+  replace(/[$€£]/g, "").
+  replace(/%$/, "");
 
   const number = Number(normalized);
 
@@ -35,69 +35,69 @@ function applyFilters(rawData, filters = []) {
         case "equals":
           return (
             String(rowValue ?? "").trim().toLowerCase() ===
-            String(filterValue ?? "").trim().toLowerCase()
-          );
+            String(filterValue ?? "").trim().toLowerCase());
+
 
         case "notEquals":
           return (
             String(rowValue ?? "").trim().toLowerCase() !==
-            String(filterValue ?? "").trim().toLowerCase()
-          );
+            String(filterValue ?? "").trim().toLowerCase());
+
 
         case "contains":
-          return String(rowValue ?? "")
-            .toLowerCase()
-            .includes(
-              String(filterValue ?? "").toLowerCase()
-            );
+          return String(rowValue ?? "").
+          toLowerCase().
+          includes(
+            String(filterValue ?? "").toLowerCase()
+          );
 
         case "greaterThan":
           return (
             parseNumericValue(rowValue) >
-            parseNumericValue(filterValue)
-          );
+            parseNumericValue(filterValue));
+
 
         case "greaterThanOrEqual":
           return (
             parseNumericValue(rowValue) >=
-            parseNumericValue(filterValue)
-          );
+            parseNumericValue(filterValue));
+
 
         case "lessThan":
           return (
             parseNumericValue(rowValue) <
-            parseNumericValue(filterValue)
-          );
+            parseNumericValue(filterValue));
+
 
         case "lessThanOrEqual":
           return (
             parseNumericValue(rowValue) <=
-            parseNumericValue(filterValue)
-          );
+            parseNumericValue(filterValue));
 
-        case "between": {
-          const min = parseNumericValue(filter.min);
-          const max = parseNumericValue(filter.max);
-          const value = parseNumericValue(rowValue);
 
-          return value >= min && value <= max;
-        }
+        case "between":{
+            const min = parseNumericValue(filter.min);
+            const max = parseNumericValue(filter.max);
+            const value = parseNumericValue(rowValue);
 
-        case "in": {
-          const selectedValues = Array.isArray(filter.value)
-            ? filter.value
-            : [];
+            return value >= min && value <= max;
+          }
 
-          return selectedValues.some(
-            (selectedValue) =>
-              String(selectedValue ?? "")
-                .trim()
-                .toLowerCase() ===
-              String(rowValue ?? "")
-                .trim()
-                .toLowerCase()
-          );
-        }
+        case "in":{
+            const selectedValues = Array.isArray(filter.value) ?
+            filter.value :
+            [];
+
+            return selectedValues.some(
+              (selectedValue) =>
+              String(selectedValue ?? "").
+              trim().
+              toLowerCase() ===
+              String(rowValue ?? "").
+              trim().
+              toLowerCase()
+            );
+          }
 
         default:
           return true;
@@ -107,36 +107,36 @@ function applyFilters(rawData, filters = []) {
 }
 
 function applyDateRange(
-  rawData,
-  dateRange
-) {
+rawData,
+dateRange)
+{
   if (
-    !dateRange?.field ||
-    (!dateRange?.from && !dateRange?.to)
-  ) {
+  !dateRange?.field ||
+  !dateRange?.from && !dateRange?.to)
+  {
     return rawData;
   }
 
   const field = dateRange.field;
 
   const fromDate =
-    dateRange.from
-      ? new Date(`${dateRange.from}T00:00:00`)
-      : null;
+  dateRange.from ?
+  new Date(`${dateRange.from}T00:00:00`) :
+  null;
 
   const toDate =
-    dateRange.to
-      ? new Date(`${dateRange.to}T23:59:59.999`)
-      : null;
+  dateRange.to ?
+  new Date(`${dateRange.to}T23:59:59.999`) :
+  null;
 
   return rawData.filter((row) => {
     const rawValue = row[field];
 
     if (
-      rawValue === null ||
-      rawValue === undefined ||
-      rawValue === ""
-    ) {
+    rawValue === null ||
+    rawValue === undefined ||
+    rawValue === "")
+    {
       return false;
     }
 
@@ -147,16 +147,16 @@ function applyDateRange(
     }
 
     if (
-      fromDate &&
-      rowDate < fromDate
-    ) {
+    fromDate &&
+    rowDate < fromDate)
+    {
       return false;
     }
 
     if (
-      toDate &&
-      rowDate > toDate
-    ) {
+    toDate &&
+    rowDate > toDate)
+    {
       return false;
     }
 
@@ -165,30 +165,30 @@ function applyDateRange(
 }
 
 function groupDateData(
-  rawData,
-  grouping
-) {
+rawData,
+grouping)
+{
   if (
-    !grouping?.enabled ||
-    !grouping?.field ||
-    !grouping?.unit
-  ) {
+  !grouping?.enabled ||
+  !grouping?.field ||
+  !grouping?.unit)
+  {
     return rawData;
   }
 
   const {
     field,
-    unit,
+    unit
   } = grouping;
 
   return rawData.map((row) => {
     const rawValue = row[field];
 
     if (
-      rawValue === null ||
-      rawValue === undefined ||
-      rawValue === ""
-    ) {
+    rawValue === null ||
+    rawValue === undefined ||
+    rawValue === "")
+    {
       return row;
     }
 
@@ -205,102 +205,102 @@ function groupDateData(
     let groupedValue;
 
     switch (unit) {
-      case "day": {
-        groupedValue =
+      case "day":{
+          groupedValue =
           `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-        break;
-      }
+          break;
+        }
 
-      case "week": {
-        const start = new Date(
-          date.getFullYear(),
-          date.getMonth(),
-          date.getDate()
-        );
+      case "week":{
+          const start = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          );
 
-        const weekday =
+          const weekday =
           start.getDay() || 7;
 
-        start.setDate(
-          start.getDate() -
+          start.setDate(
+            start.getDate() -
             weekday +
             1
-        );
+          );
 
-        groupedValue =
+          groupedValue =
           `${start.getFullYear()}-${String(
             start.getMonth() + 1
           ).padStart(2, "0")}-${String(
             start.getDate()
           ).padStart(2, "0")}`;
 
-        break;
-      }
+          break;
+        }
 
-      case "quarter": {
-        const quarter =
+      case "quarter":{
+          const quarter =
           Math.floor(
             (month - 1) / 3
           ) + 1;
 
-        groupedValue =
+          groupedValue =
           `${year} Q${quarter}`;
 
-        break;
-      }
+          break;
+        }
 
-      case "year": {
-        groupedValue =
+      case "year":{
+          groupedValue =
           String(year);
 
-        break;
-      }
+          break;
+        }
 
       case "month":
-      default: {
-        groupedValue =
+      default:{
+          groupedValue =
           `${year}-${String(month).padStart(
             2,
             "0"
           )}`;
 
-        break;
-      }
+          break;
+        }
     }
 
     return {
       ...row,
-      [field]: groupedValue,
+      [field]: groupedValue
     };
   });
 }
 
 function aggregateData(
-  rawData,
-  xField,
-  yFields,
-  mode = "none",
-  tooltipExtraFields = []
-) {
-  const yKeys = Array.isArray(yFields)
-    ? yFields
-    : yFields
-      ? [yFields]
-      : [];
+rawData,
+xField,
+yFields,
+mode = "none",
+tooltipExtraFields = [])
+{
+  const yKeys = Array.isArray(yFields) ?
+  yFields :
+  yFields ?
+  [yFields] :
+  [];
 
-  const extraFields = Array.isArray(tooltipExtraFields)
-    ? tooltipExtraFields
-    : [];
+  const extraFields = Array.isArray(tooltipExtraFields) ?
+  tooltipExtraFields :
+  [];
 
-  /*
-   * No aggregation:
-   * preserve the extra tooltip values directly from each row.
-   */
+
+
+
+
   if (mode === "none") {
     return rawData.map((row) => {
       const result = {
-        x: row[xField],
+        x: row[xField]
       };
 
       yKeys.forEach((key) => {
@@ -315,10 +315,10 @@ function aggregateData(
     });
   }
 
-  /*
-   * Aggregation:
-   * store all original rows belonging to each X category.
-   */
+
+
+
+
   const groupedData = new Map();
 
   rawData.forEach((row) => {
@@ -327,7 +327,7 @@ function aggregateData(
     if (!groupedData.has(xValue)) {
       groupedData.set(xValue, {
         valuesByKey: {},
-        sourceRows: [],
+        sourceRows: []
       });
     }
 
@@ -349,12 +349,12 @@ function aggregateData(
   return Array.from(groupedData.entries()).map(
     ([xValue, group]) => {
       const result = {
-        x: xValue,
+        x: xValue
       };
 
       yKeys.forEach((key) => {
         const values =
-          group.valuesByKey[key] || [];
+        group.valuesByKey[key] || [];
 
         if (values.length === 0) {
           result[key] = 0;
@@ -364,10 +364,10 @@ function aggregateData(
         switch (mode) {
           case "avg":
             result[key] =
-              values.reduce(
-                (sum, value) => sum + value,
-                0
-              ) / values.length;
+            values.reduce(
+              (sum, value) => sum + value,
+              0
+            ) / values.length;
             break;
 
           case "min":
@@ -392,29 +392,29 @@ function aggregateData(
         }
       });
 
-      /*
-       * Combine unique tooltip values from all rows
-       * belonging to the aggregated X category.
-       */
+
+
+
+
       extraFields.forEach((field) => {
         const uniqueValues = [
-          ...new Set(
-            group.sourceRows
-              .map((row) => row[field])
-              .filter(
-                (value) =>
-                  value !== null &&
-                  value !== undefined &&
-                  value !== ""
-              )
-              .map((value) => String(value))
-          ),
-        ];
+        ...new Set(
+          group.sourceRows.
+          map((row) => row[field]).
+          filter(
+            (value) =>
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+          ).
+          map((value) => String(value))
+        )];
+
 
         result[field] =
-          uniqueValues.length > 0
-            ? uniqueValues.join(", ")
-            : null;
+        uniqueValues.length > 0 ?
+        uniqueValues.join(", ") :
+        null;
       });
 
       return result;
@@ -427,11 +427,11 @@ function sortData(chartRows, sorting, yFields) {
     return chartRows;
   }
 
-  const yKeys = Array.isArray(yFields)
-    ? yFields
-    : yFields
-      ? [yFields]
-      : [];
+  const yKeys = Array.isArray(yFields) ?
+  yFields :
+  yFields ?
+  [yFields] :
+  [];
 
   const field = sorting.field || yKeys[0];
 
@@ -449,9 +449,9 @@ function sortData(chartRows, sorting, yFields) {
     let comparison;
 
     if (
-      Number.isFinite(aNumber) &&
-      Number.isFinite(bNumber)
-    ) {
+    Number.isFinite(aNumber) &&
+    Number.isFinite(bNumber))
+    {
       comparison = aNumber - bNumber;
     } else {
       comparison = String(aValue ?? "").localeCompare(
@@ -459,14 +459,14 @@ function sortData(chartRows, sorting, yFields) {
         undefined,
         {
           numeric: true,
-          sensitivity: "base",
+          sensitivity: "base"
         }
       );
     }
 
-    return sorting.direction === "desc"
-      ? -comparison
-      : comparison;
+    return sorting.direction === "desc" ?
+    -comparison :
+    comparison;
   });
 }
 
@@ -475,11 +475,11 @@ function applyRanking(chartRows, ranking, yFields) {
     return chartRows;
   }
 
-  const yKeys = Array.isArray(yFields)
-    ? yFields
-    : yFields
-      ? [yFields]
-      : [];
+  const yKeys = Array.isArray(yFields) ?
+  yFields :
+  yFields ?
+  [yFields] :
+  [];
 
   const field = ranking.field || yKeys[0];
   const count = Math.max(
@@ -495,9 +495,9 @@ function applyRanking(chartRows, ranking, yFields) {
     const aValue = parseNumericValue(a[field]);
     const bValue = parseNumericValue(b[field]);
 
-    return ranking.direction === "bottom"
-      ? aValue - bValue
-      : bValue - aValue;
+    return ranking.direction === "bottom" ?
+    aValue - bValue :
+    bValue - aValue;
   });
 
   return sorted.slice(0, count);
@@ -506,91 +506,91 @@ function applyRanking(chartRows, ranking, yFields) {
 
 function useChartData({ data, chartConfig, settings }) {
   const processed = useMemo(() => {
-  const yKeys = Array.isArray(chartConfig.y)
-    ? chartConfig.y
-    : chartConfig.y
-      ? [chartConfig.y]
-      : [];
+    const yKeys = Array.isArray(chartConfig.y) ?
+    chartConfig.y :
+    chartConfig.y ?
+    [chartConfig.y] :
+    [];
 
-  if (
+    if (
     !Array.isArray(data) ||
     data.length === 0 ||
     !chartConfig.x ||
-    yKeys.length === 0
-  ) {
-    return {
-      rows: [],
-      visibleYKeys: [],
-    };
-  }
+    yKeys.length === 0)
+    {
+      return {
+        rows: [],
+        visibleYKeys: []
+      };
+    }
 
-  
-const filteredRawData = applyFilters(
-  data,
-  chartConfig.filters
-);
 
-const rangeFilteredData =
-  applyDateRange(
-    filteredRawData,
-    chartConfig.dateRange
-  );
+    const filteredRawData = applyFilters(
+      data,
+      chartConfig.filters
+    );
 
-const groupedRawData = groupDateData(
-  rangeFilteredData,
-  chartConfig.grouping
-);
+    const rangeFilteredData =
+    applyDateRange(
+      filteredRawData,
+      chartConfig.dateRange
+    );
 
-const tooltipExtraFields =
-  settings.tooltipExtraFields ?? [];
+    const groupedRawData = groupDateData(
+      rangeFilteredData,
+      chartConfig.grouping
+    );
 
-const xField =
-  chartConfig.grouping?.enabled &&
-  chartConfig.grouping?.field
-    ? chartConfig.grouping.field
-    : chartConfig.x;
+    const tooltipExtraFields =
+    settings.tooltipExtraFields ?? [];
 
-const aggregationMode =
-  chartConfig.grouping?.enabled
-    ? "sum"
-    : chartConfig.aggregation;
+    const xField =
+    chartConfig.grouping?.enabled &&
+    chartConfig.grouping?.field ?
+    chartConfig.grouping.field :
+    chartConfig.x;
 
-let rows = aggregateData(
-  groupedRawData,
-  xField,
-  yKeys,
-  aggregationMode,
-  tooltipExtraFields
-);
+    const aggregationMode =
+    chartConfig.grouping?.enabled ?
+    "sum" :
+    chartConfig.aggregation;
 
-const filteredYKeys = yKeys;
+    let rows = aggregateData(
+      groupedRawData,
+      xField,
+      yKeys,
+      aggregationMode,
+      tooltipExtraFields
+    );
 
-if (settings.hideZeros) {
-  rows = rows.filter((row) =>
-    filteredYKeys.some(
-      (key) =>
+    const filteredYKeys = yKeys;
+
+    if (settings.hideZeros) {
+      rows = rows.filter((row) =>
+      filteredYKeys.some(
+        (key) =>
         parseNumericValue(row[key]) !== 0
-    )
-  );
-}
+      )
+      );
+    }
 
-rows = sortData(
-  rows,
-  chartConfig.sorting,
-  filteredYKeys
-);
+    rows = sortData(
+      rows,
+      chartConfig.sorting,
+      filteredYKeys
+    );
 
-rows = applyRanking(
-  rows,
-  chartConfig.ranking,
-  filteredYKeys
-);
+    rows = applyRanking(
+      rows,
+      chartConfig.ranking,
+      filteredYKeys
+    );
 
-  return {
-    rows,
-    visibleYKeys: filteredYKeys,
-  };
-}, [
+    return {
+      rows,
+      visibleYKeys: filteredYKeys
+    };
+  }, [
   data,
   chartConfig.x,
   chartConfig.y,
@@ -601,48 +601,48 @@ rows = applyRanking(
   chartConfig.grouping,
   chartConfig.dateRange,
   settings.hideZeros,
-  settings.tooltipExtraFields,
-]);
-
-
-const generatedColors = useMemo(() => {
-  const colorCount = Math.max(
-    processed.visibleYKeys.length,
-    processed.rows.length,
-    1
+  settings.tooltipExtraFields]
   );
 
-  const sequentialCharts = [
-    "heatmap",
-    "waterfall",
-  ];
 
-  const isSequential =
+  const generatedColors = useMemo(() => {
+    const colorCount = Math.max(
+      processed.visibleYKeys.length,
+      processed.rows.length,
+      1
+    );
+
+    const sequentialCharts = [
+    "heatmap",
+    "waterfall"];
+
+
+    const isSequential =
     sequentialCharts.includes(
       chartConfig.type
     );
 
-  return generatePalette(
-    settings.palette ?? "Standard",
-    settings.paletteMode ?? "automatic",
-    colorCount,
-    {
-      useCustomPalette:
+    return generatePalette(
+      settings.palette ?? "Standard",
+      settings.paletteMode ?? "automatic",
+      colorCount,
+      {
+        useCustomPalette:
         settings.useCustomPalette ?? false,
 
-      customColors:
+        customColors:
         settings.customPalette ?? [],
 
-      extendCustomPalette:
+        extendCustomPalette:
         settings.extendCustomPalette ?? true,
 
-      customExtensionMode:
+        customExtensionMode:
         settings.customExtensionMode ?? "distinct",
 
-      ordered: isSequential,
-    }
-  );
-}, [
+        ordered: isSequential
+      }
+    );
+  }, [
   settings.palette,
   settings.paletteMode,
   settings.useCustomPalette,
@@ -651,14 +651,14 @@ const generatedColors = useMemo(() => {
   settings.customExtensionMode,
   chartConfig.type,
   processed.visibleYKeys.length,
-  processed.rows.length,
-]);
+  processed.rows.length]
+  );
 
 
   return {
     chartData: processed.rows,
     generatedColors,
-    visibleYKeys: processed.visibleYKeys,
+    visibleYKeys: processed.visibleYKeys
   };
 }
 

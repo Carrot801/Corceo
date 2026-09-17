@@ -1,23 +1,23 @@
-// src/components/annotations/AnnotationShape.jsx
+
 
 function AnnotationShape({
   annotation,
   selected = false,
   interactive = false,
   onSelect,
-  onDragStart,
+  onDragStart
 }) {
   const markerType =
-    annotation.markerType ??
-    "dot";
+  annotation.markerType ??
+  "dot";
 
   if (markerType === "none") {
     return null;
   }
 
   const handleMouseDown = (
-    event,
-  ) => {
+  event) =>
+  {
     if (!interactive) {
       return;
     }
@@ -26,13 +26,13 @@ function AnnotationShape({
       event,
       "target",
       annotation.id,
-      annotation,
+      annotation
     );
   };
 
   const handleClick = (
-    event,
-  ) => {
+  event) =>
+  {
     if (!interactive) {
       return;
     }
@@ -40,89 +40,89 @@ function AnnotationShape({
     event.stopPropagation();
 
     onSelect?.(
-      annotation.id,
+      annotation.id
     );
   };
 
   const sizeStyle = {
     left:
-      `${annotation.x ?? 0}%`,
+    `${annotation.x ?? 0}%`,
 
     top:
-      `${annotation.y ?? 0}%`,
+    `${annotation.y ?? 0}%`,
 
     width:
-      markerType === "dot"
-        ? `${
-            (Number(
-              annotation.radius,
-            ) || 6) * 2.5
-          }px`
-        : `${
-            Number(
-              annotation.width,
-            ) || 15
-          }%`,
+    markerType === "dot" ?
+    `${
+    (Number(
+      annotation.radius
+    ) || 6) * 2.5}px` :
+
+    `${
+    Number(
+      annotation.width
+    ) || 15}%`,
+
 
     height:
-      markerType === "dot"
-        ? `${
-            (Number(
-              annotation.radius,
-            ) || 6) * 2.5
-          }px`
-        : markerType ===
-            "circle"
-          ? "auto"
-          : `${
-              Number(
-                annotation.height,
-              ) || 15
-            }%`,
+    markerType === "dot" ?
+    `${
+    (Number(
+      annotation.radius
+    ) || 6) * 2.5}px` :
+
+    markerType ===
+    "circle" ?
+    "auto" :
+    `${
+    Number(
+      annotation.height
+    ) || 15}%`,
+
 
     aspectRatio:
-      markerType === "circle"
-        ? "1 / 1"
-        : "auto",
+    markerType === "circle" ?
+    "1 / 1" :
+    "auto",
 
     transform:
-      markerType === "dot"
-        ? "translate(-50%, -50%)"
-        : "none",
+    markerType === "dot" ?
+    "translate(-50%, -50%)" :
+    "none"
   };
 
   const fillColor =
-    annotation.fillColor ||
-    "#3b82f6";
+  annotation.fillColor ||
+  "#3b82f6";
 
   return (
     <div
       className={`
         absolute
         ${
-          interactive
-            ? "pointer-events-auto"
-            : "pointer-events-none"
-        }
+      interactive ?
+      "pointer-events-auto" :
+      "pointer-events-none"}
         ${
-          selected
-            ? "z-40"
-            : "z-30"
-        }
-      `}
-      style={sizeStyle}
-    >
-      {/* =================== */}
-      {/* DOT */}
-      {/* =================== */}
 
-      {markerType === "dot" && (
-        <div
-          onMouseDown={
-            handleMouseDown
-          }
-          onClick={handleClick}
-          className={`
+      selected ?
+      "z-40" :
+      "z-30"}
+      `
+      }
+      style={sizeStyle}>
+      
+      {}
+      {}
+      {}
+
+      {markerType === "dot" &&
+      <div
+        onMouseDown={
+        handleMouseDown
+        }
+        onClick={handleClick}
+        className={`
             h-full
             w-full
             rounded-full
@@ -130,35 +130,35 @@ function AnnotationShape({
             border-white
             shadow-md
             ${
-              interactive
-                ? "cursor-move"
-                : ""
-            }
+        interactive ?
+        "cursor-move" :
+        ""}
             ${
-              selected
-                ? "ring-4 ring-blue-500/20"
-                : ""
-            }
-          `}
-          style={{
-            backgroundColor:
-              fillColor,
-          }}
-        />
-      )}
 
-      {/* =================== */}
-      {/* CIRCLE */}
-      {/* =================== */}
+        selected ?
+        "ring-4 ring-blue-500/20" :
+        ""}
+          `
+        }
+        style={{
+          backgroundColor:
+          fillColor
+        }} />
+
+      }
+
+      {}
+      {}
+      {}
 
       {markerType ===
-        "circle" && (
-        <div
-          onMouseDown={
-            handleMouseDown
-          }
-          onClick={handleClick}
-          className={`
+      "circle" &&
+      <div
+        onMouseDown={
+        handleMouseDown
+        }
+        onClick={handleClick}
+        className={`
             relative
             h-full
             w-full
@@ -166,38 +166,38 @@ function AnnotationShape({
             border-2
             border-dashed
             ${
-              interactive
-                ? "cursor-move"
-                : ""
-            }
+        interactive ?
+        "cursor-move" :
+        ""}
             ${
-              selected
-                ? "border-solid shadow-sm"
-                : ""
-            }
-          `}
-          style={{
-            borderColor:
-              fillColor,
 
-            backgroundColor:
-              `${fillColor}08`,
-          }}
-        />
-      )}
+        selected ?
+        "border-solid shadow-sm" :
+        ""}
+          `
+        }
+        style={{
+          borderColor:
+          fillColor,
 
-      {/* =================== */}
-      {/* SQUARE */}
-      {/* =================== */}
+          backgroundColor:
+          `${fillColor}08`
+        }} />
+
+      }
+
+      {}
+      {}
+      {}
 
       {markerType ===
-        "square" && (
-        <div
-          onMouseDown={
-            handleMouseDown
-          }
-          onClick={handleClick}
-          className={`
+      "square" &&
+      <div
+        onMouseDown={
+        handleMouseDown
+        }
+        onClick={handleClick}
+        className={`
             relative
             h-full
             w-full
@@ -205,49 +205,49 @@ function AnnotationShape({
             border-2
             border-dashed
             ${
-              interactive
-                ? "cursor-move"
-                : ""
-            }
+        interactive ?
+        "cursor-move" :
+        ""}
             ${
-              selected
-                ? "border-solid shadow-sm"
-                : ""
-            }
-          `}
-          style={{
-            borderColor:
-              fillColor,
 
-            backgroundColor:
-              `${fillColor}05`,
-          }}
-        />
-      )}
+        selected ?
+        "border-solid shadow-sm" :
+        ""}
+          `
+        }
+        style={{
+          borderColor:
+          fillColor,
 
-      {/* =================== */}
-      {/* RESIZE HANDLE */}
-      {/* =================== */}
+          backgroundColor:
+          `${fillColor}05`
+        }} />
+
+      }
+
+      {}
+      {}
+      {}
 
       {interactive &&
-        selected &&
-        markerType !==
-          "dot" && (
-          <button
-            type="button"
-            aria-label="Resize annotation"
-            title="Resize annotation"
-            onMouseDown={(
-              event,
-            ) =>
-              onDragStart?.(
-                event,
-                "resize",
-                annotation.id,
-                annotation,
-              )
-            }
-            className="
+      selected &&
+      markerType !==
+      "dot" &&
+      <button
+        type="button"
+        aria-label="Resize annotation"
+        title="Resize annotation"
+        onMouseDown={(
+        event) =>
+
+        onDragStart?.(
+          event,
+          "resize",
+          annotation.id,
+          annotation
+        )
+        }
+        className="
               absolute
               bottom-0
               right-0
@@ -262,11 +262,26 @@ function AnnotationShape({
               border-[rgb(var(--color-surface))]
               bg-[rgb(var(--color-primary))]
               shadow-md
-            "
-          />
-        )}
-    </div>
-  );
+            " />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      }
+    </div>);
+
 }
 
 export default AnnotationShape;

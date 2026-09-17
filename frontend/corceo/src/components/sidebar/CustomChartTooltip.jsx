@@ -2,93 +2,93 @@ import { useContext } from "react";
 import { formatValue } from "../../utils/formatters";
 
 import {
-  StoryChartScaleContext,} from "../../context/StoryChartScaleContext";
+  StoryChartScaleContext } from "../../context/StoryChartScaleContext";
 
 function CustomChartTooltip({
   active,
   payload = [],
   label,
   settings = {},
-  total = 0,
+  total = 0
 }) {
-  // Hooks must always run first
+
   const storyScale =
-    useContext(
-      StoryChartScaleContext
-    );
+  useContext(
+    StoryChartScaleContext
+  );
 
   const inverseScale =
-    storyScale > 0
-      ? 1 / storyScale
-      : 1;
+  storyScale > 0 ?
+  1 / storyScale :
+  1;
 
-if (
+  if (
   !active ||
   !Array.isArray(payload) ||
   payload.length === 0 ||
-  settings.showTooltip === false
-) {
-  return null;
-}
+  settings.showTooltip === false)
+  {
+    return null;
+  }
 
-const standardFields =
+  const standardFields =
   settings.tooltipFields ?? [
-    "name",
-    "value",
-  ];
+  "name",
+  "value"];
 
-const extraFields =
+
+  const extraFields =
   settings.tooltipExtraFields ?? [];
 
-const row =
+  const row =
   payload[0]?.payload ?? {};
-  
-const hasName =
+
+  const hasName =
   standardFields.includes("name") &&
   (label ?? row.x) !== null &&
   (label ?? row.x) !== undefined &&
   String(label ?? row.x).trim() !== "";
 
-const hasValue =
+  const hasValue =
   standardFields.includes("value") &&
   payload.some(
     (item) =>
-      item?.value !== null &&
-      item?.value !== undefined &&
-      item?.value !== "",
+    item?.value !== null &&
+    item?.value !== undefined &&
+    item?.value !== ""
   );
 
-const hasPercentage =
+  const hasPercentage =
   standardFields.includes(
-    "percentage",
+    "percentage"
   ) &&
   payload.some(
     (item) =>
-      item?.value !== null &&
-      item?.value !== undefined &&
-      item?.value !== "",
+    item?.value !== null &&
+    item?.value !== undefined &&
+    item?.value !== ""
   );
 
-const hasExtraField =
+  const hasExtraField =
   extraFields.some(
     (field) =>
-      row?.[field] !== null &&
-      row?.[field] !== undefined &&
-      String(
-        row[field],
-      ).trim() !== "",
+    row?.[field] !== null &&
+    row?.[field] !== undefined &&
+    String(
+      row[field]
+    ).trim() !== ""
   );
 
-const hasContent =
+  const hasContent =
   hasName ||
   hasValue ||
   hasPercentage ||
   hasExtraField;
 
-if (!hasContent) {
-  return null;
-}
-  
+  if (!hasContent) {
+    return null;
+  }
+
   return (
     <div
       className="
@@ -101,120 +101,129 @@ if (!hasContent) {
         text-xs
         shadow-lg
       "
+
+
+
+
+
+
+
+
+
       style={{
         transform: `scale(${inverseScale})`,
-        transformOrigin: "top left",
-      }}
-    >
+        transformOrigin: "top left"
+      }}>
+      
       {standardFields.includes(
         "name"
-      ) && (
-        <div className="mb-2 font-semibold text-slate-800">
+      ) &&
+      <div className="mb-2 font-semibold text-slate-800">
           {label ?? row.x}
         </div>
-      )}
+      }
 
       {standardFields.includes(
         "value"
       ) &&
-        payload.map((item) => (
-          <div
-            key={String(
-              item.dataKey
-            )}
-            className="flex items-center justify-between gap-4 py-1"
-          >
+      payload.map((item) =>
+      <div
+        key={String(
+          item.dataKey
+        )}
+        className="flex items-center justify-between gap-4 py-1">
+        
             <span className="flex items-center gap-2 text-slate-600">
               <span
-                className="h-2.5 w-2.5 rounded-sm"
-                style={{
-                  backgroundColor:
-                    item.color ||
-                    item.fill,
-                }}
-              />
+            className="h-2.5 w-2.5 rounded-sm"
+            style={{
+              backgroundColor:
+              item.color ||
+              item.fill
+            }} />
+          
 
               {item.name ??
-                item.dataKey}
+          item.dataKey}
             </span>
 
             <span className="font-semibold text-slate-800">
               {settings.tooltipUseChartFormat ===
-              false
-                ? String(
-                    item.value
-                  )
-                : formatValue(
-                    item.value,
-                    settings,
-                    total
-                  )}
+          false ?
+          String(
+            item.value
+          ) :
+          formatValue(
+            item.value,
+            settings,
+            total
+          )}
             </span>
           </div>
-        ))}
+      )}
 
       {standardFields.includes(
         "percentage"
       ) &&
-        payload.map((item) => {
-          const value =
-            Number(
-              item.value
-            ) || 0;
+      payload.map((item) => {
+        const value =
+        Number(
+          item.value
+        ) || 0;
 
-          const percentage =
-            total > 0
-              ? (value /
-                  total) *
-                100
-              : 0;
+        const percentage =
+        total > 0 ?
+        value /
+        total *
+        100 :
+        0;
 
-          return (
-            <div
-              key={`${item.dataKey}-percentage`}
-              className="flex justify-between gap-4 py-1"
-            >
+        return (
+          <div
+            key={`${item.dataKey}-percentage`}
+            className="flex justify-between gap-4 py-1">
+            
               <span className="text-slate-500">
                 {item.name ??
-                  item.dataKey}{" "}
+              item.dataKey}{" "}
                 %
               </span>
 
               <span className="font-medium text-slate-800">
                 {percentage.toFixed(
-                  settings.decimalPlaces ??
-                    1
-                )}
+                settings.decimalPlaces ??
+                1
+              )}
                 %
               </span>
-            </div>
-          );
-        })}
+            </div>);
+
+      })}
 
       {extraFields.length >
-        0 && (
-        <div className="mt-2 border-t border-slate-200 pt-2">
+      0 &&
+      <div className="mt-2 border-t border-slate-200 pt-2">
           {extraFields.map(
-            (field) => (
-              <div
-                key={field}
-                className="flex justify-between gap-4 py-1"
-              >
+          (field) =>
+          <div
+            key={field}
+            className="flex justify-between gap-4 py-1">
+            
                 <span className="text-slate-500">
                   {field}
                 </span>
 
                 <span className="max-w-[180px] truncate font-medium text-slate-800">
                   {row[field] ??
-                    "—"}
+              "—"}
                 </span>
               </div>
-            )
-          )}
+
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 export default CustomChartTooltip;

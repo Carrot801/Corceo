@@ -1,39 +1,39 @@
 import {
   useEffect,
   useRef,
-  useState,
-} from "react";
+  useState } from
+"react";
 
 function SettingColorControl({
   label,
   initialValue,
   onPreview,
-  onChange,
+  onChange
 }) {
   const [
-    draftColor,
-    setDraftColor,
-  ] = useState(initialValue);
+  draftColor,
+  setDraftColor] =
+  useState(initialValue);
 
   const committedColorRef =
-    useRef(initialValue);
+  useRef(initialValue);
 
   const pendingColorRef =
-    useRef(initialValue);
+  useRef(initialValue);
 
   const animationFrameRef =
-    useRef(null);
+  useRef(null);
 
-  // =========================
-  // CLEAN UP ANIMATION FRAME
-  // =========================
+
+
+
 
   useEffect(() => {
     return () => {
       if (
-        animationFrameRef.current !==
-        null
-      ) {
+      animationFrameRef.current !==
+      null)
+      {
         cancelAnimationFrame(
           animationFrameRef.current
         );
@@ -41,88 +41,88 @@ function SettingColorControl({
     };
   }, []);
 
-  // =========================
-  // PREVIEW COLOR
-  // =========================
+
+
+
 
   const previewColor = (
-    nextColor
-  ) => {
-    // Update sidebar immediately.
+  nextColor) =>
+  {
+
     setDraftColor(
       nextColor
     );
 
     pendingColorRef.current =
-      nextColor;
+    nextColor;
 
-    // Only update the chart once
-    // per animation frame.
+
+
     if (
-      animationFrameRef.current !==
-      null
-    ) {
+    animationFrameRef.current !==
+    null)
+    {
       return;
     }
 
     animationFrameRef.current =
-      requestAnimationFrame(
-        () => {
-          animationFrameRef.current =
-            null;
+    requestAnimationFrame(
+      () => {
+        animationFrameRef.current =
+        null;
 
-          onPreview?.(
-            pendingColorRef.current
-          );
-        }
-      );
+        onPreview?.(
+          pendingColorRef.current
+        );
+      }
+    );
   };
 
-  // =========================
-  // COMMIT FINAL COLOR
-  // =========================
+
+
+
 
   const commitColor = (
-    nextColor =
-      pendingColorRef.current
-  ) => {
+  nextColor =
+  pendingColorRef.current) =>
+  {
     if (
-      animationFrameRef.current !==
-      null
-    ) {
+    animationFrameRef.current !==
+    null)
+    {
       cancelAnimationFrame(
         animationFrameRef.current
       );
 
       animationFrameRef.current =
-        null;
+      null;
     }
 
     setDraftColor(
       nextColor
     );
 
-    // Make sure final color
-    // is displayed.
+
+
     onPreview?.(
       nextColor
     );
 
     if (
-      nextColor ===
-      committedColorRef.current
-    ) {
+    nextColor ===
+    committedColorRef.current)
+    {
       return;
     }
 
     const previousColor =
-      committedColorRef.current;
+    committedColorRef.current;
 
     committedColorRef.current =
-      nextColor;
+    nextColor;
 
     pendingColorRef.current =
-      nextColor;
+    nextColor;
 
     onChange?.(
       nextColor,
@@ -142,41 +142,44 @@ function SettingColorControl({
           value={draftColor}
 
           onInput={(event) =>
-            previewColor(
-              event.currentTarget.value
-            )
+          previewColor(
+            event.currentTarget.value
+          )
           }
 
           onChange={(event) =>
-            commitColor(
-              event.currentTarget.value
-            )
+          commitColor(
+            event.currentTarget.value
+          )
           }
 
           onBlur={() =>
-            commitColor()
+          commitColor()
           }
 
           className="
             h-7 w-10 cursor-pointer
             border-none bg-transparent p-0
-          "
-        />
+          " />
+
+
+
+        
 
         <span
           className="h-5 w-5 shrink-0 rounded border"
           style={{
             backgroundColor:
-              draftColor,
-          }}
-        />
+            draftColor
+          }} />
+        
 
         <span className="app-text-secondary min-w-0 flex-1 truncate font-mono text-xs">
           {draftColor.toUpperCase()}
         </span>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function SettingColor({
@@ -184,22 +187,22 @@ function SettingColor({
   value,
   fallback = "#000000",
   onPreview,
-  onChange,
+  onChange
 }) {
   const normalizedValue =
-    value || fallback;
+  value || fallback;
 
   return (
     <SettingColorControl
       key={normalizedValue}
       label={label}
       initialValue={
-        normalizedValue
+      normalizedValue
       }
       onPreview={onPreview}
-      onChange={onChange}
-    />
-  );
+      onChange={onChange} />);
+
+
 }
 
 export default SettingColor;

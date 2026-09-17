@@ -22,8 +22,8 @@ function isEmptyValue(value) {
   return (
     value === null ||
     value === undefined ||
-    String(value).trim() === ""
-  );
+    String(value).trim() === "");
+
 }
 
 function isEmptyRow(row) {
@@ -72,39 +72,39 @@ export function normalizeRows(rows, suppliedHeaders = null) {
   if (!Array.isArray(rows)) {
     return {
       rows: [],
-      columns: [],
+      columns: []
     };
   }
 
   const nonEmptyRows = rows.filter(
     (row) =>
-      row &&
-      typeof row === "object" &&
-      !Array.isArray(row) &&
-      !isEmptyRow(row)
+    row &&
+    typeof row === "object" &&
+    !Array.isArray(row) &&
+    !isEmptyRow(row)
   );
 
   if (nonEmptyRows.length === 0) {
     return {
       rows: [],
-      columns: [],
+      columns: []
     };
   }
 
   const originalHeaders =
-    Array.isArray(suppliedHeaders) && suppliedHeaders.length > 0
-      ? suppliedHeaders
-      : Array.from(
-          new Set(
-            nonEmptyRows.flatMap((row) => Object.keys(row))
-          )
-        );
+  Array.isArray(suppliedHeaders) && suppliedHeaders.length > 0 ?
+  suppliedHeaders :
+  Array.from(
+    new Set(
+      nonEmptyRows.flatMap((row) => Object.keys(row))
+    )
+  );
 
   const columns = createUniqueHeaders(originalHeaders);
 
   const headerMapping = originalHeaders.map((originalHeader, index) => ({
     originalHeader,
-    normalizedHeader: columns[index],
+    normalizedHeader: columns[index]
   }));
 
   const normalizedRows = nonEmptyRows.map((row) => {
@@ -123,13 +123,13 @@ export function normalizeRows(rows, suppliedHeaders = null) {
 
   return {
     rows: normalizedRows,
-    columns,
+    columns
   };
 }
 
-/**
- * Validates the selected file before parsing.
- */
+
+
+
 export function validateDataFile(file) {
   if (!file) {
     throw new Error("No file selected.");
@@ -162,7 +162,7 @@ export function validateDataFile(file) {
 
   return {
     extension,
-    fileType: isCSV ? "csv" : "excel",
+    fileType: isCSV ? "csv" : "excel"
   };
 }
 
@@ -185,16 +185,16 @@ export function parseCSV(file) {
         );
 
         if (seriousErrors.length > 0) {
-          const errorMessage = seriousErrors
-            .map((error) => {
-              const rowText =
-                typeof error.row === "number"
-                  ? ` at row ${error.row + 1}`
-                  : "";
+          const errorMessage = seriousErrors.
+          map((error) => {
+            const rowText =
+            typeof error.row === "number" ?
+            ` at row ${error.row + 1}` :
+            "";
 
-              return `${error.message}${rowText}`;
-            })
-            .join("; ");
+            return `${error.message}${rowText}`;
+          }).
+          join("; ");
 
           reject(
             new Error(`CSV parsing failed: ${errorMessage}`)
@@ -212,7 +212,7 @@ export function parseCSV(file) {
 
         resolve({
           ...normalized,
-          warnings: errors,
+          warnings: errors
         });
       },
 
@@ -220,11 +220,11 @@ export function parseCSV(file) {
         reject(
           new Error(
             `Could not read the CSV file: ${
-              error?.message ?? "Unknown parsing error."
-            }`
+            error?.message ?? "Unknown parsing error."}`
+
           )
         );
-      },
+      }
     });
   });
 }
@@ -236,7 +236,7 @@ export async function readExcelWorkbook(file) {
 
     const workbook = XLSX.read(buffer, {
       type: "array",
-      cellDates: true,
+      cellDates: true
     });
 
     if (!workbook.SheetNames?.length) {
@@ -247,21 +247,21 @@ export async function readExcelWorkbook(file) {
 
     return {
       workbook,
-      sheetNames: workbook.SheetNames,
+      sheetNames: workbook.SheetNames
     };
   } catch (error) {
     if (
-      error instanceof Error &&
-      error.message ===
-        "The Excel workbook contains no worksheets."
-    ) {
+    error instanceof Error &&
+    error.message ===
+    "The Excel workbook contains no worksheets.")
+    {
       throw error;
     }
 
     throw new Error(
       `Could not read the Excel file: ${
-        error?.message ?? "Invalid Excel workbook."
-      }`
+      error?.message ?? "Invalid Excel workbook."}`
+
     );
   }
 }
@@ -289,7 +289,7 @@ export function parseExcelSheet(workbook, sheetName) {
     header: 1,
     defval: "",
     raw: false,
-    blankrows: false,
+    blankrows: false
   });
 
   if (!Array.isArray(matrix) || matrix.length === 0) {
@@ -328,7 +328,7 @@ export function parseExcelSheet(workbook, sheetName) {
 
   return {
     ...normalized,
-    sheetName,
+    sheetName
   };
 }
 
@@ -360,12 +360,12 @@ export async function parseDataFile(file) {
       workbook: null,
 
       requiresSheetSelection: false,
-      warnings: parsedCSV.warnings ?? [],
+      warnings: parsedCSV.warnings ?? []
     };
   }
 
   const { workbook, sheetNames } =
-    await readExcelWorkbook(file);
+  await readExcelWorkbook(file);
 
   if (sheetNames.length === 1) {
     const sheetName = sheetNames[0];
@@ -391,7 +391,7 @@ export async function parseDataFile(file) {
       workbook: null,
 
       requiresSheetSelection: false,
-      warnings: [],
+      warnings: []
     };
   }
 
@@ -413,6 +413,6 @@ export async function parseDataFile(file) {
     workbook,
 
     requiresSheetSelection: true,
-    warnings: [],
+    warnings: []
   };
 }

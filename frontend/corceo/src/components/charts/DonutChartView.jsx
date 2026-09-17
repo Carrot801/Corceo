@@ -3,19 +3,19 @@ import {
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+  ResponsiveContainer } from
+"recharts";
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
 import {
-  getConditionalColor,
-} from "../../utils/conditionalFormatting";
+  getConditionalColor } from
+"../../utils/conditionalFormatting";
 import {
   getYKey,
   getTotal,
-  getPercent,
-} from "../../utils/chartValueHelpers";
+  getPercent } from
+"../../utils/chartValueHelpers";
 
 function DonutChartView({
   chartData = [],
@@ -24,54 +24,54 @@ function DonutChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
-  exportMode = false,
+  exportMode = false
 }) {
   const appearance =
-    chartConfig.appearance || {};
+  chartConfig.appearance || {};
 
   const yKey = getYKey(chartConfig);
 
   const total = getTotal(
     chartData,
-    yKey,
+    yKey
   );
 
-  /*
-   * Sidebar values are percentages.
-   *
-   * Recharts accepts percentages such as:
-   * "55%"
-   * "80%"
-   */
+
+
+
+
+
+
+
   const outerRadius = `${
-    appearance.outerRadius ?? 80
-  }%`;
+  appearance.outerRadius ?? 80}%`;
+
 
   const innerRadius = `${
-    appearance.innerRadius ?? 55
-  }%`;
+  appearance.innerRadius ?? 55}%`;
+
 
   const paddingAngle =
-    Number(
-      appearance.paddingAngle ?? 1,
-    );
+  Number(
+    appearance.paddingAngle ?? 1
+  );
 
   const startAngle =
-    Number(
-      appearance.startAngle ?? 90,
-    );
+  Number(
+    appearance.startAngle ?? 90
+  );
 
-  /*
-   * Recharts draws clockwise when
-   * endAngle is lower than startAngle.
-   */
+
+
+
+
   const endAngle =
-    startAngle - 360;
+  startAngle - 360;
 
   const chartOpacity =
-    Number(
-      appearance.opacity ?? 1,
-    );
+  Number(
+    appearance.opacity ?? 1
+  );
 
   const renderLabel = (props) => {
     const {
@@ -79,98 +79,98 @@ function DonutChartView({
       cy,
       midAngle,
       innerRadius:
-        calculatedInnerRadius,
+      calculatedInnerRadius,
       outerRadius:
-        calculatedOuterRadius,
+      calculatedOuterRadius,
       x,
       y,
-      payload,
+      payload
     } = props;
 
     const fontSize =
     Number(
       appearance.labelSize ??
-        12,
+      12
     );
 
     let labelText = "";
 
     if (
-      appearance.labelType === "name"
-    ) {
+    appearance.labelType === "name")
+    {
       labelText =
-        payload.x ?? "";
+      payload.x ?? "";
     } else if (
-      appearance.labelType ===
-      "percentage"
-    ) {
+    appearance.labelType ===
+    "percentage")
+    {
       const percentage =
-        getPercent(
-          payload[yKey],
-          total,
-        );
+      getPercent(
+        payload[yKey],
+        total
+      );
 
       labelText =
-        `${percentage.toFixed(
-          settings.decimalPlaces ?? 0,
-        )}%`;
+      `${percentage.toFixed(
+        settings.decimalPlaces ?? 0
+      )}%`;
     } else {
       labelText =
-        formatValue(
-          payload[yKey],
-          settings,
-          total,
-        );
+      formatValue(
+        payload[yKey],
+        settings,
+        total
+      );
     }
 
     if (
-      settings.labelPosition ===
-      "inside"
-    ) {
+    settings.labelPosition ===
+    "inside")
+    {
       const RADIAN =
-        Math.PI / 180;
+      Math.PI / 180;
 
       const radius =
-        calculatedInnerRadius +
-        (
-          calculatedOuterRadius -
-          calculatedInnerRadius
-        ) *
-          0.5;
+      calculatedInnerRadius +
+      (
+      calculatedOuterRadius -
+      calculatedInnerRadius) *
+
+      0.5;
 
       const positionX =
-        cx +
-        radius *
-          Math.cos(
-            -midAngle * RADIAN,
-          );
+      cx +
+      radius *
+      Math.cos(
+        -midAngle * RADIAN
+      );
 
       const positionY =
-        cy +
-        radius *
-          Math.sin(
-            -midAngle * RADIAN,
-          );
+      cy +
+      radius *
+      Math.sin(
+        -midAngle * RADIAN
+      );
 
       return (
         <text
           x={positionX}
           y={positionY}
           fill={
-            settings.labelColor ||
-            "#ffffff"
+          settings.labelColor ||
+          "#ffffff"
           }
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={fontSize}
           fontWeight={
-            settings.labelWeight ??
-            600
-          }
-        >
+          settings.labelWeight ??
+          600
+          }>
+          
           {labelText}
-        </text>
-      );
+        </text>);
+
     }
 
     return (
@@ -178,193 +178,193 @@ function DonutChartView({
         x={x}
         y={y}
         fill={
-          settings.labelColor ||
-          "currentColor"
+        settings.labelColor ||
+        "currentColor"
         }
         textAnchor={
-          x > cx
-            ? "start"
-            : "end"
+        x > cx ?
+        "start" :
+        "end"
         }
         dominantBaseline="central"
         fontSize={fontSize}
         fontWeight={
-          settings.labelWeight ??
-          500
-        }
-      >
+        settings.labelWeight ??
+        500
+        }>
+        
         {labelText}
-      </text>
-    );
+      </text>);
+
   };
 
   if (
-    !yKey ||
-    chartData.length === 0
-  ) {
+  !yKey ||
+  chartData.length === 0)
+  {
     return (
       <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
         Select a value field to display the donut chart.
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="h-full min-h-0 w-full">
       <ResponsiveContainer
         width="100%"
-        height="100%"
-      >
+        height="100%">
+        
         <PieChart
           margin={{
             top: 20,
             right: 30,
             bottom: 20,
-            left: 30,
-          }}
-        >
+            left: 30
+          }}>
+          
           <Pie
             data={chartData}
             dataKey={yKey}
             nameKey="x"
             isAnimationActive={!exportMode}
             innerRadius={
-              innerRadius
+            innerRadius
             }
             outerRadius={
-              outerRadius
+            outerRadius
             }
             paddingAngle={
-              paddingAngle
+            paddingAngle
             }
             startAngle={
-              startAngle
+            startAngle
             }
             endAngle={
-              endAngle
+            endAngle
             }
             opacity={
-              chartOpacity
+            chartOpacity
             }
             minAngle={
-              appearance.minSliceAngle ??
-              0
+            appearance.minSliceAngle ??
+            0
             }
             cornerRadius={
-              appearance.sliceRadius ??
-              0
+            appearance.sliceRadius ??
+            0
             }
             stroke={
-              appearance.showSliceBorder ===
-              false
-                ? "none"
-                : appearance.sliceBorderColor ||
-                  "#ffffff"
+            appearance.showSliceBorder ===
+            false ?
+            "none" :
+            appearance.sliceBorderColor ||
+            "#ffffff"
             }
             strokeWidth={
-              appearance.showSliceBorder ===
-              false
-                ? 0
-                : appearance.sliceBorderWidth ??
-                  1
+            appearance.showSliceBorder ===
+            false ?
+            0 :
+            appearance.sliceBorderWidth ??
+            1
             }
             label={
-              settings.showLabels !==
-              false
-                ? renderLabel
-                : false
+            settings.showLabels !==
+            false ?
+            renderLabel :
+            false
             }
             labelLine={
-              settings.showLabels !==
-                false &&
-              settings.labelPosition ===
-                "outside"
+            settings.showLabels !==
+            false &&
+            settings.labelPosition ===
+            "outside"
             }
             onClick={(data) => {
               const clickedItem =
-                data?.payload ||
-                data;
+              data?.payload ||
+              data;
 
               onChartItemClick?.(
-                clickedItem,
+                clickedItem
               );
             }}
             className={
-              onChartItemClick
-                ? "cursor-pointer"
-                : ""
-            }
-          >
+            onChartItemClick ?
+            "cursor-pointer" :
+            ""
+            }>
+            
             {chartData.map(
               (
-                entry,
-                index,
-              ) => {
+              entry,
+              index) =>
+              {
                 const isSelected =
-                  selectedChartValues.length ===
-                    0 ||
-                  selectedChartValues.some(
-                    (selectedValue) =>
-                      String(
-                        selectedValue,
-                      ) ===
-                      String(
-                        entry.x,
-                      ),
-                  );
+                selectedChartValues.length ===
+                0 ||
+                selectedChartValues.some(
+                  (selectedValue) =>
+                  String(
+                    selectedValue
+                  ) ===
+                  String(
+                    entry.x
+                  )
+                );
 
                 const fallbackColor =
-                  generatedColors[
-                    index %
-                      Math.max(
-                        generatedColors.length,
-                        1,
-                      )
-                  ] ||
-                  "#3b82f6";
+                generatedColors[
+                index %
+                Math.max(
+                  generatedColors.length,
+                  1
+                )] ||
+
+                "#3b82f6";
 
                 return (
                   <Cell
                     key={`donut-cell-${entry.x}-${index}`}
-                      fill={getConditionalColor({
+                    fill={getConditionalColor({
                       entry,
                       seriesKey: yKey,
                       settings,
                       fallbackColor:
-                        entry.color ||
-                        fallbackColor,
+                      entry.color ||
+                      fallbackColor
                     })}
                     opacity={
-                      isSelected
-                        ? chartOpacity
-                        : 0.25
-                    }
-                  />
-                );
-              },
+                    isSelected ?
+                    chartOpacity :
+                    0.25
+                    } />);
+
+
+              }
             )}
           </Pie>
 
           {settings.showTooltip !==
-            false && (
-            <Tooltip
-              content={
-                <CustomChartTooltip
-                  settings={
-                    settings
-                  }
-                  chartConfig={
-                    chartConfig
-                  }
-                  total={total}
-                />
+          false &&
+          <Tooltip
+            content={
+            <CustomChartTooltip
+              settings={
+              settings
               }
-            />
-          )}
+              chartConfig={
+              chartConfig
+              }
+              total={total} />
+
+            } />
+
+          }
         </PieChart>
       </ResponsiveContainer>
-    </div>
-  );
+    </div>);
+
 }
 
 export default DonutChartView;

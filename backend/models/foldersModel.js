@@ -14,16 +14,15 @@ const createFolder = async (name, parent_id, userId) => {
   return result;
 };
 const deleteFolderById = async (
-  folderId,
-  userId
-) => {
+folderId,
+userId) =>
+{
   const client =
-    await pool.connect();
+  await pool.connect();
 
   try {
     await client.query("BEGIN");
 
-    // Move direct child folders to the root
     await client.query(
       `
       UPDATE folders
@@ -32,25 +31,24 @@ const deleteFolderById = async (
         AND user_id = $2
       `,
       [
-        folderId,
-        userId,
-      ]
+      folderId,
+      userId]
+
     );
 
-    // Delete only the selected folder
     const result =
-      await client.query(
-        `
+    await client.query(
+      `
         DELETE FROM folders
         WHERE id = $1
           AND user_id = $2
         RETURNING *
         `,
-        [
-          folderId,
-          userId,
-        ]
-      );
+      [
+      folderId,
+      userId]
+
+    );
 
     if (result.rows.length === 0) {
       await client.query("ROLLBACK");
@@ -70,10 +68,10 @@ const deleteFolderById = async (
   }
 };
 const renameFolderById = async (
-  folderId,
-  name,
-  userId
-) => {
+folderId,
+name,
+userId) =>
+{
   const result = await pool.query(
     `
     UPDATE folders
@@ -83,10 +81,10 @@ const renameFolderById = async (
     RETURNING *
     `,
     [
-      name,
-      folderId,
-      userId,
-    ]
+    name,
+    folderId,
+    userId]
+
   );
 
   return result.rows[0] || null;

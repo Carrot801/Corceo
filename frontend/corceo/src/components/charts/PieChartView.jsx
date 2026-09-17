@@ -3,22 +3,22 @@ import {
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+  ResponsiveContainer } from
+"recharts";
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
 
 import {
-  getConditionalColor,
-} from "../../utils/conditionalFormatting";
+  getConditionalColor } from
+"../../utils/conditionalFormatting";
 
 
 import {
   getYKey,
   getTotal,
-  getPercent,
-} from "../../utils/chartValueHelpers";
+  getPercent } from
+"../../utils/chartValueHelpers";
 
 function PieChartView({
   chartData = [],
@@ -27,162 +27,162 @@ function PieChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
-  exportMode = false,
+  exportMode = false
 }) {
   const appearance =
-    chartConfig.appearance || {};
+  chartConfig.appearance || {};
 
   const yKey = getYKey(chartConfig);
 
   const total = getTotal(
     chartData,
-    yKey,
+    yKey
   );
 
   const outerRadiusNumber =
-    Math.max(
-      20,
-      Math.min(
-        100,
-        Number(
-          appearance.outerRadius ??
-            80,
-        ),
-      ),
-    );
+  Math.max(
+    20,
+    Math.min(
+      100,
+      Number(
+        appearance.outerRadius ??
+        80
+      )
+    )
+  );
 
   const outerRadius =
-    `${outerRadiusNumber}%`;
+  `${outerRadiusNumber}%`;
 
   const paddingAngle =
-    Number(
-      appearance.paddingAngle ??
-        1,
-    );
+  Number(
+    appearance.paddingAngle ??
+    1
+  );
 
   const startAngle =
-    Number(
-      appearance.startAngle ??
-        90,
-    );
+  Number(
+    appearance.startAngle ??
+    90
+  );
 
   const endAngle =
-    startAngle - 360;
+  startAngle - 360;
 
   const chartOpacity =
-    Number(
-      appearance.opacity ?? 1,
-    );
+  Number(
+    appearance.opacity ?? 1
+  );
 
   const selectedOffset =
-    Number(
-      appearance.selectedOffset ??
-        0,
-    );
+  Number(
+    appearance.selectedOffset ??
+    0
+  );
 
   const renderLabel = (
-    props,
-  ) => {
+  props) =>
+  {
     const {
       cx,
       cy,
       midAngle,
       innerRadius,
       outerRadius:
-        calculatedOuterRadius,
+      calculatedOuterRadius,
       x,
       y,
-      payload,
+      payload
     } = props;
 
     const fontSize =
     Number(
       appearance.labelSize ??
-        12,
+      12
     );
 
     let labelText = "";
 
     if (
-      appearance.labelType ===
-      "name"
-    ) {
+    appearance.labelType ===
+    "name")
+    {
       labelText =
-        payload.x ?? "";
+      payload.x ?? "";
     } else if (
-      appearance.labelType ===
-      "percentage"
-    ) {
+    appearance.labelType ===
+    "percentage")
+    {
       const percentage =
-        getPercent(
-          payload[yKey],
-          total,
-        );
+      getPercent(
+        payload[yKey],
+        total
+      );
 
       labelText =
-        `${percentage.toFixed(
-          settings.decimalPlaces ??
-            0,
-        )}%`;
+      `${percentage.toFixed(
+        settings.decimalPlaces ??
+        0
+      )}%`;
     } else {
       labelText =
-        formatValue(
-          payload[yKey],
-          settings,
-          total,
-        );
+      formatValue(
+        payload[yKey],
+        settings,
+        total
+      );
     }
 
     if (
-      settings.labelPosition ===
-      "inside"
-    ) {
+    settings.labelPosition ===
+    "inside")
+    {
       const RADIAN =
-        Math.PI / 180;
+      Math.PI / 180;
 
       const radius =
-        innerRadius +
-        (
-          calculatedOuterRadius -
-          innerRadius
-        ) *
-          0.58;
+      innerRadius +
+      (
+      calculatedOuterRadius -
+      innerRadius) *
+
+      0.58;
 
       const positionX =
-        cx +
-        radius *
-          Math.cos(
-            -midAngle *
-              RADIAN,
-          );
+      cx +
+      radius *
+      Math.cos(
+        -midAngle *
+        RADIAN
+      );
 
       const positionY =
-        cy +
-        radius *
-          Math.sin(
-            -midAngle *
-              RADIAN,
-          );
+      cy +
+      radius *
+      Math.sin(
+        -midAngle *
+        RADIAN
+      );
 
       return (
         <text
           x={positionX}
           y={positionY}
           fill={
-            settings.labelColor ||
-            "#ffffff"
+          settings.labelColor ||
+          "#ffffff"
           }
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={fontSize}
           fontWeight={
-            settings.labelWeight ??
-            600
-          }
-        >
+          settings.labelWeight ??
+          600
+          }>
+          
           {labelText}
-        </text>
-      );
+        </text>);
+
     }
 
     return (
@@ -190,149 +190,149 @@ function PieChartView({
         x={x}
         y={y}
         fill={
-          settings.labelColor ||
-          "currentColor"
+        settings.labelColor ||
+        "currentColor"
         }
         textAnchor={
-          x > cx
-            ? "start"
-            : "end"
+        x > cx ?
+        "start" :
+        "end"
         }
         dominantBaseline="central"
         fontSize={fontSize}
         fontWeight={
-          settings.labelWeight ??
-          500
-        }
-      >
+        settings.labelWeight ??
+        500
+        }>
+        
         {labelText}
-      </text>
-    );
+      </text>);
+
   };
 
   if (
-    !yKey ||
-    chartData.length === 0
-  ) {
+  !yKey ||
+  chartData.length === 0)
+  {
     return (
       <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
         Select a value field to display the pie chart.
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="h-full min-h-0 w-full">
       <ResponsiveContainer
         width="100%"
-        height="100%"
-      >
+        height="100%">
+        
         <PieChart
           margin={{
             top: 20,
             right: 35,
             bottom: 20,
-            left: 35,
-          }}
-        >
+            left: 35
+          }}>
+          
           <Pie
             data={chartData}
             dataKey={yKey}
             nameKey="x"
             innerRadius={0}
             outerRadius={
-              outerRadius
+            outerRadius
             }
             isAnimationActive={
-              !exportMode
+            !exportMode
             }
             paddingAngle={
-              paddingAngle
+            paddingAngle
             }
             startAngle={
-              startAngle
+            startAngle
             }
             endAngle={
-              endAngle
+            endAngle
             }
             minAngle={
-              appearance.minSliceAngle ??
-              0
+            appearance.minSliceAngle ??
+            0
             }
             cornerRadius={
-              appearance.sliceRadius ??
-              0
+            appearance.sliceRadius ??
+            0
             }
             stroke={
-              appearance.showSliceBorder ===
-              false
-                ? "none"
-                : appearance.sliceBorderColor ||
-                  "#ffffff"
+            appearance.showSliceBorder ===
+            false ?
+            "none" :
+            appearance.sliceBorderColor ||
+            "#ffffff"
             }
             strokeWidth={
-              appearance.showSliceBorder ===
-              false
-                ? 0
-                : appearance.sliceBorderWidth ??
-                  1
+            appearance.showSliceBorder ===
+            false ?
+            0 :
+            appearance.sliceBorderWidth ??
+            1
             }
             label={
-              settings.showLabels !==
-              false
-                ? renderLabel
-                : false
+            settings.showLabels !==
+            false ?
+            renderLabel :
+            false
             }
             labelLine={
-              settings.showLabels !==
-                false &&
-              settings.labelPosition ===
-                "outside"
+            settings.showLabels !==
+            false &&
+            settings.labelPosition ===
+            "outside"
             }
             onClick={(data) => {
               const clickedItem =
-                data?.payload ||
-                data;
+              data?.payload ||
+              data;
 
               onChartItemClick?.(
-                clickedItem,
+                clickedItem
               );
             }}
             className={
-              onChartItemClick
-                ? "cursor-pointer"
-                : ""
-            }
-          >
+            onChartItemClick ?
+            "cursor-pointer" :
+            ""
+            }>
+            
             {chartData.map(
               (
-                entry,
-                index,
-              ) => {
+              entry,
+              index) =>
+              {
                 const isSelected =
-                  selectedChartValues.length ===
-                    0 ||
-                  selectedChartValues.some(
-                    (
-                      selectedValue,
-                    ) =>
-                      String(
-                        selectedValue,
-                      ) ===
-                      String(
-                        entry.x,
-                      ),
-                  );
+                selectedChartValues.length ===
+                0 ||
+                selectedChartValues.some(
+                  (
+                  selectedValue) =>
+
+                  String(
+                    selectedValue
+                  ) ===
+                  String(
+                    entry.x
+                  )
+                );
 
                 const fallbackColor =
-                  generatedColors[
-                    index %
-                      Math.max(
-                        generatedColors.length,
-                        1,
-                      )
-                  ] ||
-                  "#3b82f6";
+                generatedColors[
+                index %
+                Math.max(
+                  generatedColors.length,
+                  1
+                )] ||
+
+                "#3b82f6";
 
                 return (
                   <Cell
@@ -342,64 +342,64 @@ function PieChartView({
                       seriesKey: yKey,
                       settings,
                       fallbackColor:
-                        entry.color ||
-                        fallbackColor,
+                      entry.color ||
+                      fallbackColor
                     })}
                     opacity={
-                      isSelected
-                        ? chartOpacity
-                        : 0.25
+                    isSelected ?
+                    chartOpacity :
+                    0.25
                     }
                     style={{
                       outline:
-                        "none",
+                      "none",
                       transform:
-                        exportMode
-                          ? "none"
-                          : isSelected &&
-                              selectedChartValues.length >
-                                0 &&
-                              selectedOffset >
-                                0
-                            ? `scale(${
-                                1 +
-                                selectedOffset /
-                                  100
-                              })`
-                            : "scale(1)",
+                      exportMode ?
+                      "none" :
+                      isSelected &&
+                      selectedChartValues.length >
+                      0 &&
+                      selectedOffset >
+                      0 ?
+                      `scale(${
+                      1 +
+                      selectedOffset /
+                      100})` :
+
+                      "scale(1)",
                       transformOrigin:
-                        "center",
+                      "center",
                       transition:
-                        exportMode
-                          ? "none"
-                          : "opacity 150ms ease, transform 150ms ease",
-                    }}
-                  />
-                );
-              },
+                      exportMode ?
+                      "none" :
+                      "opacity 150ms ease, transform 150ms ease"
+                    }} />);
+
+
+              }
             )}
           </Pie>
 
           {settings.showTooltip !==
-            false && (
-            <Tooltip
-              content={
-                <CustomChartTooltip
-                  settings={
-                    settings
-                  }
-                  chartConfig={
-                    chartConfig
-                  }
-                  total={total}
-                />
+          false &&
+          <Tooltip
+            content={
+            <CustomChartTooltip
+              settings={
+              settings
               }
-            />
-          )}
+              chartConfig={
+              chartConfig
+              }
+              total={total} />
+
+            } />
+
+          }
         </PieChart>
       </ResponsiveContainer>
-    </div>
-  );
+    </div>);
+
 }
 
 export default PieChartView;

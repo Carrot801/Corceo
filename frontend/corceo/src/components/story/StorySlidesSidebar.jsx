@@ -9,11 +9,11 @@ function StorySlidesSidebar({
   duplicateSlide,
   deleteSlide,
   addSlide,
-  reorderSlides,
+  reorderSlides
 }) {
   return (
-          <div
-            className="
+    <div
+      className="
               app-surface
               app-border
               flex
@@ -23,8 +23,18 @@ function StorySlidesSidebar({
               gap-4
               border-r
               p-4
-            "
-          >
+            ">
+
+
+
+
+
+
+
+
+
+
+      
             <div className="flex items-center justify-between">
               <h2 className="app-text text-sm font-semibold">
                 Slides
@@ -35,7 +45,7 @@ function StorySlidesSidebar({
               </span>
             </div>        
             <div
-              className="
+        className="
                 flex
                 min-h-0
                 w-full
@@ -44,63 +54,72 @@ function StorySlidesSidebar({
                 gap-3
                 overflow-y-auto
                 pr-1
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+
+        
               {slides.map((slide, index) => {
 
-                const isActive =
-                  activeSlideIndex === index;
+          const isActive =
+          activeSlideIndex === index;
 
-                return (
-                  <div
-                  key={slide.id}
+          return (
+            <div
+              key={slide.id}
 
-                  draggable
+              draggable
 
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed =
-                      "move";
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed =
+                "move";
 
-                    event.dataTransfer.setData(
-                      "text/plain",
-                      String(index)
-                    );
-                  }}
+                event.dataTransfer.setData(
+                  "text/plain",
+                  String(index)
+                );
+              }}
 
-                  onDragOver={(event) => {
-                    event.preventDefault();
+              onDragOver={(event) => {
+                event.preventDefault();
 
-                    event.dataTransfer.dropEffect =
-                      "move";
-                  }}
+                event.dataTransfer.dropEffect =
+                "move";
+              }}
 
-                  onDrop={(event) => {
-                    event.preventDefault();
+              onDrop={(event) => {
+                event.preventDefault();
 
-                    const fromIndex =
-                      Number(
-                        event.dataTransfer.getData(
-                          "text/plain"
-                        )
-                      );
+                const fromIndex =
+                Number(
+                  event.dataTransfer.getData(
+                    "text/plain"
+                  )
+                );
 
-                    const toIndex =
-                      index;
+                const toIndex =
+                index;
 
-                    if (
-                      !Number.isInteger(fromIndex) ||
-                      fromIndex === toIndex
-                    ) {
-                      return;
-                    }
+                if (
+                !Number.isInteger(fromIndex) ||
+                fromIndex === toIndex)
+                {
+                  return;
+                }
 
-                    reorderSlides(
-                      fromIndex,
-                      toIndex
-                    );
-                  }}
+                reorderSlides(
+                  fromIndex,
+                  toIndex
+                );
+              }}
 
-                  className="
+              className="
                     group
                     flex
                     w-full
@@ -108,11 +127,19 @@ function StorySlidesSidebar({
                     gap-2
                     cursor-grab
                     active:cursor-grabbing
-                  "
-                >
-                {/* Slide number + drag handle */}
+                  ">
+
+
+
+
+
+
+
+
+              
+                {}
                 <div
-                  className="
+                className="
                     app-text-muted
                     flex
                     w-5
@@ -120,29 +147,37 @@ function StorySlidesSidebar({
                     flex-col
                     items-center
                     pt-3
-                  "
-                >
-                  {/* Number */}
+                  ">
+
+
+
+
+
+
+
+
+                
+                  {}
                   <span className="text-[11px] font-semibold">
                     {index + 1}
                   </span>
 
-                  {/* Drag handle */}
+                  {}
                   <div
-                    draggable
-                    title="Drag to reorder slide"
+                  draggable
+                  title="Drag to reorder slide"
 
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed =
-                        "move";
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed =
+                    "move";
 
-                      event.dataTransfer.setData(
-                        "text/plain",
-                        String(index)
-                      );
-                    }}
+                    event.dataTransfer.setData(
+                      "text/plain",
+                      String(index)
+                    );
+                  }}
 
-                    className="
+                  className="
                       mt-1
                       cursor-grab
                       select-none
@@ -151,19 +186,28 @@ function StorySlidesSidebar({
                       opacity-60
                       hover:opacity-100
                       active:cursor-grabbing
-                    "
-                  >
+                    ">
+
+
+
+
+
+
+
+
+
+                  
                     ⋮⋮
                   </div>
                 </div>
-                    {/* Slide thumbnail */}
+                    {}
                     <div
-                      onClick={() => {
-                        setActiveSlideIndex(index);
-                        setSelectedAnnoId(null);
-                        setSelectedChartId(null);
-                      }}
-                      className={`
+                onClick={() => {
+                  setActiveSlideIndex(index);
+                  setSelectedAnnoId(null);
+                  setSelectedChartId(null);
+                }}
+                className={`
                         relative
                         aspect-video
                         min-w-0
@@ -176,32 +220,32 @@ function StorySlidesSidebar({
                         shadow-sm
                         transition-all
                         ${
-                          isActive
-                            ? `
+                isActive ?
+                `
                               border-[rgb(var(--color-primary))]
                               ring-2
                               ring-[rgb(var(--color-highlight))]
-                            `
-                            : `
+                            ` :
+                `
                               border-[rgb(var(--color-border))]
                               hover:border-[rgb(var(--color-border-strong))]
                               hover:shadow-md
-                            `
-                        }
-                      `}
-                    >
+                            `}
+                      `
+                }>
+                
                       <SlideThumbnail
-                        slide={slide}
-                        slideNumber={index + 1}
-                      />
-                      {/* Active slide overlay */}
-                      {isActive && (
-                        <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--color-primary))]/[0.03]" />
-                      )}
+                  slide={slide}
+                  slideNumber={index + 1} />
+                
+                      {}
+                      {isActive &&
+                <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--color-primary))]/[0.03]" />
+                }
 
-                      {/* Slide actions */}
+                      {}
                       <div
-                        className={`
+                  className={`
                           absolute
                           right-1.5
                           top-1.5
@@ -210,20 +254,20 @@ function StorySlidesSidebar({
                           gap-1
                           transition-opacity
                           ${
-                            isActive
-                              ? "opacity-100"
-                              : "opacity-0 group-hover:opacity-100"
-                          }
-                        `}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                        }}
-                      >
+                  isActive ?
+                  "opacity-100" :
+                  "opacity-0 group-hover:opacity-100"}
+                        `
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}>
+                  
                         <button
-                          type="button"
-                          onClick={() => duplicateSlide(index)}
-                          title="Duplicate slide"
-                          className="
+                    type="button"
+                    onClick={() => duplicateSlide(index)}
+                    title="Duplicate slide"
+                    className="
                             flex
                             h-7
                             w-7
@@ -239,16 +283,32 @@ function StorySlidesSidebar({
                             backdrop-blur-sm
                             hover:border-blue-400
                             hover:text-blue-600
-                          "
-                        >
+                          ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    
                           ⧉
                         </button>
 
                         <button
-                          type="button"
-                          onClick={() => deleteSlide(index)}
-                          title="Delete slide"
-                          className="
+                    type="button"
+                    onClick={() => deleteSlide(index)}
+                    title="Delete slide"
+                    className="
                             flex
                             h-7
                             w-7
@@ -264,15 +324,31 @@ function StorySlidesSidebar({
                             backdrop-blur-sm
                             hover:border-red-400
                             hover:text-red-600
-                          "
-                        >
+                          ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    
                           🗑
                         </button>
                       </div>
 
-                      {/* Slide title */}
+                      {}
                       <div
-                        className="
+                  className="
                           absolute
                           bottom-0
                           left-0
@@ -288,20 +364,36 @@ function StorySlidesSidebar({
                           text-[10px]
                           font-medium
                           text-white
-                        "
-                      >
+                        ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  
                         {slide.description || `Slide ${index + 1}`}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  </div>);
+
+        })}
             </div>
         
             <button onClick={addSlide} className="w-full py-2.5 rounded-lg text-sm font-semibold bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-surface-hover))] transition-colors">+ Add Slide</button>
-          </div>
+          </div>);
 
-  );
+
 }
 
 export default StorySlidesSidebar;

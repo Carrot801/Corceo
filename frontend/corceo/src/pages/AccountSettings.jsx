@@ -8,13 +8,13 @@ function AccountSettings() {
   const [profile, setProfile] = useState({
     full_name: "",
     username: "",
-    email: "",
+    email: ""
   });
 
   const [passwords, setPasswords] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmPassword: "",
+    confirmPassword: ""
   });
 
   const [loading, setLoading] = useState(true);
@@ -30,11 +30,11 @@ function AccountSettings() {
 
         setProfile({
           full_name:
-            data.full_name ?? "",
+          data.full_name ?? "",
           username:
-            data.username ?? "",
+          data.username ?? "",
           email:
-            data.email ?? "",
+          data.email ?? ""
         });
       } catch (err) {
         setError(err.message);
@@ -53,25 +53,25 @@ function AccountSettings() {
 
     try {
       const updatedUser =
-        await apiRequest(
-          "/users/me",
-          {
-            method: "PUT",
-            body: JSON.stringify(
-              profile,
-            ),
-          },
-        );
+      await apiRequest(
+        "/users/me",
+        {
+          method: "PUT",
+          body: JSON.stringify(
+            profile
+          )
+        }
+      );
 
       localStorage.setItem(
         "user",
         JSON.stringify(
-          updatedUser,
-        ),
+          updatedUser
+        )
       );
 
       setMessage(
-        "Profile updated successfully.",
+        "Profile updated successfully."
       );
     } catch (err) {
       setError(err.message);
@@ -87,32 +87,32 @@ function AccountSettings() {
       setError("New passwords do not match.");
       return;
     }
-try {
-  await apiRequest(
-    "/users/me/password",
-    {
-      method: "PUT",
-      body: JSON.stringify({
-        currentPassword:
-          passwords.currentPassword,
-        newPassword:
-          passwords.newPassword,
-      }),
-    },
-  );
+    try {
+      await apiRequest(
+        "/users/me/password",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            currentPassword:
+            passwords.currentPassword,
+            newPassword:
+            passwords.newPassword
+          })
+        }
+      );
 
-  setPasswords({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
 
-  setMessage(
-    "Password changed successfully.",
-  );
-} catch (err) {
-  setError(err.message);
-}
+      setMessage(
+        "Password changed successfully."
+      );
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const logout = () => {
@@ -135,16 +135,16 @@ try {
       await apiRequest(
         "/users/me",
         {
-          method: "DELETE",
-        },
+          method: "DELETE"
+        }
       );
 
       localStorage.removeItem(
-        "token",
+        "token"
       );
 
       localStorage.removeItem(
-        "user",
+        "user"
       );
 
       navigate("/register");
@@ -165,8 +165,8 @@ try {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-4 text-sm text-slate-600 hover:text-blue-600 dark:text-slate-300"
-        >
+          className="mb-4 text-sm text-slate-600 hover:text-blue-600 dark:text-slate-300">
+          
           ← Back
         </button>
 
@@ -176,17 +176,17 @@ try {
               Account settings
             </h1>
 
-            {message && (
-              <div className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-800">
+            {message &&
+            <div className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-800">
                 {message}
               </div>
-            )}
+            }
 
-            {error && (
-              <div className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800">
+            {error &&
+            <div className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800">
                 {error}
               </div>
-            )}
+            }
 
             <form onSubmit={updateProfile} className="mt-6 space-y-4">
               <label className="block">
@@ -198,13 +198,13 @@ try {
                   type="text"
                   value={profile.full_name}
                   onChange={(event) =>
-                    setProfile((current) => ({
-                      ...current,
-                      full_name: event.target.value,
-                    }))
+                  setProfile((current) => ({
+                    ...current,
+                    full_name: event.target.value
+                  }))
                   }
-                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-                />
+                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+                
               </label>
 
               <label className="block">
@@ -216,13 +216,13 @@ try {
                   type="text"
                   value={profile.username}
                   onChange={(event) =>
-                    setProfile((current) => ({
-                      ...current,
-                      username: event.target.value,
-                    }))
+                  setProfile((current) => ({
+                    ...current,
+                    username: event.target.value
+                  }))
                   }
-                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-                />
+                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+                
               </label>
 
               <label className="block">
@@ -234,19 +234,19 @@ try {
                   type="email"
                   value={profile.email}
                   onChange={(event) =>
-                    setProfile((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
+                  setProfile((current) => ({
+                    ...current,
+                    email: event.target.value
+                  }))
                   }
-                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-                />
+                  className="mt-1 w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+                
               </label>
 
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-              >
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+                
                 Save profile
               </button>
             </form>
@@ -263,44 +263,44 @@ try {
                 placeholder="Current password"
                 value={passwords.currentPassword}
                 onChange={(event) =>
-                  setPasswords((current) => ({
-                    ...current,
-                    currentPassword: event.target.value,
-                  }))
+                setPasswords((current) => ({
+                  ...current,
+                  currentPassword: event.target.value
+                }))
                 }
-                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-              />
+                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+              
 
               <input
                 type="password"
                 placeholder="New password"
                 value={passwords.newPassword}
                 onChange={(event) =>
-                  setPasswords((current) => ({
-                    ...current,
-                    newPassword: event.target.value,
-                  }))
+                setPasswords((current) => ({
+                  ...current,
+                  newPassword: event.target.value
+                }))
                 }
-                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-              />
+                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+              
 
               <input
                 type="password"
                 placeholder="Confirm new password"
                 value={passwords.confirmPassword}
                 onChange={(event) =>
-                  setPasswords((current) => ({
-                    ...current,
-                    confirmPassword: event.target.value,
-                  }))
+                setPasswords((current) => ({
+                  ...current,
+                  confirmPassword: event.target.value
+                }))
                 }
-                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white"
-              />
+                className="w-full rounded-lg border p-2 dark:bg-slate-800 dark:text-white" />
+              
 
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-              >
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+                
                 Change password
               </button>
             </form>
@@ -313,24 +313,24 @@ try {
               <button
                 type="button"
                 onClick={logout}
-                className="rounded-lg border px-4 py-2 text-sm font-semibold dark:text-white"
-              >
+                className="rounded-lg border px-4 py-2 text-sm font-semibold dark:text-white">
+                
                 Log out
               </button>
 
               <button
                 type="button"
                 onClick={deleteAccount}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white"
-              >
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white">
+                
                 Delete account
               </button>
             </div>
           </section>
         </div>
       </main>
-    </div>
-  );
+    </div>);
+
 }
 
 export default AccountSettings;

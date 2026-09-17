@@ -15,7 +15,7 @@ describe("formatValue", () => {
   test("formats a number with two decimal places", () => {
     const result = formatValue(1234.567, {
       decimalPlaces: 2,
-      useThousandsSeparator: false,
+      useThousandsSeparator: false
     });
 
     expect(result).toBe("1234.57");
@@ -26,7 +26,7 @@ describe("formatValue", () => {
       locale: "en-US",
       numberFormat: "currency",
       currency: "USD",
-      decimalPlaces: 2,
+      decimalPlaces: 2
     });
 
     expect(result).toContain("$");
@@ -38,7 +38,7 @@ describe("formatValue", () => {
     const result = formatValue(25, {
       numberFormat: "percentage",
       percentageInputMode: "whole",
-      decimalPlaces: 0,
+      decimalPlaces: 0
     });
 
     expect(result).toBe("25%");
@@ -50,7 +50,7 @@ describe("formatValue", () => {
       {
         numberFormat: "percentage",
         percentageInputMode: "total",
-        decimalPlaces: 0,
+        decimalPlaces: 0
       },
       100
     );
@@ -62,7 +62,7 @@ describe("formatValue", () => {
     const result = formatValue(-500, {
       decimalPlaces: 0,
       useThousandsSeparator: false,
-      negativeNumberStyle: "parentheses",
+      negativeNumberStyle: "parentheses"
     });
 
     expect(result).toBe("(500)");

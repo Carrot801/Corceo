@@ -1,5 +1,5 @@
-import StorySlideContent
-  from "./StorySlideContent";
+import StorySlideContent from
+"./StorySlideContent";
 
 
 function StoryMainCanvas({
@@ -29,7 +29,7 @@ function StoryMainCanvas({
 
   handleDragStart,
 
-  setActiveSlideIndex,
+  setActiveSlideIndex
 }) {
   return (
     <div
@@ -41,8 +41,16 @@ function StoryMainCanvas({
         items-center
         justify-center
         overflow-hidden
-      "
-    >
+      ">
+
+
+
+
+
+
+
+
+      
       <div
         className="
           story-slide
@@ -59,58 +67,80 @@ function StoryMainCanvas({
           flex-col
           gap-4
           relative
-        "
-      >
+        ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
        <div
-  className="
+          className="
     story-pdf-slide
     min-h-0
     flex-1
     flex
     flex-col
     gap-4
-  "
->
-  {/* ========================= */}
-  {/* SLIDE TITLE */}
-  {/* ========================= */}
+  ">
+
+
+
+
+
+
+
+          
+  {}
+  {}
+  {}
 
   <input
-    type="text"
-    placeholder={
-      `Slide ${
-        activeSlideIndex + 1
-      }`
-    }
-    value={
-      currentSlide.description ||
-      ""
-    }
-    onChange={(event) => {
-      const newTitle =
-        event.target.value;
+            type="text"
+            placeholder={
+            `Slide ${
+            activeSlideIndex + 1}`
 
-      setSlides(
-        (
-          previousSlides
-        ) =>
-          previousSlides.map(
-            (
-              slide,
-              index
-            ) =>
-              index ===
-              activeSlideIndex
-                ? {
+            }
+            value={
+            currentSlide.description ||
+            ""
+            }
+            onChange={(event) => {
+              const newTitle =
+              event.target.value;
+
+              setSlides(
+                (
+                previousSlides) =>
+
+                previousSlides.map(
+                  (
+                  slide,
+                  index) =>
+
+                  index ===
+                  activeSlideIndex ?
+                  {
                     ...slide,
                     description:
-                      newTitle,
-                  }
-                : slide
-          )
-      );
-    }}
-    className="
+                    newTitle
+                  } :
+                  slide
+                )
+              );
+            }}
+            className="
       app-text
       w-full
       bg-transparent
@@ -124,80 +154,94 @@ function StoryMainCanvas({
       pb-2
       transition-colors
       placeholder:text-slate-400
-    "
-  />
+    " />
 
 
-  {/* ========================= */}
-  {/* ACTUAL SLIDE CONTENT */}
-  {/* ========================= */}
+
+
+
+
+
+
+
+
+
+
+
+
+          
+
+
+  {}
+  {}
+  {}
 
   <div className="min-h-0 flex-1">
     <StorySlideContent
-      slide={
-        currentSlide
-      }
+              slide={
+              currentSlide
+              }
 
-      slideIndex={
-        activeSlideIndex
-      }
+              slideIndex={
+              activeSlideIndex
+              }
 
-      interactive
+              interactive
 
-      canvasRef={
-        canvasRef
-      }
+              canvasRef={
+              canvasRef
+              }
 
-      canvasDimensions={
-        canvasDimensions
-      }
+              canvasDimensions={
+              canvasDimensions
+              }
 
-      selectedChartId={
-        selectedChartId
-      }
+              selectedChartId={
+              selectedChartId
+              }
 
-      selectedAnnoId={
-        selectedAnnoId
-      }
+              selectedAnnoId={
+              selectedAnnoId
+              }
 
-      setSelectedChartId={
-        setSelectedChartId
-      }
+              setSelectedChartId={
+              setSelectedChartId
+              }
 
-      setSelectedAnnoId={
-        setSelectedAnnoId
-      }
+              setSelectedAnnoId={
+              setSelectedAnnoId
+              }
 
-      startChartInteraction={
-        startChartInteraction
-      }
+              startChartInteraction={
+              startChartInteraction
+              }
 
-      duplicateChartItem={
-        duplicateChartItem
-      }
+              duplicateChartItem={
+              duplicateChartItem
+              }
 
-      deleteChartItem={
-        deleteChartItem
-      }
+              deleteChartItem={
+              deleteChartItem
+              }
 
-      sendChartToBack={
-        sendChartToBack
-      }
+              sendChartToBack={
+              sendChartToBack
+              }
 
-      setShowPicker={
-        setShowPicker
-      }
+              setShowPicker={
+              setShowPicker
+              }
 
-      handleDragStart={
-        handleDragStart
-      }
-    />
+              handleDragStart={
+              handleDragStart
+              } />
+            
   </div>
 </div>
 
-        {/* ========================= */}
-        {/* LOWER CONTROLS */}
-        {/* ========================= */}
+        {}
+        {}
+        {}
 
         <div
           className="
@@ -208,8 +252,16 @@ function StoryMainCanvas({
             pt-3
             border-t
             mt-auto
-          "
-        >
+          ">
+
+
+
+
+
+
+
+
+          
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -217,7 +269,7 @@ function StoryMainCanvas({
                   Math.max(
                     0,
                     activeSlideIndex -
-                      1
+                    1
                   )
                 );
 
@@ -230,8 +282,8 @@ function StoryMainCanvas({
                 );
               }}
               disabled={
-                activeSlideIndex ===
-                0
+              activeSlideIndex ===
+              0
               }
               className="
                 btn-secondary
@@ -240,8 +292,15 @@ function StoryMainCanvas({
                 text-sm
                 rounded-xl
                 disabled:opacity-40
-              "
-            >
+              ">
+
+
+
+
+
+
+
+              
               ← Previous
             </button>
 
@@ -250,9 +309,9 @@ function StoryMainCanvas({
                 setActiveSlideIndex(
                   Math.min(
                     slides.length -
-                      1,
+                    1,
                     activeSlideIndex +
-                      1
+                    1
                   )
                 );
 
@@ -265,8 +324,8 @@ function StoryMainCanvas({
                 );
               }}
               disabled={
-                activeSlideIndex ===
-                slides.length - 1
+              activeSlideIndex ===
+              slides.length - 1
               }
               className="
                 btn-primary
@@ -275,8 +334,15 @@ function StoryMainCanvas({
                 text-sm
                 rounded-xl
                 disabled:opacity-40
-              "
-            >
+              ">
+
+
+
+
+
+
+
+              
               Next →
             </button>
           </div>
@@ -288,17 +354,23 @@ function StoryMainCanvas({
               font-bold
               uppercase
               tracking-wider
-            "
-          >
+            ">
+
+
+
+
+
+
+            
             Slide{" "}
             {activeSlideIndex +
-              1}{" "}
+            1}{" "}
             / {slides.length}
           </span>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 

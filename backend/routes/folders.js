@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { 
-    fetchFolders,
-    addFolder,
-    deleteFolder,
-    renameFolder
+const {
+  fetchFolders,
+  addFolder,
+  deleteFolder,
+  renameFolder
 } = require("../controllers/foldersController");
 const authMiddleware = require("../middleware/authMiddleware");
 

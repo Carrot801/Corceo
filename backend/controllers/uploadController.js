@@ -11,38 +11,38 @@ const uploadData = async (req, res) => {
 
     if (!userId) {
       return res.status(401).json({
-        error: "Unauthorized",
+        error: "Unauthorized"
       });
     }
 
     if (!Number.isInteger(projectId)) {
       return res.status(400).json({
-        error: "Invalid project_id",
+        error: "Invalid project_id"
       });
     }
 
     if (!Array.isArray(rows)) {
       return res.status(400).json({
-        error: "rows must be an array",
+        error: "rows must be an array"
       });
     }
 
     if (rows.length === 0) {
       return res.status(400).json({
-        error: "The uploaded file contains no rows",
+        error: "The uploaded file contains no rows"
       });
     }
 
     const invalidRow = rows.some(
       (row) =>
-        !row ||
-        typeof row !== "object" ||
-        Array.isArray(row)
+      !row ||
+      typeof row !== "object" ||
+      Array.isArray(row)
     );
 
     if (invalidRow) {
       return res.status(400).json({
-        error: "Every row must be an object",
+        error: "Every row must be an object"
       });
     }
 
@@ -59,7 +59,7 @@ const uploadData = async (req, res) => {
 
     if (projectResult.rows.length === 0) {
       return res.status(404).json({
-        error: "Project not found",
+        error: "Project not found"
       });
     }
 
@@ -119,10 +119,10 @@ const uploadData = async (req, res) => {
     const BATCH_SIZE = 1000;
 
     for (
-      let start = 0;
-      start < rows.length;
-      start += BATCH_SIZE
-    ) {
+    let start = 0;
+    start < rows.length;
+    start += BATCH_SIZE)
+    {
       const batch = rows.slice(
         start,
         start + BATCH_SIZE
@@ -166,7 +166,7 @@ const uploadData = async (req, res) => {
     return res.status(201).json({
       success: true,
       id: datasetId,
-      datasetId,
+      datasetId
     });
   } catch (error) {
     await client.query("ROLLBACK");
@@ -179,9 +179,9 @@ const uploadData = async (req, res) => {
     return res.status(500).json({
       error: "Upload failed",
       details:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : undefined,
+      process.env.NODE_ENV === "development" ?
+      error.message :
+      undefined
     });
   } finally {
     client.release();
@@ -189,5 +189,5 @@ const uploadData = async (req, res) => {
 };
 
 module.exports = {
-  uploadData,
+  uploadData
 };

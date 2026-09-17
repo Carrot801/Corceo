@@ -1,57 +1,52 @@
-// backend/app.js
 
 const express = require("express");
 const cors = require("cors");
 
 
 const projectsRoutes =
-  require("./routes/projects");
+require("./routes/projects");
 
 const foldersRoutes =
-  require("./routes/folders");
+require("./routes/folders");
 
 const uploadRoutes =
-  require("./routes/upload");
+require("./routes/upload");
 
 const dataRoutes =
-  require("./routes/data");
+require("./routes/data");
 
 const chartsRoutes =
-  require("./routes/charts");
+require("./routes/charts");
 
 const searchRoutes =
-  require("./routes/search");
+require("./routes/search");
 
 const storiesRoutes =
-  require("./routes/stories");
+require("./routes/stories");
 
 const authRoutes =
-  require("./routes/auth");
+require("./routes/auth");
 
 const userRoutes =
-  require("./routes/user");
+require("./routes/user");
 
 const errorHandler =
-  require("./middleware/errorHandler");
+require("./middleware/errorHandler");
 
 const app = express();
- 
+
 const helmet = require("helmet");
 
 app.use(helmet());
 
-// =========================
-// GLOBAL MIDDLEWARE
-// =========================
 
 const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:5173",
-];
+process.env.CLIENT_URL || "http://localhost:5173"];
+
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow requests without Origin, e.g. Postman/tests
       if (!origin) {
         return callback(null, true);
       }
@@ -65,90 +60,79 @@ app.use(
       );
     },
 
-    credentials: true,
+    credentials: true
   })
 );
 
 app.use(
   express.json({
-    limit: "10mb",
-  }),
+    limit: "10mb"
+  })
 );
 
 app.use(
   express.urlencoded({
     limit: "10mb",
-    extended: true,
-  }),
+    extended: true
+  })
 );
 
 
-// =========================
-// ROUTES
-// =========================
-
 app.use(
   "/search",
-  searchRoutes,
+  searchRoutes
 );
 
 app.use(
   "/projects",
-  projectsRoutes,
+  projectsRoutes
 );
 
 app.use(
   "/folders",
-  foldersRoutes,
+  foldersRoutes
 );
 
 app.use(
   "/upload-data",
-  uploadRoutes,
+  uploadRoutes
 );
 
 app.use(
   "/auth",
-  authRoutes,
+  authRoutes
 );
 
 app.use(
   "/data",
-  dataRoutes,
+  dataRoutes
 );
 
 app.use(
   "/charts",
-  chartsRoutes,
+  chartsRoutes
 );
 
 app.use(
   "/stories",
-  storiesRoutes,
+  storiesRoutes
 );
 
 app.use(
   "/users",
-  userRoutes,
+  userRoutes
 );
 
 
-// =========================
-// 404
-// =========================
 
 app.use((req, res) => {
-  res
-    .status(404)
-    .json({
-      error: "Route not found",
-    });
+  res.
+  status(404).
+  json({
+    error: "Route not found"
+  });
 });
 
-
-// =========================
-// GLOBAL ERROR HANDLER
-// =========================
 
 app.use(errorHandler);
 

@@ -1,11 +1,11 @@
 import {
-  useCallback,
-} from "react";
+  useCallback } from
+"react";
 
 import {
   arrangeCharts,
-  createChartItem,
-} from "../../utils/story/storyLayout";
+  createChartItem } from
+"../../utils/story/storyLayout";
 
 
 export default function useStoryCharts({
@@ -15,418 +15,418 @@ export default function useStoryCharts({
 
   setSelectedChartId,
   setSelectedAnnoId,
-  setShowPicker,
+  setShowPicker
 }) {
-  // =========================
-  // ADD CHART
-  // =========================
+
+
+
 
   const addChartToSlide =
-    useCallback(
-      (
-        chartId,
-        name,
-        imageUrl
-      ) => {
-        let newItemId =
-          null;
+  useCallback(
+    (
+    chartId,
+    name,
+    imageUrl) =>
+    {
+      let newItemId =
+      null;
 
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                const content =
-                  slide.content ||
-                  [];
+            const content =
+            slide.content ||
+            [];
 
-                const newItem =
-                  createChartItem(
-                    chartId,
-                    name,
-                    imageUrl,
-                    content.length
-                  );
+            const newItem =
+            createChartItem(
+              chartId,
+              name,
+              imageUrl,
+              content.length
+            );
 
-                newItemId =
-                  newItem.id;
+            newItemId =
+            newItem.id;
 
-                return {
-                  ...slide,
+            return {
+              ...slide,
 
-                  content:
-                    arrangeCharts([
-                      ...content,
-                      newItem,
-                    ]),
-                };
-              }
-            )
+              content:
+              arrangeCharts([
+              ...content,
+              newItem]
+              )
+            };
+          }
+        )
+      );
+
+      if (newItemId) {
+        setSelectedChartId(
+          newItemId
         );
+      }
 
-        if (newItemId) {
-          setSelectedChartId(
-            newItemId
-          );
-        }
+      setSelectedAnnoId(
+        null
+      );
 
-        setSelectedAnnoId(
-          null
-        );
+      setShowPicker?.(
+        false
+      );
+    },
+    [
+    activeSlideIndex,
+    setSelectedAnnoId,
+    setSelectedChartId,
+    setShowPicker,
+    setSlides]
 
-        setShowPicker?.(
-          false
-        );
-      },
-      [
-        activeSlideIndex,
-        setSelectedAnnoId,
-        setSelectedChartId,
-        setShowPicker,
-        setSlides,
-      ]
-    );
+  );
 
 
-  // =========================
-  // UPDATE CHART
-  // =========================
+
+
+
 
   const updateChartItem =
-    useCallback(
-      (
-        itemId,
-        updates,
+  useCallback(
+    (
+    itemId,
+    updates,
+    options) =>
+    {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
+
+            return {
+              ...slide,
+
+              content: (
+              slide.content ||
+              []).
+              map(
+                (item) =>
+                item.id ===
+                itemId ?
+                {
+                  ...item,
+                  ...updates
+                } :
+                item
+              )
+            };
+          }
+        ),
         options
-      ) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+      );
+    },
+    [
+    activeSlideIndex,
+    setSlides]
 
-                return {
-                  ...slide,
-
-                  content: (
-                    slide.content ||
-                    []
-                  ).map(
-                    (item) =>
-                      item.id ===
-                      itemId
-                        ? {
-                            ...item,
-                            ...updates,
-                          }
-                        : item
-                  ),
-                };
-              }
-            ),
-          options
-        );
-      },
-      [
-        activeSlideIndex,
-        setSlides,
-      ]
-    );
+  );
 
 
-  // =========================
-  // DELETE CHART
-  // =========================
+
+
+
 
   const deleteChartItem =
-    useCallback(
-      (itemId) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+  useCallback(
+    (itemId) => {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                const remaining =
-                  (
-                    slide.content ||
-                    []
-                  ).filter(
-                    (item) =>
-                      item.id !==
-                      itemId
-                  );
+            const remaining =
+            (
+            slide.content ||
+            []).
+            filter(
+              (item) =>
+              item.id !==
+              itemId
+            );
 
-                return {
-                  ...slide,
+            return {
+              ...slide,
 
-                  content:
-                    arrangeCharts(
-                      remaining
-                    ),
-                };
-              }
-            )
-        );
+              content:
+              arrangeCharts(
+                remaining
+              )
+            };
+          }
+        )
+      );
 
-        setSelectedChartId(
-          (current) =>
-            current ===
-            itemId
-              ? null
-              : current
-        );
-      },
-      [
-        activeSlideIndex,
-        setSelectedChartId,
-        setSlides,
-      ]
-    );
+      setSelectedChartId(
+        (current) =>
+        current ===
+        itemId ?
+        null :
+        current
+      );
+    },
+    [
+    activeSlideIndex,
+    setSelectedChartId,
+    setSlides]
+
+  );
 
 
-  // =========================
-  // DUPLICATE CHART
-  // =========================
+
+
+
 
   const duplicateChartItem =
-    useCallback(
-      (itemId) => {
-        let duplicatedId =
-          null;
+  useCallback(
+    (itemId) => {
+      let duplicatedId =
+      null;
 
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                const content =
-                  slide.content ||
-                  [];
+            const content =
+            slide.content ||
+            [];
 
-                const sourceItem =
-                  content.find(
-                    (item) =>
-                      item.id ===
-                      itemId
-                  );
+            const sourceItem =
+            content.find(
+              (item) =>
+              item.id ===
+              itemId
+            );
 
-                if (!sourceItem) {
-                  return slide;
-                }
+            if (!sourceItem) {
+              return slide;
+            }
 
-                duplicatedId =
-                  `chart-${crypto.randomUUID()}`;
+            duplicatedId =
+            `chart-${crypto.randomUUID()}`;
 
-                const duplicate = {
-                  ...sourceItem,
+            const duplicate = {
+              ...sourceItem,
 
-                  id:
-                    duplicatedId,
+              id:
+              duplicatedId,
 
-                  name:
-                    `${
-                      sourceItem.name ||
-                      "Chart"
-                    } copy`,
-                };
+              name:
+              `${
+              sourceItem.name ||
+              "Chart"} copy`
 
-                return {
-                  ...slide,
+            };
 
-                  content:
-                    arrangeCharts([
-                      ...content,
-                      duplicate,
-                    ]),
-                };
-              }
-            )
+            return {
+              ...slide,
+
+              content:
+              arrangeCharts([
+              ...content,
+              duplicate]
+              )
+            };
+          }
+        )
+      );
+
+      if (duplicatedId) {
+        setSelectedChartId(
+          duplicatedId
         );
+      }
 
-        if (duplicatedId) {
-          setSelectedChartId(
-            duplicatedId
-          );
-        }
+      setSelectedAnnoId(
+        null
+      );
+    },
+    [
+    activeSlideIndex,
+    setSelectedAnnoId,
+    setSelectedChartId,
+    setSlides]
 
-        setSelectedAnnoId(
-          null
-        );
-      },
-      [
-        activeSlideIndex,
-        setSelectedAnnoId,
-        setSelectedChartId,
-        setSlides,
-      ]
-    );
+  );
 
 
-  // =========================
-  // BRING TO FRONT
-  // =========================
+
+
+
 
   const bringChartToFront =
-    useCallback(
-      (
-        itemId,
+  useCallback(
+    (
+    itemId,
+    options) =>
+    {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
+
+            const content =
+            slide.content ||
+            [];
+
+            const highest =
+            Math.max(
+              0,
+              ...content.map(
+                (item) =>
+                item.zIndex ||
+                0
+              )
+            );
+
+            return {
+              ...slide,
+
+              content:
+              content.map(
+                (item) =>
+                item.id ===
+                itemId ?
+                {
+                  ...item,
+
+                  zIndex:
+                  highest +
+                  1
+                } :
+                item
+              )
+            };
+          }
+        ),
         options
-      ) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+      );
+    },
+    [
+    activeSlideIndex,
+    setSlides]
 
-                const content =
-                  slide.content ||
-                  [];
-
-                const highest =
-                  Math.max(
-                    0,
-                    ...content.map(
-                      (item) =>
-                        item.zIndex ||
-                        0
-                    )
-                  );
-
-                return {
-                  ...slide,
-
-                  content:
-                    content.map(
-                      (item) =>
-                        item.id ===
-                        itemId
-                          ? {
-                              ...item,
-
-                              zIndex:
-                                highest +
-                                1,
-                            }
-                          : item
-                    ),
-                };
-              }
-            ),
-          options
-        );
-      },
-      [
-        activeSlideIndex,
-        setSlides,
-      ]
-    );
+  );
 
 
-  // =========================
-  // SEND TO BACK
-  // =========================
+
+
+
 
   const sendChartToBack =
-    useCallback(
-      (itemId) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+  useCallback(
+    (itemId) => {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                const content =
-                  slide.content ||
-                  [];
+            const content =
+            slide.content ||
+            [];
 
-                const lowest =
-                  Math.min(
-                    0,
-                    ...content.map(
-                      (item) =>
-                        item.zIndex ||
-                        0
-                    )
-                  );
+            const lowest =
+            Math.min(
+              0,
+              ...content.map(
+                (item) =>
+                item.zIndex ||
+                0
+              )
+            );
 
-                return {
-                  ...slide,
+            return {
+              ...slide,
 
-                  content:
-                    content.map(
-                      (item) =>
-                        item.id ===
-                        itemId
-                          ? {
-                              ...item,
+              content:
+              content.map(
+                (item) =>
+                item.id ===
+                itemId ?
+                {
+                  ...item,
 
-                              zIndex:
-                                lowest -
-                                1,
-                            }
-                          : item
-                    ),
-                };
-              }
-            )
-        );
-      },
-      [
-        activeSlideIndex,
-        setSlides,
-      ]
-    );
+                  zIndex:
+                  lowest -
+                  1
+                } :
+                item
+              )
+            };
+          }
+        )
+      );
+    },
+    [
+    activeSlideIndex,
+    setSlides]
+
+  );
 
 
   return {
@@ -435,6 +435,6 @@ export default function useStoryCharts({
     deleteChartItem,
     duplicateChartItem,
     bringChartToFront,
-    sendChartToBack,
+    sendChartToBack
   };
-}3
+}3;

@@ -9,9 +9,9 @@ export const defaultChartSettings = {
   extendPalette: false,
   paletteMode: "automatic",
   conditionalFormatting: {
-      enabled: false,
-      rules: [],
-    },
+    enabled: false,
+    rules: []
+  },
   useCustomPalette: false,
   customPalette: [],
   extendCustomPalette: true,
@@ -41,7 +41,7 @@ export const defaultChartSettings = {
   formatMode: "decimal",
   compactNumbers: false,
   numberFormat: "default",
-  decimalPlaces: 2,
+  decimalPlaces: 2
 };
 
 export const defaultChartConfig = {
@@ -53,7 +53,7 @@ export const defaultChartConfig = {
 
   sorting: {
     field: null,
-    direction: "none",
+    direction: "none"
   },
 
   appearance: {
@@ -71,7 +71,7 @@ export const defaultChartConfig = {
       showEveryLabel: false,
       showLine: true,
       showTicks: false,
-      showGrid: false,
+      showGrid: false
     },
 
     yAxis: {
@@ -81,20 +81,20 @@ export const defaultChartConfig = {
       showTicks: false,
       showGrid: true,
       min: "auto",
-      max: "auto",
-    },
+      max: "auto"
+    }
   },
 
   ranking: {
     enabled: false,
     direction: "top",
     count: 10,
-    field: null,
+    field: null
   },
 
   dateGrouping: {
     field: null,
-    interval: "none",
+    interval: "none"
   },
 
   filters: [],
@@ -102,5 +102,5 @@ export const defaultChartConfig = {
   xHierarchy: [],
   dateHierarchySource: null,
   groupSmallCategories: false,
-  timeGroupBy: "none",
+  timeGroupBy: "none"
 };

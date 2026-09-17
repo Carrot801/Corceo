@@ -1,8 +1,8 @@
 import React, {
   useEffect,
   useRef,
-  useState,
-} from "react";
+  useState } from
+"react";
 
 import StoryChart from "../StoryChart";
 import AnnotationLayer from "../annotations/AnnotationLayer";
@@ -31,81 +31,81 @@ function StorySlideContent({
   setShowPicker,
   handleDragStart,
 
-  canvasDimensions: externalCanvasDimensions = null,
+  canvasDimensions: externalCanvasDimensions = null
 }) {
   const internalCanvasRef =
-    useRef(null);
+  useRef(null);
 
   const canvasRef =
-    externalCanvasRef ||
-    internalCanvasRef;
+  externalCanvasRef ||
+  internalCanvasRef;
 
   const [
-    internalCanvasDimensions,
-    setInternalCanvasDimensions,
-  ] = useState({
+  internalCanvasDimensions,
+  setInternalCanvasDimensions] =
+  useState({
     width: 0,
-    height: 0,
+    height: 0
   });
 
   const [
-    hoveredChartId,
-    setHoveredChartId,
-  ] = useState(null);
+  hoveredChartId,
+  setHoveredChartId] =
+  useState(null);
 
 
-  // =========================
-  // CANVAS SIZE
-  // =========================
+
+
+
 
   useEffect(() => {
     if (
-      externalCanvasDimensions ||
-      !canvasRef.current
-    ) {
+    externalCanvasDimensions ||
+    !canvasRef.current)
+    {
       return;
     }
 
     const observer =
-      new ResizeObserver(
-        (entries) => {
-          for (
-            const entry of entries
-          ) {
-            setInternalCanvasDimensions({
-              width:
-                entry.contentRect.width,
+    new ResizeObserver(
+      (entries) => {
+        for (
+        const entry of entries)
+        {
+          setInternalCanvasDimensions({
+            width:
+            entry.contentRect.width,
 
-              height:
-                entry.contentRect.height,
-            });
-          }
+            height:
+            entry.contentRect.height
+          });
         }
-      );
+      }
+    );
 
     observer.observe(
       canvasRef.current
     );
 
     return () =>
-      observer.disconnect();
+    observer.disconnect();
 
   }, [
-    canvasRef,
-    externalCanvasDimensions,
-  ]);
+  canvasRef,
+  externalCanvasDimensions]
+  );
 
 
   const canvasDimensions =
-    externalCanvasDimensions ||
-    internalCanvasDimensions;
+  externalCanvasDimensions ||
+  internalCanvasDimensions;
 
 
   const safeSlide =
-    slide || {
-      content: [],
-      annotations: [],
-    };
+  slide || {
+    content: [],
+    annotations: []
+  };
 
 
   return (
@@ -122,12 +122,22 @@ function StorySlideContent({
         border-slate-200
         bg-white
       "
+
+
+
+
+
+
+
+
+
+
       onClick={(event) => {
         if (
-          !interactive ||
-          event.target !==
-            event.currentTarget
-        ) {
+        !interactive ||
+        event.target !==
+        event.currentTarget)
+        {
           return;
         }
 
@@ -138,11 +148,11 @@ function StorySlideContent({
         setSelectedChartId?.(
           null
         );
-      }}
-    >
-      {/* ========================= */}
-      {/* CHARTS */}
-      {/* ========================= */}
+      }}>
+      
+      {}
+      {}
+      {}
 
       <div
         className="
@@ -151,105 +161,118 @@ function StorySlideContent({
           z-[5]
           overflow-visible
           rounded-xl
-        "
-      >
-        {(safeSlide.content || [])
-          .map((item) => {
-            const isSelected =
-              interactive &&
-              selectedChartId ===
-                item.id;
+        ">
 
-            return (
-              <div
-                key={item.id}
-                className={`
+
+
+
+
+
+        
+        {(safeSlide.content || []).
+        map((item) => {
+          const isSelected =
+          interactive &&
+          selectedChartId ===
+          item.id;
+
+          return (
+            <div
+              key={item.id}
+              className={`
                   absolute
                   group
                   rounded-xl
                   ${
-                    interactive
-                      ? "transition-shadow"
-                      : ""
-                  }
+              interactive ?
+              "transition-shadow" :
+              ""}
                   ${
-                    isSelected
-                      ? "ring-2 ring-[rgb(var(--color-primary))] shadow-xl"
-                      : interactive
-                        ? "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]"
-                        : ""
-                  }
-                `}
-                style={{
-                  left:
-                    `${item.x ?? 5}%`,
 
-                  top:
-                    `${item.y ?? 5}%`,
+              isSelected ?
+              "ring-2 ring-[rgb(var(--color-primary))] shadow-xl" :
+              interactive ?
+              "hover:ring-1 hover:ring-[rgb(var(--color-border-strong))]" :
+              ""}
+                `
+              }
+              style={{
+                left:
+                `${item.x ?? 5}%`,
 
-                  width:
-                    `${item.width ?? 48}%`,
+                top:
+                `${item.y ?? 5}%`,
 
-                  height:
-                    `${item.height ?? 45}%`,
+                width:
+                `${item.width ?? 48}%`,
 
-                  zIndex:
-                    interactive &&
-                    hoveredChartId ===
-                      item.id
-                      ? 10000
-                      : item.zIndex ??
-                        1,
-                }}
-                onMouseEnter={
-                  interactive
-                    ? () => {
-                        setHoveredChartId(
-                          item.id
-                        );
-                      }
-                    : undefined
-                }
-                onMouseLeave={
-                  interactive
-                    ? () => {
-                        setHoveredChartId(
-                          null
-                        );
-                      }
-                    : undefined
-                }
-                onMouseDown={
-                  interactive
-                    ? (event) => {
-                        event.stopPropagation();
+                height:
+                `${item.height ?? 45}%`,
 
-                        setSelectedChartId?.(
-                          item.id
-                        );
+                zIndex:
+                interactive &&
+                hoveredChartId ===
+                item.id ?
+                10000 :
+                item.zIndex ??
+                1
+              }}
+              onMouseEnter={
+              interactive ?
+              () => {
+                setHoveredChartId(
+                  item.id
+                );
+              } :
+              undefined
+              }
+              onMouseLeave={
+              interactive ?
+              () => {
+                setHoveredChartId(
+                  null
+                );
+              } :
+              undefined
+              }
+              onMouseDown={
+              interactive ?
+              (event) => {
+                event.stopPropagation();
 
-                        setSelectedAnnoId?.(
-                          null
-                        );
-                      }
-                    : undefined
-                }
-              >
+                setSelectedChartId?.(
+                  item.id
+                );
+
+                setSelectedAnnoId?.(
+                  null
+                );
+              } :
+              undefined
+              }>
+              
                 <div
-                  className="
+                className="
                     relative
                     h-full
                     w-full
                     overflow-visible
                     rounded-sm
                     bg-white
-                  "
-                >
-                  {/* EDITOR TOOLBAR */}
+                  ">
 
-                  {interactive && (
-                    <div
-                      className={`
+
+
+
+
+
+
+                
+                  {}
+
+                  {interactive &&
+                <div
+                  className={`
                         absolute
                         left-0
                         right-0
@@ -267,15 +290,15 @@ function StorySlideContent({
                         transition-opacity
 
                         ${
-                          isSelected
-                            ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
-                        }
-                      `}
-                    >
+                  isSelected ?
+                  "opacity-100" :
+                  "opacity-0 group-hover:opacity-100"}
+                      `
+                  }>
+                  
                       <button
-                        type="button"
-                        className="
+                    type="button"
+                    className="
                           app-text-secondary
                           min-w-0
                           flex-1
@@ -285,129 +308,145 @@ function StorySlideContent({
                           text-[11px]
                           font-semibold
                         "
-                        title="Drag chart"
-                        onMouseDown={(
-                          event
-                        ) =>
-                          startChartInteraction?.(
-                            event,
-                            "move",
-                            item
-                          )
-                        }
-                      >
+
+
+
+
+
+
+
+
+
+                    title="Drag chart"
+                    onMouseDown={(
+                    event) =>
+
+                    startChartInteraction?.(
+                      event,
+                      "move",
+                      item
+                    )
+                    }>
+                    
                         ⋮⋮{" "}
                         {item.name ||
-                          "Chart"}
+                    "Chart"}
                       </button>
 
                       <div className="ml-2 flex shrink-0 gap-1">
                         <button
-                          type="button"
-                          title="Send backward"
-                          onMouseDown={(
-                            event
-                          ) =>
-                            event.stopPropagation()
-                          }
-                          onClick={(
-                            event
-                          ) => {
-                            event.stopPropagation();
+                      type="button"
+                      title="Send backward"
+                      onMouseDown={(
+                      event) =>
 
-                            sendChartToBack?.(
-                              item.id
-                            );
-                          }}
-                          className="app-icon-button h-6 w-6 rounded text-xs"
-                        >
+                      event.stopPropagation()
+                      }
+                      onClick={(
+                      event) =>
+                      {
+                        event.stopPropagation();
+
+                        sendChartToBack?.(
+                          item.id
+                        );
+                      }}
+                      className="app-icon-button h-6 w-6 rounded text-xs">
+                      
                           ↓
                         </button>
 
                         <button
-                          type="button"
-                          title="Duplicate chart"
-                          onMouseDown={(
-                            event
-                          ) =>
-                            event.stopPropagation()
-                          }
-                          onClick={(
-                            event
-                          ) => {
-                            event.stopPropagation();
+                      type="button"
+                      title="Duplicate chart"
+                      onMouseDown={(
+                      event) =>
 
-                            duplicateChartItem?.(
-                              item.id
-                            );
-                          }}
-                          className="app-icon-button h-6 w-6 rounded text-xs"
-                        >
+                      event.stopPropagation()
+                      }
+                      onClick={(
+                      event) =>
+                      {
+                        event.stopPropagation();
+
+                        duplicateChartItem?.(
+                          item.id
+                        );
+                      }}
+                      className="app-icon-button h-6 w-6 rounded text-xs">
+                      
                           ⧉
                         </button>
 
                         <button
-                          type="button"
-                          title="Delete chart"
-                          onMouseDown={(
-                            event
-                          ) =>
-                            event.stopPropagation()
-                          }
-                          onClick={(
-                            event
-                          ) => {
-                            event.stopPropagation();
+                      type="button"
+                      title="Delete chart"
+                      onMouseDown={(
+                      event) =>
 
-                            deleteChartItem?.(
-                              item.id
-                            );
-                          }}
-                          className="
+                      event.stopPropagation()
+                      }
+                      onClick={(
+                      event) =>
+                      {
+                        event.stopPropagation();
+
+                        deleteChartItem?.(
+                          item.id
+                        );
+                      }}
+                      className="
                             app-icon-button
                             h-6
                             w-6
                             rounded
                             text-xs
                             text-[rgb(var(--color-danger))]
-                          "
-                        >
+                          ">
+
+
+
+
+
+
+
+                      
                           ✕
                         </button>
                       </div>
                     </div>
-                  )}
+                }
 
 
-                  {/* ACTUAL CHART */}
+                  {}
 
                   <div className="h-full w-full bg-white">
                     <StoryChart
-                      chartId={
-                        item.chartId
-                      }
-                      exportMode={exportMode}
-                      storyMode
-                    />
+                    chartId={
+                    item.chartId
+                    }
+                    exportMode={exportMode}
+                    storyMode />
+                  
                   </div>
 
 
-                  {/* RESIZE HANDLES */}
+                  {}
 
                   {interactive &&
-                    isSelected && (
-                      <>
+                isSelected &&
+                <>
                         <div
-                          onMouseDown={(
-                            event
-                          ) =>
-                            startChartInteraction?.(
-                              event,
-                              "top",
-                              item
-                            )
-                          }
-                          className="
+                    onMouseDown={(
+                    event) =>
+
+                    startChartInteraction?.(
+                      event,
+                      "top",
+                      item
+                    )
+                    }
+                    className="
                             absolute
                             left-3
                             right-3
@@ -416,20 +455,29 @@ function StorySlideContent({
                             h-2
                             -translate-y-1/2
                             cursor-n-resize
-                          "
-                        />
+                          " />
+
+
+
+
+
+
+
+
+
+                  
 
                         <div
-                          onMouseDown={(
-                            event
-                          ) =>
-                            startChartInteraction?.(
-                              event,
-                              "bottom",
-                              item
-                            )
-                          }
-                          className="
+                    onMouseDown={(
+                    event) =>
+
+                    startChartInteraction?.(
+                      event,
+                      "bottom",
+                      item
+                    )
+                    }
+                    className="
                             absolute
                             bottom-0
                             left-3
@@ -438,20 +486,29 @@ function StorySlideContent({
                             h-2
                             translate-y-1/2
                             cursor-s-resize
-                          "
-                        />
+                          " />
+
+
+
+
+
+
+
+
+
+                  
 
                         <div
-                          onMouseDown={(
-                            event
-                          ) =>
-                            startChartInteraction?.(
-                              event,
-                              "left",
-                              item
-                            )
-                          }
-                          className="
+                    onMouseDown={(
+                    event) =>
+
+                    startChartInteraction?.(
+                      event,
+                      "left",
+                      item
+                    )
+                    }
+                    className="
                             absolute
                             bottom-3
                             left-0
@@ -460,20 +517,29 @@ function StorySlideContent({
                             w-2
                             -translate-x-1/2
                             cursor-w-resize
-                          "
-                        />
+                          " />
+
+
+
+
+
+
+
+
+
+                  
 
                         <div
-                          onMouseDown={(
-                            event
-                          ) =>
-                            startChartInteraction?.(
-                              event,
-                              "right",
-                              item
-                            )
-                          }
-                          className="
+                    onMouseDown={(
+                    event) =>
+
+                    startChartInteraction?.(
+                      event,
+                      "right",
+                      item
+                    )
+                    }
+                    className="
                             absolute
                             bottom-3
                             right-0
@@ -482,47 +548,56 @@ function StorySlideContent({
                             w-2
                             translate-x-1/2
                             cursor-e-resize
-                          "
-                        />
+                          " />
+
+
+
+
+
+
+
+
+
+                  
 
                         {[
-                          [
-                            "top-left",
-                            "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize",
-                          ],
-                          [
-                            "top-right",
-                            "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize",
-                          ],
-                          [
-                            "bottom-left",
-                            "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize",
-                          ],
-                          [
-                            "bottom-right",
-                            "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize",
-                          ],
-                        ].map(
-                          ([
-                            mode,
-                            position,
-                          ]) => (
-                            <button
-                              key={
-                                mode
-                              }
-                              type="button"
-                              aria-label={`Resize chart from ${mode}`}
-                              onMouseDown={(
-                                event
-                              ) =>
-                                startChartInteraction?.(
-                                  event,
-                                  mode,
-                                  item
-                                )
-                              }
-                              className={`
+                  [
+                  "top-left",
+                  "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"],
+
+                  [
+                  "top-right",
+                  "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"],
+
+                  [
+                  "bottom-left",
+                  "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"],
+
+                  [
+                  "bottom-right",
+                  "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"]].
+
+                  map(
+                    ([
+                    mode,
+                    position]) =>
+
+                    <button
+                      key={
+                      mode
+                      }
+                      type="button"
+                      aria-label={`Resize chart from ${mode}`}
+                      onMouseDown={(
+                      event) =>
+
+                      startChartInteraction?.(
+                        event,
+                        mode,
+                        item
+                      )
+                      }
+                      className={`
                                 absolute
                                 z-40
                                 h-3
@@ -533,31 +608,31 @@ function StorySlideContent({
                                 bg-[rgb(var(--color-primary))]
                                 shadow
                                 ${position}
-                              `}
-                            />
-                          )
-                        )}
+                              `} />
+
+
+                  )}
                       </>
-                    )}
+                }
                 </div>
-              </div>
-            );
-          })}
+              </div>);
+
+        })}
 
 
-        {/* EMPTY SLIDE */}
+        {}
 
         {interactive &&
-          (safeSlide.content || [])
-            .length === 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                setShowPicker?.(
-                  true
-                )
-              }
-              className="
+        (safeSlide.content || []).
+        length === 0 &&
+        <button
+          type="button"
+          onClick={() =>
+          setShowPicker?.(
+            true
+          )
+          }
+          className="
                 app-text-muted
                 flex
                 h-full
@@ -572,8 +647,23 @@ function StorySlideContent({
                 border-[rgb(var(--color-border-strong))]
                 transition-all
                 hover:bg-[rgb(var(--color-surface-hover))]
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
               <span className="text-2xl">
                 📊
               </span>
@@ -582,27 +672,27 @@ function StorySlideContent({
                 Add your first chart
               </span>
             </button>
-          )}
+        }
 
 
-        {/* ADD CHART */}
+        {}
 
         {interactive &&
-          (safeSlide.content || [])
-            .length > 0 && (
-            <button
-              type="button"
-              data-pdf-hide="true"
-              onClick={(
-                event
-              ) => {
-                event.stopPropagation();
+        (safeSlide.content || []).
+        length > 0 &&
+        <button
+          type="button"
+          data-pdf-hide="true"
+          onClick={(
+          event) =>
+          {
+            event.stopPropagation();
 
-                setShowPicker?.(
-                  true
-                );
-              }}
-              className="
+            setShowPicker?.(
+              true
+            );
+          }}
+          className="
                 btn-primary
                 absolute
                 bottom-3
@@ -613,65 +703,76 @@ function StorySlideContent({
                 py-2
                 text-xs
                 shadow-lg
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+
+
+
+          
               + Add chart
             </button>
-          )}
+        }
       </div>
 
 
-      {/* ========================= */}
-      {/* ANNOTATIONS */}
-      {/* ========================= */}
+      {}
+      {}
+      {}
 
       <AnnotationLayer
         annotations={
-          safeSlide.annotations ||
-          []
+        safeSlide.annotations ||
+        []
         }
         width={
-          canvasDimensions.width
+        canvasDimensions.width
         }
         height={
-          canvasDimensions.height
+        canvasDimensions.height
         }
         interactive={
-          interactive
+        interactive
         }
         selectedAnnoId={
-          interactive
-            ? selectedAnnoId
-            : null
+        interactive ?
+        selectedAnnoId :
+        null
         }
         onSelect={
-          interactive
-            ? (
-                annotationId
-              ) => {
-                setSelectedAnnoId?.(
-                  annotationId
-                );
+        interactive ?
+        (
+        annotationId) =>
+        {
+          setSelectedAnnoId?.(
+            annotationId
+          );
 
-                setSelectedChartId?.(
-                  null
-                );
-              }
-            : undefined
+          setSelectedChartId?.(
+            null
+          );
+        } :
+        undefined
         }
         onDragStart={
-          interactive
-            ? handleDragStart
-            : undefined
+        interactive ?
+        handleDragStart :
+        undefined
         }
         idPrefix={
-          interactive
-            ? `story-editor-${slideIndex}`
-            : `story-export-${slideIndex}`
-        }
-      />
-    </div>
-  );
+        interactive ?
+        `story-editor-${slideIndex}` :
+        `story-export-${slideIndex}`
+        } />
+      
+    </div>);
+
 }
 
 

@@ -7,7 +7,7 @@ const {
   getCurrentUser,
   updateCurrentUser,
   changePassword,
-  deleteCurrentUser,
+  deleteCurrentUser
 } = require("../controllers/userController");
 
 router.get("/me", authMiddleware, getCurrentUser);

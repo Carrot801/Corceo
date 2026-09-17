@@ -1,17 +1,14 @@
 const pool = require("../db");
 
 
-// =========================================
-// CREATE / UPDATE CHART
-// =========================================
 
 const createChart = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   const client =
-    await pool.connect();
+  await pool.connect();
 
   try {
     const {
@@ -22,143 +19,128 @@ const createChart = async (
       y_axis,
       settings,
       image_data,
-      chart_config,
+      chart_config
     } = req.body;
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const projectId =
-      Number(project_id);
+    Number(project_id);
 
     const datasetId =
-      Number(dataset_id);
+    Number(dataset_id);
 
-    // =========================
-    // VALIDATION
-    // =========================
 
     if (
-      !Number.isInteger(
-        projectId
-      )
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid project ID",
-        });
+    !Number.isInteger(
+      projectId
+    ))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid project ID"
+      });
     }
 
     if (
-      !Number.isInteger(
-        datasetId
-      )
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid dataset ID",
-        });
+    !Number.isInteger(
+      datasetId
+    ))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid dataset ID"
+      });
     }
 
     if (
-      !chart_type ||
-      typeof chart_type !==
-        "string"
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Chart type is required",
-        });
+    !chart_type ||
+    typeof chart_type !==
+    "string")
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Chart type is required"
+      });
     }
 
     await client.query(
       "BEGIN"
     );
 
-    // =========================
-    // VERIFY PROJECT OWNERSHIP
-    // =========================
-
     const projectResult =
-      await client.query(
-        `
+    await client.query(
+      `
         SELECT id
         FROM projects
         WHERE id = $1
           AND user_id = $2
         `,
-        [
-          projectId,
-          userId,
-        ]
-      );
+      [
+      projectId,
+      userId]
+
+    );
 
     if (
-      projectResult.rows.length ===
-      0
-    ) {
+    projectResult.rows.length ===
+    0)
+    {
       await client.query(
         "ROLLBACK"
       );
 
-      return res
-        .status(404)
-        .json({
-          error:
-            "Project not found",
-        });
+      return res.
+      status(404).
+      json({
+        error:
+        "Project not found"
+      });
     }
 
-    // =========================
-    // VERIFY DATASET OWNERSHIP
-    // AND PROJECT RELATIONSHIP
-    // =========================
-
     const datasetResult =
-      await client.query(
-        `
+    await client.query(
+      `
         SELECT id
         FROM datasets
         WHERE id = $1
           AND project_id = $2
           AND user_id = $3
         `,
-        [
-          datasetId,
-          projectId,
-          userId,
-        ]
-      );
+      [
+      datasetId,
+      projectId,
+      userId]
+
+    );
 
     if (
-      datasetResult.rows.length ===
-      0
-    ) {
+    datasetResult.rows.length ===
+    0)
+    {
       await client.query(
         "ROLLBACK"
       );
 
-      return res
-        .status(404)
-        .json({
-          error:
-            "Dataset not found",
-        });
+      return res.
+      status(404).
+      json({
+        error:
+        "Dataset not found"
+      });
     }
 
-    // =========================
-    // CREATE / UPDATE CHART
-    // =========================
 
     const result =
-      await client.query(
-        `
+    await client.query(
+      `
         INSERT INTO charts (
           project_id,
           dataset_id,
@@ -210,42 +192,38 @@ const createChart = async (
 
         RETURNING *
         `,
-        [
-          projectId,
-          datasetId,
-          chart_type,
-          x_axis ?? null,
-          y_axis ?? null,
-          settings ?? {},
-          chart_config ?? {},
-          image_data ?? null,
-          userId,
-        ]
-      );
+      [
+      projectId,
+      datasetId,
+      chart_type,
+      x_axis ?? null,
+      y_axis ?? null,
+      settings ?? {},
+      chart_config ?? {},
+      image_data ?? null,
+      userId]
 
-    /*
-     * Normally ownership was already
-     * verified above, but this also
-     * protects the conflict update.
-     */
+    );
+
+
+
+
+
+
     if (
-      result.rows.length === 0
-    ) {
+    result.rows.length === 0)
+    {
       await client.query(
         "ROLLBACK"
       );
 
-      return res
-        .status(404)
-        .json({
-          error:
-            "Chart not found",
-        });
+      return res.
+      status(404).
+      json({
+        error:
+        "Chart not found"
+      });
     }
-
-    // =========================
-    // UPDATE PROJECT PREVIEW
-    // =========================
 
     if (image_data) {
       await client.query(
@@ -256,10 +234,10 @@ const createChart = async (
           AND user_id = $3
         `,
         [
-          image_data,
-          projectId,
-          userId,
-        ]
+        image_data,
+        projectId,
+        userId]
+
       );
     }
 
@@ -277,8 +255,8 @@ const createChart = async (
         "ROLLBACK"
       );
     } catch (
-      rollbackError
-    ) {
+    rollbackError)
+    {
       console.error(
         "Chart rollback failed:",
         rollbackError
@@ -292,43 +270,38 @@ const createChart = async (
   }
 };
 
-
-// =========================================
-// GET CHART FOR PROJECT
-// =========================================
-
 const getCharts = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const {
-      project_id,
+      project_id
     } = req.query;
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const projectId =
-      Number(project_id);
+    Number(project_id);
 
     if (
-      !Number.isInteger(
-        projectId
-      )
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid project ID",
-        });
+    !Number.isInteger(
+      projectId
+    ))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid project ID"
+      });
     }
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         SELECT *
         FROM charts
         WHERE project_id = $1
@@ -336,22 +309,22 @@ const getCharts = async (
         ORDER BY id DESC
         LIMIT 1
         `,
-        [
-          projectId,
-          userId,
-        ]
-      );
+      [
+      projectId,
+      userId]
+
+    );
 
     if (
-      result.rows.length ===
-      0
-    ) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Chart not found",
-        });
+    result.rows.length ===
+    0)
+    {
+      return res.
+      status(404).
+      json({
+        error:
+        "Chart not found"
+      });
     }
 
     return res.json(
@@ -364,41 +337,32 @@ const getCharts = async (
 };
 
 
-// =========================================
-// GET PUBLISHED CHART
-// =========================================
 const getPublishedChart = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const chartId = Number(
       req.params.chartId
     );
 
-    // =========================
-    // VALIDATE ID
-    // =========================
 
     if (
-      !Number.isInteger(chartId)
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid chart ID",
-        });
+    !Number.isInteger(chartId))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid chart ID"
+      });
     }
 
-    // =========================
-    // GET PUBLISHED CHART
-    // =========================
 
     const chartResult =
-      await pool.query(
-        `
+    await pool.query(
+      `
         SELECT
           id,
           dataset_id,
@@ -415,55 +379,49 @@ const getPublishedChart = async (
         WHERE id = $1
           AND is_published = TRUE
         `,
-        [chartId]
-      );
+      [chartId]
+    );
 
     if (
-      chartResult.rows.length ===
-      0
-    ) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Chart not found or not published",
-        });
+    chartResult.rows.length ===
+    0)
+    {
+      return res.
+      status(404).
+      json({
+        error:
+        "Chart not found or not published"
+      });
     }
 
     const chart =
-      chartResult.rows[0];
+    chartResult.rows[0];
 
-    // =========================
-    // GET DATASET ROWS
-    // =========================
 
     let rows = [];
 
     if (chart.dataset_id) {
       const rowsResult =
-        await pool.query(
-          `
+      await pool.query(
+        `
           SELECT data
           FROM rows
           WHERE dataset_id = $1
           ORDER BY id
           `,
-          [chart.dataset_id]
-        );
+        [chart.dataset_id]
+      );
 
       rows =
-        rowsResult.rows.map(
-          (row) => row.data
-        );
+      rowsResult.rows.map(
+        (row) => row.data
+      );
     }
 
-    // =========================
-    // RETURN PUBLIC RESOURCE
-    // =========================
 
     return res.json({
       chart,
-      rows,
+      rows
     });
 
   } catch (err) {
@@ -471,40 +429,37 @@ const getPublishedChart = async (
   }
 };
 
-// =========================================
-// PUBLISH CHART
-// =========================================
 
 const publishChart = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const chartId =
-      Number(
-        req.params.chartId
-      );
+    Number(
+      req.params.chartId
+    );
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     if (
-      !Number.isInteger(
-        chartId
-      )
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid chart ID",
-        });
+    !Number.isInteger(
+      chartId
+    ))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid chart ID"
+      });
     }
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         UPDATE charts
         SET is_published = TRUE
 
@@ -513,28 +468,28 @@ const publishChart = async (
 
         RETURNING id
         `,
-        [
-          chartId,
-          userId,
-        ]
-      );
+      [
+      chartId,
+      userId]
+
+    );
 
     if (
-      result.rows.length ===
-      0
-    ) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Chart not found",
-        });
+    result.rows.length ===
+    0)
+    {
+      return res.
+      status(404).
+      json({
+        error:
+        "Chart not found"
+      });
     }
 
     return res.json({
       success: true,
       chartId:
-        result.rows[0].id,
+      result.rows[0].id
     });
 
   } catch (error) {
@@ -543,51 +498,51 @@ const publishChart = async (
 };
 
 const getChartById = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const chartId =
-      Number(req.params.chartId);
+    Number(req.params.chartId);
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     if (
-      !Number.isInteger(chartId)
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid chart ID",
-        });
+    !Number.isInteger(chartId))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid chart ID"
+      });
     }
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         SELECT *
         FROM charts
         WHERE id = $1
           AND user_id = $2
         `,
-        [
-          chartId,
-          userId,
-        ]
-      );
+      [
+      chartId,
+      userId]
+
+    );
 
     if (
-      result.rows.length === 0
-    ) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Chart not found",
-        });
+    result.rows.length === 0)
+    {
+      return res.
+      status(404).
+      json({
+        error:
+        "Chart not found"
+      });
     }
 
     return res.json(
@@ -604,5 +559,5 @@ module.exports = {
   getCharts,
   getPublishedChart,
   publishChart,
-  getChartById,
+  getChartById
 };

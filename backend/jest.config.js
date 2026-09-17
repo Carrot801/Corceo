@@ -2,12 +2,12 @@ module.exports = {
   testEnvironment: "node",
 
   setupFiles: [
-    "<rootDir>/jest.setup.js",
-  ],
+  "<rootDir>/jest.setup.js"],
+
 
   testMatch: [
-    "**/tests/**/*.test.js",
-  ],
+  "**/tests/**/*.test.js"],
 
-  clearMocks: true,
+
+  clearMocks: true
 };

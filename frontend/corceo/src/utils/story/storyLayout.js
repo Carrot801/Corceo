@@ -1,9 +1,9 @@
 export function createChartItem(
-  chartId,
-  name,
-  imageUrl,
-  index = 0,
-) {
+chartId,
+name,
+imageUrl,
+index = 0)
+{
   return {
     id: `chart-${crypto.randomUUID()}`,
     type: "chart",
@@ -14,7 +14,7 @@ export function createChartItem(
     y: 0,
     width: 100,
     height: 100,
-    zIndex: index + 1,
+    zIndex: index + 1
   };
 }
 
@@ -31,7 +31,7 @@ export function arrangeCharts(items = []) {
       y: 0,
       width: 100,
       height: 100,
-      zIndex: index + 1,
+      zIndex: index + 1
     }));
   }
 
@@ -44,86 +44,86 @@ export function arrangeCharts(items = []) {
       y: 0,
       width,
       height: 100,
-      zIndex: index + 1,
+      zIndex: index + 1
     }));
   }
 
   if (count === 3) {
     const leftWidth = 58;
     const rightWidth =
-      100 - leftWidth - gap;
+    100 - leftWidth - gap;
     const rightHeight =
-      (100 - gap) / 2;
+    (100 - gap) / 2;
 
     return items.map((item, index) =>
-      index === 0
-        ? {
-            ...item,
-            x: 0,
-            y: 0,
-            width: leftWidth,
-            height: 100,
-            zIndex: 1,
-          }
-        : {
-            ...item,
-            x: leftWidth + gap,
-            y:
-              (index - 1) *
-              (rightHeight + gap),
-            width: rightWidth,
-            height: rightHeight,
-            zIndex: index + 1,
-          },
+    index === 0 ?
+    {
+      ...item,
+      x: 0,
+      y: 0,
+      width: leftWidth,
+      height: 100,
+      zIndex: 1
+    } :
+    {
+      ...item,
+      x: leftWidth + gap,
+      y:
+      (index - 1) * (
+      rightHeight + gap),
+      width: rightWidth,
+      height: rightHeight,
+      zIndex: index + 1
+    }
     );
   }
 
   const columns =
-    count === 4
-      ? 2
-      : count <= 6
-        ? 3
-        : Math.ceil(Math.sqrt(count));
+  count === 4 ?
+  2 :
+  count <= 6 ?
+  3 :
+  Math.ceil(Math.sqrt(count));
 
   const rows = Math.ceil(
-    count / columns,
+    count / columns
   );
 
   const width =
-    (100 - gap * (columns - 1)) /
-    columns;
+  (100 - gap * (columns - 1)) /
+  columns;
 
   const height =
-    (100 - gap * (rows - 1)) /
-    rows;
+  (100 - gap * (rows - 1)) /
+  rows;
 
   return items.map((item, index) => ({
     ...item,
     x:
-      (index % columns) *
-      (width + gap),
+    index % columns * (
+    width + gap),
     y:
-      Math.floor(index / columns) *
-      (height + gap),
+    Math.floor(index / columns) * (
+    height + gap),
     width,
     height,
-    zIndex: index + 1,
+    zIndex: index + 1
   }));
 }
 
 export function clampPercent(value) {
   return Math.max(
     0,
-    Math.min(100, value),
+    Math.min(100, value)
   );
 }
 
 export function clampChartPosition(
-  value,
-  size,
-) {
+value,
+size)
+{
   return Math.max(
     0,
-    Math.min(100 - size, value),
+    Math.min(100 - size, value)
   );
 }

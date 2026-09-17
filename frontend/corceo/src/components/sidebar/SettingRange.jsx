@@ -5,7 +5,7 @@ function SettingRange({
   max,
   step = 1,
   unit = "",
-  onChange,
+  onChange
 }) {
   return (
     <div className="space-y-1.5">
@@ -31,11 +31,14 @@ function SettingRange({
           h-2 w-full cursor-pointer appearance-none rounded-lg
           bg-[rgb(var(--color-surface-hover))]
           accent-[rgb(var(--color-primary))]
-        "
-      />
-    </div>
-  );
+        " />
+
+
+
+
+      
+    </div>);
+
 }
 
 export default SettingRange;
-

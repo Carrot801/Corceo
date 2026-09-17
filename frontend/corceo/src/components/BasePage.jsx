@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Header from "./Header";
 import AuthRequiredModal from "../components/AuthRequiredModal";
 import {
-  apiRequest,
-} from "../api/client";
+  apiRequest } from
+"../api/client";
 
 function BasePage() {
   const [addingFolder, setAddingFolder] = useState(false);
@@ -20,9 +20,9 @@ function BasePage() {
   const [openMenu, setOpenMenu] = useState(null);
   const [renamingProject, setRenamingProject] = useState(null);
   const [newProjectName, setNewProjectName] = useState("");
-  const [renamingFolder, setRenamingFolder] =useState(null);
-  const [newFolderName, setNewFolderName] =useState("");
-  const [folderRenameSource, setFolderRenameSource] =useState(null);
+  const [renamingFolder, setRenamingFolder] = useState(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [folderRenameSource, setFolderRenameSource] = useState(null);
   const [search, setSearch] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] =
   useState(false);
@@ -31,117 +31,117 @@ function BasePage() {
     x: 0,
     y: 0,
     folderId: null,
-    folderName: "",
+    folderName: ""
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchResults, setSearchResults] = useState({
-  folders: [],
-  projects: [],
-  stories: [],
-});
-const createProject = async () => {
-  try {
-    const newProject = await apiRequest(
-      "/projects",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          name: "New Project",
-          folder_id:
-            activeFolder || null,
-        }),
-      },
-    );
+    folders: [],
+    projects: [],
+    stories: []
+  });
+  const createProject = async () => {
+    try {
+      const newProject = await apiRequest(
+        "/projects",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: "New Project",
+            folder_id:
+            activeFolder || null
+          })
+        }
+      );
 
-    setProjects((prev) => [
+      setProjects((prev) => [
       ...prev,
-      newProject,
-    ]);
+      newProject]
+      );
 
-    navigate(
-      `/projects/new/${newProject.id}`,
-    );
-  } catch (err) {
-    console.error(
-      "Failed to create project:",
-      err,
-    );
-  }
-};
-
-
-
-
-const loadTreeItemsForFolder = async (folderId) => {
-  try {
-    let projectPath = "/projects";
-    let storyPath = "/stories";
-
-    if (folderId !== null && folderId !== undefined) {
-      const query = `?folder_id=${encodeURIComponent(folderId)}`;
-
-      projectPath += query;
-      storyPath += query;
+      navigate(
+        `/projects/new/${newProject.id}`
+      );
+    } catch (err) {
+      console.error(
+        "Failed to create project:",
+        err
+      );
     }
+  };
 
-    const [projectData, storyData] = await Promise.all([
+
+
+
+  const loadTreeItemsForFolder = async (folderId) => {
+    try {
+      let projectPath = "/projects";
+      let storyPath = "/stories";
+
+      if (folderId !== null && folderId !== undefined) {
+        const query = `?folder_id=${encodeURIComponent(folderId)}`;
+
+        projectPath += query;
+        storyPath += query;
+      }
+
+      const [projectData, storyData] = await Promise.all([
       apiRequest(projectPath),
-      apiRequest(storyPath),
-    ]);
+      apiRequest(storyPath)]
+      );
 
-    setTreeProjects((previous) =>
+      setTreeProjects((previous) =>
       sortProjects([
-        ...previous.filter(
-          (project) =>
-            project.folder_id !== folderId,
-        ),
-        ...projectData,
-      ]),
-    );
+      ...previous.filter(
+        (project) =>
+        project.folder_id !== folderId
+      ),
+      ...projectData]
+      )
+      );
 
-    setTreeStories((previous) => [
+      setTreeStories((previous) => [
       ...previous.filter(
         (story) =>
-          story.folder_id !== folderId,
+        story.folder_id !== folderId
       ),
-      ...storyData,
-    ]);
-  } catch (err) {
-    console.error(
-      "Failed to load folder tree items:",
-      err,
-    );
-  }
-};
+      ...storyData]
+      );
+    } catch (err) {
+      console.error(
+        "Failed to load folder tree items:",
+        err
+      );
+    }
+  };
 
   const getFolders = async () => {
     const data =
     await apiRequest(
-      "/folders",
+      "/folders"
     );
     setFolders(data);
     await loadTreeItemsForFolder(null);
   };
-  
-const createFolder = async () => {
-  if (!folderName.trim()) return;
 
-  try {
-    await apiRequest("/folders", {
-      method: "POST",
-      body: JSON.stringify({
-        name: folderName,
-        parent_id: activeFolder || null,
-      }),
-    });
+  const createFolder = async () => {
+    if (!folderName.trim()) return;
 
-    await getFolders();
-    setFolderName("");
-    setAddingFolder(false);
-  } catch (err) {
-    console.error("Failed to create folder:", err);
-  }
-};
+    try {
+      await apiRequest("/folders", {
+        method: "POST",
+        body: JSON.stringify({
+          name: folderName,
+          parent_id: activeFolder || null
+        })
+      });
+
+      await getFolders();
+      setFolderName("");
+      setAddingFolder(false);
+    } catch (err) {
+      console.error("Failed to create folder:", err);
+    }
+  };
 
   const getProjects = async (folderId) => {
     try {
@@ -159,103 +159,103 @@ const createFolder = async () => {
     }
   };
   const handleDeleteFolder = async (folder_id, folderName) => {
-  if (!folder_id) {
-    console.error(
-      "Cannot delete folder: missing folder ID",
-      {
-        folderId: folder_id,
-        folderName,
-      }
+    if (!folder_id) {
+      console.error(
+        "Cannot delete folder: missing folder ID",
+        {
+          folderId: folder_id,
+          folderName
+        }
+      );
+
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete "${folderName}"?\n\nProjects and stories inside this folder will not be deleted.`
     );
 
-    return;
-  }
-    const confirmed = window.confirm(
-    `Delete "${folderName}"?\n\nProjects and stories inside this folder will not be deleted.`
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    await apiRequest(`/folders/${folder_id}`, {
-      method: "DELETE",
-    });
-
-    if (activeFolder === folder_id) {
-      setActiveFolder(null);
-      await getProjects(null);
-      await getStories(null);
+    if (!confirmed) {
+      return;
     }
 
-    await getFolders();
+    try {
+      await apiRequest(`/folders/${folder_id}`, {
+        method: "DELETE"
+      });
 
-    setOpenMenu(null);
+      if (activeFolder === folder_id) {
+        setActiveFolder(null);
+        await getProjects(null);
+        await getStories(null);
+      }
 
-  } catch (error) {
-    console.error(
-      "Failed to delete folder:",
-      error
-    );
-  }
-};
-const renameFolder = async (
-  folderId
-) => {
-  const trimmedName =
+      await getFolders();
+
+      setOpenMenu(null);
+
+    } catch (error) {
+      console.error(
+        "Failed to delete folder:",
+        error
+      );
+    }
+  };
+  const renameFolder = async (
+  folderId) =>
+  {
+    const trimmedName =
     newFolderName.trim();
 
-  if (!trimmedName) {
-    return;
-  }
+    if (!trimmedName) {
+      return;
+    }
 
-  try {
-    const updatedFolder =
+    try {
+      const updatedFolder =
       await apiRequest(
         `/folders/${folderId}`,
         {
           method: "PUT",
           body: JSON.stringify({
-            name: trimmedName,
-          }),
+            name: trimmedName
+          })
         }
       );
 
-    setFolders((prev) =>
+      setFolders((prev) =>
       prev.map((folder) =>
-        folder.id === folderId
-          ? updatedFolder
-          : folder
+      folder.id === folderId ?
+      updatedFolder :
+      folder
       )
-    );
+      );
 
-    setSearchResults((prev) => ({
-      ...prev,
-      folders: (
-        prev.folders || []
-      ).map((folder) =>
-        folder.id === folderId
-          ? updatedFolder
-          : folder
-      ),
-    }));
+      setSearchResults((prev) => ({
+        ...prev,
+        folders: (
+        prev.folders || []).
+        map((folder) =>
+        folder.id === folderId ?
+        updatedFolder :
+        folder
+        )
+      }));
 
-    setRenamingFolder(null);
-    setNewFolderName("");
-    setFolderRenameSource(null);
+      setRenamingFolder(null);
+      setNewFolderName("");
+      setFolderRenameSource(null);
 
-  } catch (error) {
-    console.error(
-      "Failed to rename folder:",
-      error
-    );
+    } catch (error) {
+      console.error(
+        "Failed to rename folder:",
+        error
+      );
 
-    alert("Failed to rename folder.");
-  }
-};
+      alert("Failed to rename folder.");
+    }
+  };
 
-   const getStories = async (folderId) => {
+  const getStories = async (folderId) => {
     try {
 
       let path = "/stories";
@@ -263,7 +263,7 @@ const renameFolder = async (
         path += `?folder_id=${folderId}`;
       }
 
-      
+
 
       const data = await apiRequest(path);
 
@@ -274,14 +274,14 @@ const renameFolder = async (
   };
 
   const renderFolders = (parentId = null, level = 0) => {
-  const currentFolders = folders.filter((f) => f.parent_id === parentId);
-  const currentProjects = treeProjects.filter((p) => p.folder_id === parentId);
-  const currentStories = treeStories.filter((s) => s.folder_id === parentId);
-  return (
-    <div className="flex flex-col">
-      {currentFolders.map((folder) => (
+    const currentFolders = folders.filter((f) => f.parent_id === parentId);
+    const currentProjects = treeProjects.filter((p) => p.folder_id === parentId);
+    const currentStories = treeStories.filter((s) => s.folder_id === parentId);
+    return (
+      <div className="flex flex-col">
+      {currentFolders.map((folder) =>
         <div key={`folder-${folder.id}`}>
-          {/* FOLDER ROW */}
+          {}
           <div
             onContextMenu={(e) => {
               e.preventDefault();
@@ -292,70 +292,70 @@ const renameFolder = async (
                 x: e.clientX,
                 y: e.clientY,
                 folderId: folder.id,
-                folderName: folder.name,
+                folderName: folder.name
               });
             }}
             className={`flex items-center gap-1 py-1.5 text-sm transition-colors cursor-pointer
-            ${activeFolder === folder.id
-              ? "app-active"
-              : "app-text-secondary app-hover"
-            }`}
-            style={{ paddingLeft: `${level * 16 + 8}px` }}
-          >
+            ${activeFolder === folder.id ?
+            "app-active" :
+            "app-text-secondary app-hover"}`
+            }
+            style={{ paddingLeft: `${level * 16 + 8}px` }}>
+            
            <span
-            onClick={(e) => {
-              e.stopPropagation();
+              onClick={(e) => {
+                e.stopPropagation();
 
-              setOpenFolders(prev => ({
-                ...prev,
-                [folder.id]: !prev[folder.id],
-              }));
+                setOpenFolders((prev) => ({
+                  ...prev,
+                  [folder.id]: !prev[folder.id]
+                }));
 
-              loadTreeItemsForFolder(folder.id);
-            }}
-            className="w-5 flex justify-center app-text-muted cursor-pointer hover:text-gray-600"
-          >
+                loadTreeItemsForFolder(folder.id);
+              }}
+              className="w-5 flex justify-center app-text-muted cursor-pointer hover:text-gray-600">
+              
             {openFolders[folder.id] ? "▼" : "▶"}
           </span>
 
           <div
-            className="flex-1 flex items-center gap-2"
-            onClick={(e) => {
-              e.stopPropagation();
+              className="flex-1 flex items-center gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
 
-              if (
+                if (
                 renamingFolder === folder.id &&
-                folderRenameSource === "tree"
-              ) {
-                return;
-              }
+                folderRenameSource === "tree")
+                {
+                  return;
+                }
 
-              setActiveFolder(folder.id);
+                setActiveFolder(folder.id);
 
-              setOpenFolders((prev) => ({
-                ...prev,
-                [folder.id]: true,
-              }));
+                setOpenFolders((prev) => ({
+                  ...prev,
+                  [folder.id]: true
+                }));
 
-              getProjects(folder.id);
-              getStories(folder.id);
-              loadTreeItemsForFolder(folder.id);
-            }}
-          >
+                getProjects(folder.id);
+                getStories(folder.id);
+                loadTreeItemsForFolder(folder.id);
+              }}>
+              
             <span>📁</span>
 
             {renamingFolder === folder.id &&
-            folderRenameSource === "tree" ? (
+              folderRenameSource === "tree" ?
               <input
                 autoFocus
                 value={newFolderName}
                 onClick={(e) =>
-                  e.stopPropagation()
+                e.stopPropagation()
                 }
                 onChange={(e) =>
-                  setNewFolderName(
-                    e.target.value
-                  )
+                setNewFolderName(
+                  e.target.value
+                )
                 }
                 onKeyDown={(e) => {
                   e.stopPropagation();
@@ -378,43 +378,51 @@ const renameFolder = async (
                   px-1
                   py-0.5
                   text-sm
-                "
-              />
-            ) : (
+                " /> :
+
+
+
+
+
+
+
+
+
+
               <span className="truncate">
                 {folder.name}
               </span>
-            )}
+              }
           </div>
           </div>
 
-          {/* RECURSIVE FOLDER CONTENT */}
+          {}
           {openFolders[folder.id] && renderFolders(folder.id, level + 1)}
         </div>
-      ))}
-      {currentStories.map((story) => (
+        )}
+      {currentStories.map((story) =>
         <div
           key={`story-${story.id}`}
           onClick={() => navigate(`/newStory/${story.id}`)}
           className="cursor-pointer hover:bg-gray-100 py-1.5 text-sm flex items-center gap-2 app-text"
-          style={{ paddingLeft: `${level * 16 + 10}px` }}
-        >
+          style={{ paddingLeft: `${level * 16 + 10}px` }}>
+          
           <span>📖</span>
           {story.name}
         </div>
-      ))}
+        )}
 
-      {/* PROJECT ROWS */}
+      {}
       {currentProjects.map(
-  (project) => (
-    <div
-      key={`project-${project.id}`}
-      onClick={() =>
-        navigate(
-          `/newVisualization/${project.id}`,
-        )
-      }
-      className="
+          (project) =>
+          <div
+            key={`project-${project.id}`}
+            onClick={() =>
+            navigate(
+              `/newVisualization/${project.id}`
+            )
+            }
+            className="
         app-text
         flex
         cursor-pointer
@@ -424,26 +432,35 @@ const renameFolder = async (
         text-sm
         hover:bg-gray-100
       "
-      style={{
-        paddingLeft:
-          `${level * 16 + 10}px`,
-      }}
-    >
-      <button
-        type="button"
-        title={
-          project.is_favorite
-            ? "Remove from favorites"
-            : "Add to favorites"
-        }
-        onClick={(event) => {
-          event.stopPropagation();
 
-          toggleProjectFavorite(
-            project,
-          );
-        }}
-        className="
+
+
+
+
+
+
+
+
+            style={{
+              paddingLeft:
+              `${level * 16 + 10}px`
+            }}>
+            
+      <button
+              type="button"
+              title={
+              project.is_favorite ?
+              "Remove from favorites" :
+              "Add to favorites"
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+
+                toggleProjectFavorite(
+                  project
+                );
+              }}
+              className="
           flex
           h-6
           w-6
@@ -451,18 +468,26 @@ const renameFolder = async (
           justify-center
           rounded
           hover:bg-black/5
-        "
-      >
+        ">
+
+
+
+
+
+
+
+
+              
         <span
-          className={
-            project.is_favorite
-              ? "text-amber-500"
-              : "text-slate-400"
-          }
-        >
-          {project.is_favorite
-            ? "★"
-            : "☆"}
+                className={
+                project.is_favorite ?
+                "text-amber-500" :
+                "text-slate-400"
+                }>
+                
+          {project.is_favorite ?
+                "★" :
+                "☆"}
         </span>
       </button>
 
@@ -472,257 +497,257 @@ const renameFolder = async (
         {project.name}
       </span>
     </div>
-  ),
-)}
-    </div>
-  );
-};
+
+        )}
+    </div>);
+
+  };
 
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  const init = async () => {
-    try {
-      const [
+    const init = async () => {
+      try {
+        const [
         foldersData,
         projectsData,
-        storiesData,
-      ] = await Promise.all([
+        storiesData] =
+        await Promise.all([
         apiRequest("/folders"),
         apiRequest("/projects"),
-        apiRequest("/stories"),
-      ]);
+        apiRequest("/stories")]
+        );
 
-      if (cancelled) {
-        return;
+        if (cancelled) {
+          return;
+        }
+
+        setFolders(
+          Array.isArray(foldersData) ?
+          foldersData :
+          []
+        );
+
+        setProjects(
+          Array.isArray(projectsData) ?
+          projectsData :
+          []
+        );
+
+        setStories(
+          Array.isArray(storiesData) ?
+          storiesData :
+          []
+        );
+
+
+        setTreeProjects(
+          Array.isArray(projectsData) ?
+          projectsData :
+          []
+        );
+
+        setTreeStories(
+          Array.isArray(storiesData) ?
+          storiesData :
+          []
+        );
+
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Failed to initialize dashboard:",
+          error
+        );
       }
+    };
 
-      setFolders(
-        Array.isArray(foldersData)
-          ? foldersData
-          : []
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const searchItems = async (value) => {
+    try {
+      const data = await apiRequest(
+        `/search?q=${encodeURIComponent(value)}`
       );
 
-      setProjects(
-        Array.isArray(projectsData)
-          ? projectsData
-          : []
-      );
-
-      setStories(
-        Array.isArray(storiesData)
-          ? storiesData
-          : []
-      );
-
-      // Root-level items for the sidebar tree.
-      setTreeProjects(
-        Array.isArray(projectsData)
-          ? projectsData
-          : []
-      );
-
-      setTreeStories(
-        Array.isArray(storiesData)
-          ? storiesData
-          : []
-      );
-
-    } catch (error) {
-      if (cancelled) {
-        return;
-      }
-
-      console.error(
-        "Failed to initialize dashboard:",
-        error
-      );
+      setSearchResults(data);
+    } catch (err) {
+      console.error("Search failed:", err);
     }
   };
 
-  init();
-
-  return () => {
-    cancelled = true;
-  };
-}, []);
 
 
-const searchItems = async (value) => {
-  try {
-    const data = await apiRequest(
-      `/search?q=${encodeURIComponent(value)}`
-    );
+  const createFolderWithParent = async (parentId) => {
+    if (!folderName.trim()) return;
 
-    setSearchResults(data);
-  } catch (err) {
-    console.error("Search failed:", err);
-  }
-};
-
-
-
-const createFolderWithParent = async (parentId) => {
-  if (!folderName.trim()) return;
-
-  try {
-    await apiRequest("/folders", {
-      method: "POST",
-      body: JSON.stringify({
-        name: folderName,
-        parent_id: parentId,
-      }),
-    });
-
-    await getFolders();
-
-    setFolderName("");
-    setContextMenu({
-      visible: false,
-      x: 0,
-      y: 0,
-      folderId: null,
-    });
-  } catch (err) {
-    console.error("Create folder failed:", err);
-  }
-};
-
-useEffect(() => {
-  const timeout = setTimeout(() => {
-    if (search.trim()) {
-      searchItems(search);
-    }
-  }, 300);
-
-  return () => clearTimeout(timeout);
-}, [search]);
-const navigate = useNavigate();
-  
-
-const renameProject = async (projectId) => {
-  if (!newProjectName.trim()) return;
-
-  try {
-    const data = await apiRequest(`/projects/${projectId}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        name: newProjectName,
-      }),
-    });
-
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === projectId ? data : project
-      )
-    );
-
-    setRenamingProject(null);
-    setNewProjectName("");
-  } catch (err) {
-    console.error("Failed to rename project:", err);
-  }
-};
-const duplicateProject = async (projectId) => {
-  try {
-    if (!projectId) {
-      console.error("Cannot duplicate project: missing project ID");
-      return;
-    }
-
-    const data = await apiRequest(`/projects/duplicate/${projectId}`, 
-      {
+    try {
+      await apiRequest("/folders", {
         method: "POST",
+        body: JSON.stringify({
+          name: folderName,
+          parent_id: parentId
+        })
+      });
+
+      await getFolders();
+
+      setFolderName("");
+      setContextMenu({
+        visible: false,
+        x: 0,
+        y: 0,
+        folderId: null
+      });
+    } catch (err) {
+      console.error("Create folder failed:", err);
+    }
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (search.trim()) {
+        searchItems(search);
       }
-    );
+    }, 300);
 
-    setProjects((prev) => [data, ...prev]);
-    setTreeProjects((prev) => [data, ...prev]);
-    setOpenMenu(null);
-  } catch (error) {
-    console.error("Duplicate project network error:", error);
-  }
-};
-  
-const deleteProject = async (projectId) => {
-  try {
-    await apiRequest(`/projects/${projectId}`, {
-      method: "DELETE",
-    });
+    return () => clearTimeout(timeout);
+  }, [search]);
+  const navigate = useNavigate();
 
-    setProjects((prev) =>
+
+  const renameProject = async (projectId) => {
+    if (!newProjectName.trim()) return;
+
+    try {
+      const data = await apiRequest(`/projects/${projectId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: newProjectName
+        })
+      });
+
+      setProjects((prev) =>
+      prev.map((project) =>
+      project.id === projectId ? data : project
+      )
+      );
+
+      setRenamingProject(null);
+      setNewProjectName("");
+    } catch (err) {
+      console.error("Failed to rename project:", err);
+    }
+  };
+  const duplicateProject = async (projectId) => {
+    try {
+      if (!projectId) {
+        console.error("Cannot duplicate project: missing project ID");
+        return;
+      }
+
+      const data = await apiRequest(`/projects/duplicate/${projectId}`,
+      {
+        method: "POST"
+      }
+      );
+
+      setProjects((prev) => [data, ...prev]);
+      setTreeProjects((prev) => [data, ...prev]);
+      setOpenMenu(null);
+    } catch (error) {
+      console.error("Duplicate project network error:", error);
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    try {
+      await apiRequest(`/projects/${projectId}`, {
+        method: "DELETE"
+      });
+
+      setProjects((prev) =>
       prev.filter((project) => project.id !== projectId)
-    );
-  } catch (err) {
-    console.error("Failed to delete project:", err);
-  }
-};
+      );
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+    }
+  };
 
   const createStory = async () => {
-  try {
-    const data = await apiRequest("/stories", {
-      method: "POST",
-      body: JSON.stringify({ 
-        name: "Untitled Story",
-        slides: [],
-      folder_id: activeFolder ?? null,
-     }),
-    });
+    try {
+      const data = await apiRequest("/stories", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Untitled Story",
+          slides: [],
+          folder_id: activeFolder ?? null
+        })
+      });
 
 
-    if (data.id) {
-      navigate(`/stories/new/${data.id}`);
-    } else {
+      if (data.id) {
+        navigate(`/stories/new/${data.id}`);
+      } else {
 
-    console.log("Server did not return an ID:", data.id);
+        console.log("Server did not return an ID:", data.id);
 
+      }
+    } catch (err) {
+      console.error("Failed to initialize story:", err);
     }
-  } catch (err) {
-    console.error("Failed to initialize story:", err);
-  }
-};
+  };
 
-const duplicateStory = async (storyId) => {
-  try {
-    const duplicated = await apiRequest(`/stories/duplicate/${storyId}`, {
-      method: "POST",
-    });
+  const duplicateStory = async (storyId) => {
+    try {
+      const duplicated = await apiRequest(`/stories/duplicate/${storyId}`, {
+        method: "POST"
+      });
 
 
-    setStories((prev) => [...prev, duplicated]);
-    setTreeStories((prev) => [...prev, duplicated]);
-  } catch (err) {
-    console.error(err);
-  }
-};
+      setStories((prev) => [...prev, duplicated]);
+      setTreeStories((prev) => [...prev, duplicated]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-const sortProjects = (projectList) => {
-  return [...projectList].sort(
-    (first, second) => {
-      const favoriteDifference =
+  const sortProjects = (projectList) => {
+    return [...projectList].sort(
+      (first, second) => {
+        const favoriteDifference =
         Number(Boolean(second.is_favorite)) -
         Number(Boolean(first.is_favorite));
 
-      if (favoriteDifference !== 0) {
-        return favoriteDifference;
-      }
+        if (favoriteDifference !== 0) {
+          return favoriteDifference;
+        }
 
-      return Number(second.id) -
+        return Number(second.id) -
         Number(first.id);
-    },
-  );
-};
+      }
+    );
+  };
 
-const sortStories = (
-  storyList
-) => {
-  return [...storyList].sort(
-    (
+  const sortStories = (
+  storyList) =>
+  {
+    return [...storyList].sort(
+      (
       first,
-      second
-    ) => {
-      const favoriteDifference =
+      second) =>
+      {
+        const favoriteDifference =
         Number(
           Boolean(
             second.is_favorite
@@ -734,342 +759,342 @@ const sortStories = (
           )
         );
 
-      if (
+        if (
         favoriteDifference !==
-        0
-      ) {
-        return favoriteDifference;
+        0)
+        {
+          return favoriteDifference;
+        }
+
+        return (
+          Number(second.id) -
+          Number(first.id));
+
       }
-
-      return (
-        Number(second.id) -
-        Number(first.id)
-      );
-    }
-  );
-};
+    );
+  };
 
 
-const toggleProjectFavorite = async (
-  project,
-) => {
-const nextFavorite =
-  !project.is_favorite;
+  const toggleProjectFavorite = async (
+  project) =>
+  {
+    const nextFavorite =
+    !project.is_favorite;
 
 
-  const updateLocalProject = (
+    const updateLocalProject = (
     projectList,
-    favoriteValue,
-  ) =>
+    favoriteValue) =>
+
     sortProjects(
       projectList.map((item) =>
-        item.id === project.id
-          ? {
-              ...item,
-              is_favorite:
-                favoriteValue,
-            }
-          : item,
-      ),
+      item.id === project.id ?
+      {
+        ...item,
+        is_favorite:
+        favoriteValue
+      } :
+      item
+      )
     );
 
-  setProjects((previous) =>
-    updateLocalProject(
-      previous,
-      nextFavorite,
-    ),
-  );
-
-  setTreeProjects((previous) =>
-    updateLocalProject(
-      previous,
-      nextFavorite,
-    ),
-  );
-
-  setSearchResults((previous) => ({
-    ...previous,
-
-    projects: updateLocalProject(
-      previous.projects || [],
-      nextFavorite,
-    ),
-  }));
-
-  try {
-  const updatedProject = await apiRequest(
-    `/projects/${project.id}/favorite`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({
-        is_favorite: nextFavorite,
-      }),
-    },
-  );
-
-    const applyServerProject = (
-      projectList,
-    ) =>
-      sortProjects(
-        projectList.map((item) =>
-          item.id ===
-          updatedProject.id
-            ? updatedProject
-            : item,
-        ),
-      );
-
-    setProjects(applyServerProject);
-    setTreeProjects(
-      applyServerProject,
-    );
-
-    setSearchResults(
-      (previous) => ({
-        ...previous,
-
-        projects:
-          applyServerProject(
-            previous.projects || [],
-          ),
-      }),
-    );
-  } catch (error) {
-    console.error(
-      "Favorite update failed:",
-      error,
-    );
     setProjects((previous) =>
-      updateLocalProject(
-        previous,
-        Boolean(
-          project.is_favorite,
-        ),
-      ),
+    updateLocalProject(
+      previous,
+      nextFavorite
+    )
     );
 
     setTreeProjects((previous) =>
+    updateLocalProject(
+      previous,
+      nextFavorite
+    )
+    );
+
+    setSearchResults((previous) => ({
+      ...previous,
+
+      projects: updateLocalProject(
+        previous.projects || [],
+        nextFavorite
+      )
+    }));
+
+    try {
+      const updatedProject = await apiRequest(
+        `/projects/${project.id}/favorite`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            is_favorite: nextFavorite
+          })
+        }
+      );
+
+      const applyServerProject = (
+      projectList) =>
+
+      sortProjects(
+        projectList.map((item) =>
+        item.id ===
+        updatedProject.id ?
+        updatedProject :
+        item
+        )
+      );
+
+      setProjects(applyServerProject);
+      setTreeProjects(
+        applyServerProject
+      );
+
+      setSearchResults(
+        (previous) => ({
+          ...previous,
+
+          projects:
+          applyServerProject(
+            previous.projects || []
+          )
+        })
+      );
+    } catch (error) {
+      console.error(
+        "Favorite update failed:",
+        error
+      );
+      setProjects((previous) =>
       updateLocalProject(
         previous,
         Boolean(
-          project.is_favorite,
-        ),
-      ),
+          project.is_favorite
+        )
+      )
+      );
+
+      setTreeProjects((previous) =>
+      updateLocalProject(
+        previous,
+        Boolean(
+          project.is_favorite
+        )
+      )
+      );
+
+      setSearchResults(
+        (previous) => ({
+          ...previous,
+
+          projects:
+          updateLocalProject(
+            previous.projects || [],
+            Boolean(
+              project.is_favorite
+            )
+          )
+        })
+      );
+    }
+  };
+
+  const toggleStoryFavorite = async (
+  story) =>
+  {
+    const nextFavorite =
+    !story.is_favorite;
+
+    const updateLocalStory = (
+    storyList,
+    favoriteValue) =>
+
+    sortStories(
+      storyList.map(
+        (item) =>
+        item.id ===
+        story.id ?
+        {
+          ...item,
+
+          is_favorite:
+          favoriteValue
+        } :
+        item
+      )
+    );
+
+
+    setStories(
+      (previous) =>
+      updateLocalStory(
+        previous,
+        nextFavorite
+      )
+    );
+
+    setTreeStories(
+      (previous) =>
+      updateLocalStory(
+        previous,
+        nextFavorite
+      )
     );
 
     setSearchResults(
       (previous) => ({
         ...previous,
 
-        projects:
-          updateLocalProject(
-            previous.projects || [],
-            Boolean(
-              project.is_favorite,
-            ),
-          ),
-      }),
-    );
-  }
-};
-
-const toggleStoryFavorite = async (
-  story
-) => {
-  const nextFavorite =
-    !story.is_favorite;
-
-  const updateLocalStory = (
-    storyList,
-    favoriteValue
-  ) =>
-    sortStories(
-      storyList.map(
-        (item) =>
-          item.id ===
-          story.id
-            ? {
-                ...item,
-
-                is_favorite:
-                  favoriteValue,
-              }
-            : item
-      )
-    );
-
-  // Optimistic UI
-  setStories(
-    (previous) =>
-      updateLocalStory(
-        previous,
-        nextFavorite
-      )
-  );
-
-  setTreeStories(
-    (previous) =>
-      updateLocalStory(
-        previous,
-        nextFavorite
-      )
-  );
-
-  setSearchResults(
-    (previous) => ({
-      ...previous,
-
-      stories:
+        stories:
         updateLocalStory(
           previous.stories ||
-            [],
+          [],
           nextFavorite
-        ),
-    })
-  );
+        )
+      })
+    );
 
-  try {
-    const updatedStory =
+    try {
+      const updatedStory =
       await apiRequest(
         `/stories/${story.id}/favorite`,
         {
           method:
-            "PATCH",
+          "PATCH",
 
           body:
-            JSON.stringify({
-              is_favorite:
-                nextFavorite,
-            }),
+          JSON.stringify({
+            is_favorite:
+            nextFavorite
+          })
         }
       );
 
-    const applyServerStory =
+      const applyServerStory =
       (storyList) =>
-        sortStories(
-          storyList.map(
-            (item) =>
-              item.id ===
-              updatedStory.id
-                ? updatedStory
-                : item
-          )
-        );
+      sortStories(
+        storyList.map(
+          (item) =>
+          item.id ===
+          updatedStory.id ?
+          updatedStory :
+          item
+        )
+      );
 
-    setStories(
-      applyServerStory
-    );
+      setStories(
+        applyServerStory
+      );
 
-    setTreeStories(
-      applyServerStory
-    );
+      setTreeStories(
+        applyServerStory
+      );
 
-    setSearchResults(
-      (previous) => ({
-        ...previous,
+      setSearchResults(
+        (previous) => ({
+          ...previous,
 
-        stories:
+          stories:
           applyServerStory(
             previous.stories ||
-              []
-          ),
-      })
-    );
+            []
+          )
+        })
+      );
 
-  } catch (error) {
-    console.error(
-      "Story favorite update failed:",
-      error
-    );
+    } catch (error) {
+      console.error(
+        "Story favorite update failed:",
+        error
+      );
 
-    // Roll back optimistic UI
-    setStories(
-      (previous) =>
+
+      setStories(
+        (previous) =>
         updateLocalStory(
           previous,
           Boolean(
             story.is_favorite
           )
         )
-    );
+      );
 
-    setTreeStories(
-      (previous) =>
+      setTreeStories(
+        (previous) =>
         updateLocalStory(
           previous,
           Boolean(
             story.is_favorite
           )
         )
-    );
+      );
 
-    setSearchResults(
-      (previous) => ({
-        ...previous,
+      setSearchResults(
+        (previous) => ({
+          ...previous,
 
-        stories:
+          stories:
           updateLocalStory(
             previous.stories ||
-              [],
+            [],
             Boolean(
               story.is_favorite
             )
-          ),
-      })
-    );
-  }
-};
-
-const deleteStory = async (storyId) => {
-  try {
-    await apiRequest(`/stories/${storyId}`, {
-      method: "DELETE",
-    });
-
-    setStories((prev) =>
-      prev.filter((story) => story.id !== storyId)
-    );
-
-    setTreeStories((prev) =>
-      prev.filter((story) => story.id !== storyId)
-    );
-  } catch (err) {
-    console.error("Failed to delete story:", err);
-  }
-};
-    const isSearching = search.trim().length > 0;
-    const projectSource =
-      isSearching
-        ? searchResults.projects
-        : projects;
-
-    const displayedProjects =
-      showFavoritesOnly
-        ? projectSource.filter(
-            (project) =>
-              Boolean(
-                project.is_favorite,
-              ),
           )
-        : projectSource;
+        })
+      );
+    }
+  };
 
-    const storySource =
-      isSearching
-        ? searchResults.stories
-        : stories;
+  const deleteStory = async (storyId) => {
+    try {
+      await apiRequest(`/stories/${storyId}`, {
+        method: "DELETE"
+      });
 
-    const displayedStories =
-      showFavoritesOnly
-        ? storySource.filter(
-            (story) =>
-              Boolean(
-                story.is_favorite
-              )
-          )
-        : storySource;
-    const displayedFolders = isSearching
-      ? (searchResults.folders || [])
-      : (folders || []).filter(f => f.parent_id === activeFolder);
+      setStories((prev) =>
+      prev.filter((story) => story.id !== storyId)
+      );
+
+      setTreeStories((prev) =>
+      prev.filter((story) => story.id !== storyId)
+      );
+    } catch (err) {
+      console.error("Failed to delete story:", err);
+    }
+  };
+  const isSearching = search.trim().length > 0;
+  const projectSource =
+  isSearching ?
+  searchResults.projects :
+  projects;
+
+  const displayedProjects =
+  showFavoritesOnly ?
+  projectSource.filter(
+    (project) =>
+    Boolean(
+      project.is_favorite
+    )
+  ) :
+  projectSource;
+
+  const storySource =
+  isSearching ?
+  searchResults.stories :
+  stories;
+
+  const displayedStories =
+  showFavoritesOnly ?
+  storySource.filter(
+    (story) =>
+    Boolean(
+      story.is_favorite
+    )
+  ) :
+  storySource;
+  const displayedFolders = isSearching ?
+  searchResults.folders || [] :
+  (folders || []).filter((f) => f.parent_id === activeFolder);
 
 
   return (
@@ -1077,7 +1102,7 @@ const deleteStory = async (storyId) => {
     <Header />
 <div className="app-page flex min-h-screen w-full overflow-x-hidden">
 <div
-  className="
+          className="
     app-sidebar
     w-[220px]
     shrink-0
@@ -1088,77 +1113,95 @@ const deleteStory = async (storyId) => {
     gap-4
 
     lg:w-[240px]
-  "
->
+  ">
+
+
+
+
+
+
+
+
+
+
+
+          
           <button
-          onClick={createProject}
-          className="btn-primary"
-        >
+            onClick={createProject}
+            className="btn-primary">
+            
           + New visualization
         </button>
 
-        <button 
-        onClick={(createStory)}
-        className="btn-secondary"
-        >
+        <button
+            onClick={createStory}
+            className="btn-secondary">
+            
           + New story
         </button>
         <button
-          type="button"
-          onClick={() => {
-            setShowFavoritesOnly(
-              (current) => !current,
-            );
-          }}
-          className={
-            showFavoritesOnly
-              ? "app-active rounded  text-left text-sm"
-              : "app-hover rounded text-left text-sm"
-          }
-        >
+            type="button"
+            onClick={() => {
+              setShowFavoritesOnly(
+                (current) => !current
+              );
+            }}
+            className={
+            showFavoritesOnly ?
+            "app-active rounded  text-left text-sm" :
+            "app-hover rounded text-left text-sm"
+            }>
+            
           ★ Favorites
         </button>
         <div className="app-text-secondary flex flex-col gap-2">            
             <span className="font-semibold">Projects</span>
             <button
-            onClick={() => {
-              setActiveFolder(null);
-              getProjects(null);
-              getStories(null);
-              loadTreeItemsForFolder(null);
-            }}
-            className="
+              onClick={() => {
+                setActiveFolder(null);
+                getProjects(null);
+                getStories(null);
+                loadTreeItemsForFolder(null);
+              }}
+              className="
               app-hover
               app-text
               rounded
               py-2
               text-left
               text-sm
-            "
-          >
+            ">
+
+
+
+
+
+
+
+              
             My projects
           </button>
             <div className="left-5 relative">
               {renderFolders(null)}
-              {addingFolder ? (
+              {addingFolder ?
 
-                <input
-                  autoFocus
-                  value={folderName}
-                  onChange={(e) => setFolderName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") createFolder();
-                    if (e.key === "Escape") setAddingFolder(false);
-                  }}
-                  placeholder="Folder name..."
-                  className="bg-transparent focus:outline-none text-sm py-2 px-2 border rounded"
-                />
+              <input
+                autoFocus
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") createFolder();
+                  if (e.key === "Escape") setAddingFolder(false);
+                }}
+                placeholder="Folder name..."
+                className="bg-transparent focus:outline-none text-sm py-2 px-2 border rounded" /> :
 
-              ) : (
 
-                <button
-                  onClick={() => setAddingFolder(true)}
-                  className="
+
+
+              <button
+                onClick={() => setAddingFolder(true)}
+                className="
                     app-text-muted
                     app-hover
                     rounded
@@ -1166,12 +1209,20 @@ const deleteStory = async (storyId) => {
                     py-2
                     text-left
                     text-sm
-                  " 
-              >
+                  ">
+
+
+
+
+
+
+
+
+                
                   + Add new folder
                 </button>
 
-              )}
+              }
             </div>
         </div>
 
@@ -1183,19 +1234,26 @@ const deleteStory = async (storyId) => {
         <div className="flex justify-between mb-8">
 
           <input
-            type="text"
-            placeholder="Search projects..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="
+              type="text"
+              placeholder="Search projects..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
             app-input
             w-full
             max-w-[350px]
             p-3
             border
             rounded-lg
-          "
-          />
+          " />
+
+
+
+
+
+
+
+            
 
 
 
@@ -1203,41 +1261,48 @@ const deleteStory = async (storyId) => {
 
 
 <div
-  className="
+            className="
     grid
     grid-cols-1
     gap-6
     sm:grid-cols-2
     xl:grid-cols-3
     2xl:grid-cols-4
-  "
->
-          {!isSearching && (
+  ">
+
+
+
+
+
+
+
+            
+          {!isSearching &&
             <div
               className="app-create-card flex aspect-square w-full max-w-[280px] cursor-pointer items-center justify-center rounded-lg"
-              onClick={createProject}
-            >
+              onClick={createProject}>
+              
               + Create visualization
             </div>
-          )}
+            }
 
-          {/* 2. Map through displayedFolders (either current folder or search results) */}
-          {displayedFolders.map((folder) => (
-          <div
-            key={folder.id}
-            onClick={() => {
-              setActiveFolder(folder.id);
+          {}
+          {displayedFolders.map((folder) =>
+            <div
+              key={folder.id}
+              onClick={() => {
+                setActiveFolder(folder.id);
 
-              setOpenFolders((prev) => ({
-                ...prev,
-                [folder.id]: true,
-              }));
+                setOpenFolders((prev) => ({
+                  ...prev,
+                  [folder.id]: true
+                }));
 
-              getProjects(folder.id);
-              getStories(folder.id);
-              loadTreeItemsForFolder(folder.id);
-            }}
-            className="
+                getProjects(folder.id);
+                getStories(folder.id);
+                loadTreeItemsForFolder(folder.id);
+              }}
+              className="
               app-card
               group
               flex
@@ -1253,70 +1318,86 @@ const deleteStory = async (storyId) => {
               transition-all
               hover:-translate-y-0.5
               hover:shadow-md
-            "
-          >
-            {/* FOLDER MENU */}
+            ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              
+            {}
             <div className="absolute top-1 right-2 z-20">
               <button
-                type="button"
-                className="app-icon-button"
-                onClick={(e) => {
-                  e.stopPropagation();
+                  type="button"
+                  className="app-icon-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
 
-                  setOpenMenu(
-                    openMenu === `folder-${folder.id}`
-                      ? null
-                      : `folder-${folder.id}`
-                  );
-                }}
-              >
+                    setOpenMenu(
+                      openMenu === `folder-${folder.id}` ?
+                      null :
+                      `folder-${folder.id}`
+                    );
+                  }}>
+                  
                 ⋮
               </button>
 
-              {openMenu === `folder-${folder.id}` && (
-              <div
-                className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
-                onClick={(e) =>
+              {openMenu === `folder-${folder.id}` &&
+                <div
+                  className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
+                  onClick={(e) =>
                   e.stopPropagation()
-                }
-              >
+                  }>
+                  
                 <button
-                  className="app-menu-item"
-                  onClick={() => {
-                    setRenamingFolder(
-                      folder.id
-                    );
+                    className="app-menu-item"
+                    onClick={() => {
+                      setRenamingFolder(
+                        folder.id
+                      );
 
-                    setNewFolderName(
-                      folder.name
-                    );
+                      setNewFolderName(
+                        folder.name
+                      );
 
-                    setFolderRenameSource(
-                      "card"
-                    );
+                      setFolderRenameSource(
+                        "card"
+                      );
 
-                    setOpenMenu(null);
-                  }}
-                >
+                      setOpenMenu(null);
+                    }}>
+                    
                   Rename
                 </button>
 
                 <button
-                  className="app-menu-item app-menu-danger"
-                  onClick={() =>
+                    className="app-menu-item app-menu-danger"
+                    onClick={() =>
                     handleDeleteFolder(
                       folder.id,
                       folder.name
                     )
-                  }
-                >
+                    }>
+                    
                   Delete
                 </button>
               </div>
-            )}
+                }
             </div>
             <div
-              className="
+                className="
                 app-surface
                 app-border
                 flex
@@ -1324,34 +1405,47 @@ const deleteStory = async (storyId) => {
                 items-center
                 justify-center
                 border-b
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+                
               
               <span
-                className="
+                  className="
                   text-6xl
                   transition-transform
                   duration-200
                   group-hover:scale-105
-                "
-              >
+                ">
+
+
+
+
+
+                  
                 📁
               </span>
             </div>
 
             <div className="p-3">
               {renamingFolder === folder.id &&
-                folderRenameSource === "card" ? (
+                folderRenameSource === "card" ?
                 <input
                   autoFocus
                   value={newFolderName}
                   onClick={(e) =>
-                    e.stopPropagation()
+                  e.stopPropagation()
                   }
                   onChange={(e) =>
-                    setNewFolderName(
-                      e.target.value
-                    )
+                  setNewFolderName(
+                    e.target.value
+                  )
                   }
                   onKeyDown={(e) => {
                     e.stopPropagation();
@@ -1381,9 +1475,17 @@ const deleteStory = async (storyId) => {
                     p-1
                     text-base
                     font-semibold
-                  "
-                />
-              ) : (
+                  " /> :
+
+
+
+
+
+
+
+
+
+
                 <div
                   className="
                     app-text
@@ -1391,43 +1493,48 @@ const deleteStory = async (storyId) => {
                     text-base
                     font-semibold
                   "
-                  title={folder.name}
-                >
+
+
+
+
+
+                  title={folder.name}>
+                  
                   {folder.name}
                 </div>
-              )}
+                }
 
               <div className="app-text-muted mt-1 text-xs">
                 Folder
               </div>
             </div>
           </div>
-        ))}
-          {displayedStories.map((story) => (
+            )}
+          {displayedStories.map((story) =>
             <div
               key={story.id}
-              className="app-card relative aspect-square w-full max-w-[280px]rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
-            >
+              className="app-card relative aspect-square w-full max-w-[280px]rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
+              
               <button
-              type="button"
-              aria-label={
-                story.is_favorite
-                  ? "Remove story from favorites"
-                  : "Add story to favorites"
-              }
-              title={
-                story.is_favorite
-                  ? "Remove from favorites"
-                  : "Add to favorites"
-              }
-              onClick={(event) => {
-                event.stopPropagation();
+                type="button"
+                aria-label={
+                story.is_favorite ?
+                "Remove story from favorites" :
+                "Add story to favorites"
+                }
+                title={
+                story.is_favorite ?
+                "Remove from favorites" :
+                "Add to favorites"
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
 
-                toggleStoryFavorite(
-                  story
-                );
-              }}
-              className="
+                  toggleStoryFavorite(
+                    story
+                  );
+                }}
+                className="
                 absolute
                 left-2
                 top-2
@@ -1443,18 +1550,34 @@ const deleteStory = async (storyId) => {
                 transition
                 hover:bg-black/5
                 dark:hover:bg-white/10
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
               <span
-                className={
-                  story.is_favorite
-                    ? "text-amber-500"
-                    : "text-slate-400"
-                }
-              >
-                {story.is_favorite
-                  ? "★"
-                  : "☆"}
+                  className={
+                  story.is_favorite ?
+                  "text-amber-500" :
+                  "text-slate-400"
+                  }>
+                  
+                {story.is_favorite ?
+                  "★" :
+                  "☆"}
               </span>
 </button>
               <div className="absolute top- right-2 z-20">
@@ -1463,48 +1586,48 @@ const deleteStory = async (storyId) => {
                     e.stopPropagation();
                     setOpenMenu(openMenu === `story-${story.id}` ? null : `story-${story.id}`);
                   }}
-                  className="app-icon-button"
-                >
+                  className="app-icon-button">
+                  
                   ⋮
                 </button>
 
-                {openMenu === `story-${story.id}` && (
-                  <div
-                    className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                {openMenu === `story-${story.id}` &&
+                <div
+                  className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
+                  onClick={(e) => e.stopPropagation()}>
+                  
                     <button
-                      className="app-menu-item"
-                      onClick={() => duplicateStory(story.id)}
-                    >
+                    className="app-menu-item"
+                    onClick={() => duplicateStory(story.id)}>
+                    
                       Duplicate
                     </button>
 
                     <button
-                      className="app-menu-item app-menu-danger"
-                      onClick={() => deleteStory(story.id)}
-                    >
+                    className="app-menu-item app-menu-danger"
+                    onClick={() => deleteStory(story.id)}>
+                    
                       Delete
                     </button>
                   </div>
-                )}
+                }
               </div>
               <div
                 onClick={() => navigate(`/newStory/${story.id}`)}
-                className="h-full flex flex-col cursor-pointer"
-              >
+                className="h-full flex flex-col cursor-pointer">
+                
                 <div className="flex-1 app-card  border-b flex items-center justify-center">
-                  {story.image_url ? (
-                    <img
-                      src={story.image_url}
-                      alt={story.name}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-slate-300 text-4xl">
+                  {story.image_url ?
+                  <img
+                    src={story.image_url}
+                    alt={story.name}
+                    className="w-full h-full object-contain" /> :
+
+
+                  <div className="text-slate-300 text-4xl">
                       📖
                     </div>
-                  )}
+                  }
                 </div>
 
                 <div className="p-3">
@@ -1518,9 +1641,9 @@ const deleteStory = async (storyId) => {
                 </div>
               </div>
             </div>
-          ))}
-          {/* 3. Map through displayedProjects (either current folder or search results) */}
-          {displayedProjects.map((project) => (
+            )}
+          {}
+          {displayedProjects.map((project) =>
             <div
               key={project.id}
               className="
@@ -1532,25 +1655,34 @@ const deleteStory = async (storyId) => {
                 border
                 transition-shadow
                 hover:shadow-md
-              "
-            >
+              ">
+
+
+
+
+
+
+
+
+
+              
               <button
                 type="button"
                 aria-label={
-                  project.is_favorite
-                    ? "Remove from favorites"
-                    : "Add to favorites"
+                project.is_favorite ?
+                "Remove from favorites" :
+                "Add to favorites"
                 }
                 title={
-                  project.is_favorite
-                    ? "Remove from favorites"
-                    : "Add to favorites"
+                project.is_favorite ?
+                "Remove from favorites" :
+                "Add to favorites"
                 }
                 onClick={(event) => {
                   event.stopPropagation();
 
                   toggleProjectFavorite(
-                    project,
+                    project
                   );
                 }}
                 className="
@@ -1569,120 +1701,136 @@ const deleteStory = async (storyId) => {
                   transition
                   hover:bg-black/5
                   dark:hover:bg-white/10
-                "
-              >
+                ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
                 <span
                   className={
-                    project.is_favorite
-                      ? "text-amber-500"
-                      : "text-slate-400"
-                  }
-                >
-                  {project.is_favorite
-                    ? "★"
-                    : "☆"}
+                  project.is_favorite ?
+                  "text-amber-500" :
+                  "text-slate-400"
+                  }>
+                  
+                  {project.is_favorite ?
+                  "★" :
+                  "☆"}
                 </span>
               </button>
 
-              {/* Existing menu and card */}
-              {/* MENU */}
+              {}
+              {}
               <div className="absolute top-1 right-2 z-20">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setOpenMenu(
-                      openMenu === project.id
-                        ? null
-                        : project.id
+                      openMenu === project.id ?
+                      null :
+                      project.id
                     );
                   }}
-                  className="app-icon-button"
-                >
+                  className="app-icon-button">
+                  
                   ⋮
                 </button>
 
-                {openMenu === project.id && (
-                  <div
-                    className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                {openMenu === project.id &&
+                <div
+                  className="app-menu absolute right-0 mt-1 w-40 rounded-lg py-1"
+                  onClick={(e) => e.stopPropagation()}>
+                  
                     <button
-                      className="app-menu-item"
-                      onClick={() => {
-                        setRenamingProject(project.id);
-                        setNewProjectName(project.name);
-                        setOpenMenu(null);
-                      }}
-                    >
+                    className="app-menu-item"
+                    onClick={() => {
+                      setRenamingProject(project.id);
+                      setNewProjectName(project.name);
+                      setOpenMenu(null);
+                    }}>
+                    
                       Rename
                     </button>
 
                     <button
-                      className="app-menu-item"
-                      onClick={() =>
-                        duplicateProject(project.id)
-                      }
-                    >
+                    className="app-menu-item"
+                    onClick={() =>
+                    duplicateProject(project.id)
+                    }>
+                    
                       Duplicate
                     </button>
 
                     <button
-                      className="app-menu-item app-menu-danger"
-                      onClick={() =>
-                        deleteProject(project.id)
-                      }
-                    >
+                    className="app-menu-item app-menu-danger"
+                    onClick={() =>
+                    deleteProject(project.id)
+                    }>
+                    
                       Delete
                     </button>
                   </div>
-                )}
+                }
               </div>
 
-              {/* CARD */}
+              {}
               <div
                 onClick={() =>
-                  navigate(`/newVisualization/${project.id}`)
+                navigate(`/newVisualization/${project.id}`)
                 }
-                className="h-full flex flex-col cursor-pointer"
-              >
+                className="h-full flex flex-col cursor-pointer">
+                
                 <div className="flex-1 app-card  border-b flex items-center justify-center">
-                  {project.image_url ? (
-                    <img
-                      src={project.image_url}
-                      alt={project.name}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-slate-300">
+                  {project.image_url ?
+                  <img
+                    src={project.image_url}
+                    alt={project.name}
+                    className="w-full h-full object-contain" /> :
+
+
+                  <div className="text-slate-300">
                       📊
                     </div>
-                  )}
+                  }
                 </div> 
 
                 <div className="p-3">
-                  {renamingProject === project.id ? (
-                    <input
-                      autoFocus
-                      value={newProjectName}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        setNewProjectName(e.target.value)
-                      }
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter")
-                          renameProject(project.id);
+                  {renamingProject === project.id ?
+                  <input
+                    autoFocus
+                    value={newProjectName}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                    setNewProjectName(e.target.value)
+                    }
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter")
+                      renameProject(project.id);
 
-                        if (e.key === "Escape")
-                          setRenamingProject(null);
-                      }}
-                      className="border rounded p-1 w-full"
-                    />
-                  ) : (
-                    <div className="app-text font-semibold truncate">
+                      if (e.key === "Escape")
+                      setRenamingProject(null);
+                    }}
+                    className="border rounded p-1 w-full" /> :
+
+
+                  <div className="app-text font-semibold truncate">
                       {project.name}
                     </div>
-                  )}
+                  }
 
                   <div className="text-xs app-text-muted">
                     Click to customize
@@ -1690,13 +1838,13 @@ const deleteStory = async (storyId) => {
                 </div>
               </div>
             </div>
-          ))}
+            )}
           
 
         </div>
 
       </div>
-      {contextMenu.visible && (
+      {contextMenu.visible &&
         <div
           className="
             app-menu
@@ -1707,45 +1855,57 @@ const deleteStory = async (storyId) => {
             py-1
             shadow-xl
           "
+
+
+
+
+
+
+
+
           style={{
             top: contextMenu.y,
-            left: contextMenu.x,
+            left: contextMenu.x
           }}
           onClick={(e) =>
-            e.stopPropagation()
+          e.stopPropagation()
           }
           onMouseLeave={() =>
-            setContextMenu((prev) => ({
-              ...prev,
-              visible: false,
-            }))
-          }
-        >
+          setContextMenu((prev) => ({
+            ...prev,
+            visible: false
+          }))
+          }>
+          
         <button
-          type="button"
-          className="
+            type="button"
+            className="
             app-menu-item
             w-full
             text-left
           "
-          onClick={() => {
-            const folderId =
+
+
+
+
+            onClick={() => {
+              const folderId =
               contextMenu.folderId;
 
-            const folderName =
+              const folderName =
               contextMenu.folderName;
 
-            setRenamingFolder(folderId);
-            setNewFolderName(folderName);
+              setRenamingFolder(folderId);
+              setNewFolderName(folderName);
 
-            setFolderRenameSource("tree");
+              setFolderRenameSource("tree");
 
-            setContextMenu((prev) => ({
-              ...prev,
-              visible: false,
-            }));
-          }}
-        >
+              setContextMenu((prev) => ({
+                ...prev,
+                visible: false
+              }));
+            }}>
+            
           Rename
         </button>
           <button
@@ -1756,36 +1916,41 @@ const deleteStory = async (storyId) => {
               w-full
               text-left
             "
+
+
+
+
+
             onClick={() => {
               const folderId =
-                contextMenu.folderId;
+              contextMenu.folderId;
 
               const folderName =
-                contextMenu.folderName;
+              contextMenu.folderName;
 
               setContextMenu((prev) => ({
                 ...prev,
-                visible: false,
+                visible: false
               }));
 
               handleDeleteFolder(
                 folderId,
                 folderName
               );
-            }}
-          >
+            }}>
+            
             Delete
           </button>
         </div>
-      )}
+        }
 
       <AuthRequiredModal
-        open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)} />
+        
     </div>
-  </>
-  );
+  </>);
+
 }
 
 export default BasePage;

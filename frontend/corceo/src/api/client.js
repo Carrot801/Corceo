@@ -2,9 +2,9 @@
 import { API_URL } from "./config.js";
 
 export async function apiRequest(
-  path,
-  options = {},
-) {
+path,
+options = {})
+{
   const {
     auth = true,
     headers: customHeaders = {},
@@ -12,44 +12,44 @@ export async function apiRequest(
   } = options;
 
   const token =
-    auth
-      ? localStorage.getItem("token")
-      : null;
+  auth ?
+  localStorage.getItem("token") :
+  null;
 
   const headers = {
     ...(fetchOptions.body && {
       "Content-Type":
-        "application/json",
+      "application/json"
     }),
 
     ...(token && {
       Authorization:
-        `Bearer ${token}`,
+      `Bearer ${token}`
     }),
 
-    ...customHeaders,
+    ...customHeaders
   };
 
   const response = await fetch(
     `${API_URL}${path}`,
     {
       ...fetchOptions,
-      headers,
-    },
+      headers
+    }
   );
 
   const data =
-    response.status === 204
-      ? null
-      : await response
-          .json()
-          .catch(() => null);
+  response.status === 204 ?
+  null :
+  await response.
+  json().
+  catch(() => null);
 
   if (!response.ok) {
     throw new Error(
       data?.error ??
       data?.message ??
-      `Request failed (${response.status})`,
+      `Request failed (${response.status})`
     );
   }
 

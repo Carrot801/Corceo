@@ -1,27 +1,27 @@
 import {
   useCallback,
   useEffect,
-  useState,
-} from "react";
+  useState } from
+"react";
 
 import { parseDataFile, parseExcelSheet } from "../hooks/fileParser";
 
 import { apiRequest } from "../api/client";
 const DEFAULT_COLUMNS = [
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-];
+"A",
+"B",
+"C",
+"D",
+"E",
+"F"];
+
 
 const MIN_ROWS = 30;
 
 function createEmptyRows(
-  columns = DEFAULT_COLUMNS,
-  count = MIN_ROWS
-) {
+columns = DEFAULT_COLUMNS,
+count = MIN_ROWS)
+{
   return Array.from(
     { length: count },
     () => {
@@ -42,8 +42,8 @@ function getReturnedDatasetId(responseData) {
     responseData?.dataset_id ??
     responseData?.id ??
     responseData?.dataset?.id ??
-    null
-  );
+    null);
+
 }
 
 
@@ -53,37 +53,37 @@ function useProjectData(id) {
   );
 
   const [data, setData] = useState(() =>
-    createEmptyRows()
+  createEmptyRows()
   );
 
   const [datasetId, setDatasetId] =
-    useState(null);
+  useState(null);
 
   const [savedChart, setSavedChart] =
-    useState(null);
+  useState(null);
 
   const [isLoadingProject, setIsLoadingProject] =
-    useState(false);
+  useState(false);
 
   const [isUploadingFile, setIsUploadingFile] =
-    useState(false);
+  useState(false);
 
   const [isSavingDataset, setIsSavingDataset] =
-    useState(false);
+  useState(false);
 
   const [error, setError] = useState("");
 
   const [excelImport, setExcelImport] =
-    useState({
-      isOpen: false,
-      fileName: "",
-      workbook: null,
-      sheetNames: [],
-      selectedSheet: "",
-    });
+  useState({
+    isOpen: false,
+    fileName: "",
+    workbook: null,
+    sheetNames: [],
+    selectedSheet: ""
+  });
 
 
-  
+
 
   const clearError = useCallback(() => {
     setError("");
@@ -97,21 +97,21 @@ function useProjectData(id) {
 
   const applyRows = useCallback(
     (
-      rows,
-      suppliedColumns = null,
-      padToMinimum = false
-    ) => {
-      const safeRows = Array.isArray(rows)
-        ? rows
-        : [];
+    rows,
+    suppliedColumns = null,
+    padToMinimum = false) =>
+    {
+      const safeRows = Array.isArray(rows) ?
+      rows :
+      [];
 
       const detectedColumns =
-        Array.isArray(suppliedColumns) &&
-        suppliedColumns.length > 0
-          ? suppliedColumns
-          : safeRows.length > 0
-            ? Object.keys(safeRows[0])
-            : DEFAULT_COLUMNS;
+      Array.isArray(suppliedColumns) &&
+      suppliedColumns.length > 0 ?
+      suppliedColumns :
+      safeRows.length > 0 ?
+      Object.keys(safeRows[0]) :
+      DEFAULT_COLUMNS;
 
       const normalizedRows = safeRows.map(
         (row) => {
@@ -120,7 +120,7 @@ function useProjectData(id) {
           detectedColumns.forEach(
             (column) => {
               normalizedRow[column] =
-                row?.[column] ?? "";
+              row?.[column] ?? "";
             }
           );
 
@@ -129,11 +129,11 @@ function useProjectData(id) {
       );
 
       if (
-        padToMinimum &&
-        normalizedRows.length < MIN_ROWS
-      ) {
+      padToMinimum &&
+      normalizedRows.length < MIN_ROWS)
+      {
         const missingRows =
-          MIN_ROWS - normalizedRows.length;
+        MIN_ROWS - normalizedRows.length;
 
         normalizedRows.push(
           ...createEmptyRows(
@@ -151,111 +151,111 @@ function useProjectData(id) {
 
 
 
-const loadProject = useCallback(
-  async (signal) => {
-    const dataset = await apiRequest(
-      `/data/datasets?project_id=${id}`,
-      {
-        signal,
-      },
-    );
-
-    if (!dataset?.id) {
-      resetEmptySheet();
-      return;
-    }
-
-    setDatasetId(dataset.id);
-
-    const rows = await apiRequest(
-      `/data/rows?dataset_id=${dataset.id}`,
-      {
-        signal,
-      },
-    );
-
-    if (
-      !Array.isArray(rows) ||
-      rows.length === 0
-    ) {
-      setColumns(DEFAULT_COLUMNS);
-      setData(
-        createEmptyRows(
-          DEFAULT_COLUMNS,
-        ),
+  const loadProject = useCallback(
+    async (signal) => {
+      const dataset = await apiRequest(
+        `/data/datasets?project_id=${id}`,
+        {
+          signal
+        }
       );
-      return;
-    }
 
-    applyRows(
-      rows,
-      Object.keys(rows[0]),
-      true,
-    );
-  },
-  [
+      if (!dataset?.id) {
+        resetEmptySheet();
+        return;
+      }
+
+      setDatasetId(dataset.id);
+
+      const rows = await apiRequest(
+        `/data/rows?dataset_id=${dataset.id}`,
+        {
+          signal
+        }
+      );
+
+      if (
+      !Array.isArray(rows) ||
+      rows.length === 0)
+      {
+        setColumns(DEFAULT_COLUMNS);
+        setData(
+          createEmptyRows(
+            DEFAULT_COLUMNS
+          )
+        );
+        return;
+      }
+
+      applyRows(
+        rows,
+        Object.keys(rows[0]),
+        true
+      );
+    },
+    [
     id,
     resetEmptySheet,
-    applyRows,
-  ],
-);
-  // ===================================
-  // LOAD CHART
-  // ===================================
-  const loadChart = useCallback(
-  async (signal) => {
-    const chart = await apiRequest(
-      `/charts?project_id=${id}`,
-      {
-        signal,
-      },
-    );
+    applyRows]
 
-    if (
+  );
+
+
+
+  const loadChart = useCallback(
+    async (signal) => {
+      const chart = await apiRequest(
+        `/charts?project_id=${id}`,
+        {
+          signal
+        }
+      );
+
+      if (
       !chart ||
       typeof chart !== "object" ||
-      Object.keys(chart).length === 0
-    ) {
-      setSavedChart(null);
+      Object.keys(chart).length === 0)
+      {
+        setSavedChart(null);
+        return;
+      }
+
+      setSavedChart(chart);
+    },
+    [id]
+  );
+
+
+
+
+  useEffect(() => {
+    if (!id) {
       return;
     }
 
-    setSavedChart(chart);
-  },
-  [id],
-);
-
-  // ===================================
-  // INITIAL LOAD
-  // ===================================
-useEffect(() => {
-  if (!id) {
-    return;
-  }
-
-  const controller =
+    const controller =
     new AbortController();
 
-  const initializeProject =
+    const initializeProject =
     async () => {
       setIsLoadingProject(true);
       setError("");
 
       try {
         await Promise.all([
-          loadProject(
-            controller.signal
-          ),
+        loadProject(
+          controller.signal
+        ),
 
-          loadChart(
-            controller.signal
-          ),
-        ]);
+        loadChart(
+          controller.signal
+        )]
+        );
       } catch (loadError) {
         if (
-          loadError.name ===
-          "AbortError"
-        ) {
+        loadError.name ===
+        "AbortError")
+        {
           return;
         }
 
@@ -266,12 +266,12 @@ useEffect(() => {
 
         setError(
           loadError.message ??
-            "Could not load the project."
+          "Could not load the project."
         );
       } finally {
         if (
-          !controller.signal.aborted
-        ) {
+        !controller.signal.aborted)
+        {
           setIsLoadingProject(false);
         }
       }
@@ -283,134 +283,134 @@ useEffect(() => {
       controller.abort();
     };
   }, [
-    id,
-    loadProject,
-    loadChart,
-  ]);
+  id,
+  loadProject,
+  loadChart]
+  );
 
-const uploadData = async (
+  const uploadData = async (
   rows,
   uploadedColumns = null,
-  metadata = {}
-) => {
-  if (!id) {
-    throw new Error(
-      "No project selected."
-    );
-  }
+  metadata = {}) =>
+  {
+    if (!id) {
+      throw new Error(
+        "No project selected."
+      );
+    }
 
-  if (
+    if (
     !Array.isArray(rows) ||
-    rows.length === 0
-  ) {
-    throw new Error(
-      "There are no rows to upload."
-    );
-  }
+    rows.length === 0)
+    {
+      throw new Error(
+        "There are no rows to upload."
+      );
+    }
 
-  const columnsToUpload =
+    const columnsToUpload =
     Array.isArray(
       uploadedColumns
     ) &&
-    uploadedColumns.length > 0
-      ? uploadedColumns
-      : Object.keys(
-          rows[0] ?? {}
-        );
+    uploadedColumns.length > 0 ?
+    uploadedColumns :
+    Object.keys(
+      rows[0] ?? {}
+    );
 
-  const requestBody = {
-    project_id: Number(id),
+    const requestBody = {
+      project_id: Number(id),
 
-    rows,
+      rows,
 
-    columns:
+      columns:
       columnsToUpload,
 
-    file_name:
+      file_name:
       metadata.fileName ??
       null,
 
-    file_type:
+      file_type:
       metadata.fileType ??
       null,
 
-    sheet_name:
+      sheet_name:
       metadata.sheetName ??
-      null,
-  };
+      null
+    };
 
-  try {
-    setError("");
+    try {
+      setError("");
 
-    // =========================
-    // SHOW DATA IMMEDIATELY
-    // =========================
 
-    applyRows(
-      rows,
-      columnsToUpload,
-      true
-    );
 
-    // =========================
-    // SAVE TO BACKEND
-    // =========================
 
-    const savedDataset =
+
+      applyRows(
+        rows,
+        columnsToUpload,
+        true
+      );
+
+
+
+
+
+      const savedDataset =
       await apiRequest(
         "/upload-data",
         {
           method: "POST",
 
           body:
-            JSON.stringify(
-              requestBody
-            ),
+          JSON.stringify(
+            requestBody
+          )
         }
       );
 
-    const newDatasetId =
+      const newDatasetId =
       getReturnedDatasetId(
         savedDataset
       );
 
-    if (!newDatasetId) {
-      throw new Error(
-        "Upload succeeded, but the backend did not return a dataset ID."
+      if (!newDatasetId) {
+        throw new Error(
+          "Upload succeeded, but the backend did not return a dataset ID."
+        );
+      }
+
+      setDatasetId(
+        newDatasetId
       );
-    }
 
-    setDatasetId(
-      newDatasetId
-    );
+      return {
+        ...savedDataset,
 
-    return {
-      ...savedDataset,
-
-      id:
+        id:
         newDatasetId,
 
-      datasetId:
-        newDatasetId,
-    };
-  } catch (uploadError) {
-    console.error(
-      "Dataset upload failed:",
-      uploadError
-    );
+        datasetId:
+        newDatasetId
+      };
+    } catch (uploadError) {
+      console.error(
+        "Dataset upload failed:",
+        uploadError
+      );
 
-    setError(
-      uploadError.message ??
+      setError(
+        uploadError.message ??
         "Could not upload the dataset."
-    );
+      );
 
-    throw uploadError;
-  }
-};
+      throw uploadError;
+    }
+  };
 
-  // ===================================
-  // SELECT CSV OR EXCEL FILE
-  // ===================================
+
+
+
   const handleDataFile = async (file) => {
     if (!file) {
       return null;
@@ -421,42 +421,42 @@ const uploadData = async (
 
     try {
       const parsedFile =
-        await parseDataFile(file);
+      await parseDataFile(file);
 
       if (
-        parsedFile.requiresSheetSelection
-      ) {
+      parsedFile.requiresSheetSelection)
+      {
         setExcelImport({
           isOpen: true,
           fileName: parsedFile.fileName,
           workbook: parsedFile.workbook,
           sheetNames:
-            parsedFile.sheetNames,
+          parsedFile.sheetNames,
           selectedSheet:
-            parsedFile.sheetNames[0] ??
-            "",
+          parsedFile.sheetNames[0] ??
+          ""
         });
 
         return parsedFile;
       }
 
       const savedDataset =
-        await uploadData(
-          parsedFile.rows,
-          parsedFile.columns,
-          {
-            fileName:
-              parsedFile.fileName,
-            fileType:
-              parsedFile.fileType,
-            sheetName:
-              parsedFile.sheetName,
-          }
-        );
+      await uploadData(
+        parsedFile.rows,
+        parsedFile.columns,
+        {
+          fileName:
+          parsedFile.fileName,
+          fileType:
+          parsedFile.fileType,
+          sheetName:
+          parsedFile.sheetName
+        }
+      );
 
       return {
         ...parsedFile,
-        savedDataset,
+        savedDataset
       };
     } catch (fileError) {
       console.error(
@@ -466,7 +466,7 @@ const uploadData = async (
 
       setError(
         fileError.message ??
-          "Could not import the file."
+        "Could not import the file."
       );
 
       throw fileError;
@@ -475,16 +475,16 @@ const uploadData = async (
     }
   };
 
-  // ===================================
-  // EXCEL SHEET SELECTION
-  // ===================================
+
+
+
   const selectExcelSheet = (
-    sheetName
-  ) => {
+  sheetName) =>
+  {
     setExcelImport(
       (currentImport) => ({
         ...currentImport,
-        selectedSheet: sheetName,
+        selectedSheet: sheetName
       })
     );
   };
@@ -495,7 +495,7 @@ const uploadData = async (
       fileName: "",
       workbook: null,
       sheetNames: [],
-      selectedSheet: "",
+      selectedSheet: ""
     });
   };
 
@@ -503,12 +503,12 @@ const uploadData = async (
     const {
       workbook,
       selectedSheet,
-      fileName,
+      fileName
     } = excelImport;
 
     if (!workbook) {
       const message =
-        "The Excel workbook is not loaded.";
+      "The Excel workbook is not loaded.";
 
       setError(message);
       throw new Error(message);
@@ -516,7 +516,7 @@ const uploadData = async (
 
     if (!selectedSheet) {
       const message =
-        "Select an Excel worksheet.";
+      "Select an Excel worksheet.";
 
       setError(message);
       throw new Error(message);
@@ -527,22 +527,22 @@ const uploadData = async (
 
     try {
       const parsedSheet =
-        parseExcelSheet(
-          workbook,
-          selectedSheet
-        );
+      parseExcelSheet(
+        workbook,
+        selectedSheet
+      );
 
       const savedDataset =
-        await uploadData(
-          parsedSheet.rows,
-          parsedSheet.columns,
-          {
-            fileName,
-            fileType: "excel",
-            sheetName:
-              selectedSheet,
-          }
-        );
+      await uploadData(
+        parsedSheet.rows,
+        parsedSheet.columns,
+        {
+          fileName,
+          fileType: "excel",
+          sheetName:
+          selectedSheet
+        }
+      );
 
       cancelExcelImport();
 
@@ -555,7 +555,7 @@ const uploadData = async (
 
       setError(
         sheetError.message ??
-          "Could not import the worksheet."
+        "Could not import the worksheet."
       );
 
       throw sheetError;
@@ -564,22 +564,22 @@ const uploadData = async (
     }
   };
 
-  // ===================================
-  // REMOVE COMPLETELY EMPTY ROWS
-  // ===================================
+
+
+
   const getRowsForSaving = () => {
     return data.filter((row) =>
-      Object.values(row ?? {}).some(
-        (value) =>
-          String(value ?? "").trim() !==
-          ""
-      )
+    Object.values(row ?? {}).some(
+      (value) =>
+      String(value ?? "").trim() !==
+      ""
+    )
     );
   };
 
-  // ===================================
-  // SAVE DATASET
-  // ===================================
+
+
+
   const saveDataset = async () => {
     if (!id) {
       throw new Error(
@@ -588,7 +588,7 @@ const uploadData = async (
     }
 
     const rowsToSave =
-      getRowsForSaving();
+    getRowsForSaving();
 
     if (rowsToSave.length === 0) {
       throw new Error(
@@ -599,64 +599,64 @@ const uploadData = async (
     setIsSavingDataset(true);
     setError("");
 
-   try {
-  const savedDataset = await apiRequest(
-    "/data/save_dataset",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        project_id: id,
-        dataset_id: datasetId,
-        columns,
-        rows: rowsToSave,
-      }),
-    },
-  );
+    try {
+      const savedDataset = await apiRequest(
+        "/data/save_dataset",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            project_id: id,
+            dataset_id: datasetId,
+            columns,
+            rows: rowsToSave
+          })
+        }
+      );
 
-  const savedDatasetId =
-    getReturnedDatasetId(
-      savedDataset,
-    );
+      const savedDatasetId =
+      getReturnedDatasetId(
+        savedDataset
+      );
 
-  if (!savedDatasetId) {
-    throw new Error(
-      "The backend did not return a dataset ID.",
-    );
-  }
+      if (!savedDatasetId) {
+        throw new Error(
+          "The backend did not return a dataset ID."
+        );
+      }
 
-  setDatasetId(
-    savedDatasetId,
-  );
+      setDatasetId(
+        savedDatasetId
+      );
 
-  return {
-    ...savedDataset,
-    id: savedDatasetId,
-    datasetId:
-      savedDatasetId,
+      return {
+        ...savedDataset,
+        id: savedDatasetId,
+        datasetId:
+        savedDatasetId
+      };
+    } catch (saveError) {
+      console.error(
+        "Dataset saving failed:",
+        saveError
+      );
+
+      setError(
+        saveError.message ??
+        "Could not save the dataset."
+      );
+
+      throw saveError;
+    } finally {
+      setIsSavingDataset(false);
+    }
   };
-} catch (saveError) {
-  console.error(
-    "Dataset saving failed:",
-    saveError,
-  );
 
-  setError(
-    saveError.message ??
-      "Could not save the dataset.",
-  );
 
-  throw saveError;
-} finally {
-  setIsSavingDataset(false);
-}
-  };
 
-  // ===================================
-  // SAVE CHART
-  // ===================================
+
   const saveChartToBackend = async (
-    chart
-  ) => {
+  chart) =>
+  {
     if (!id) {
       throw new Error(
         "No project selected."
@@ -664,7 +664,7 @@ const uploadData = async (
     }
 
     const token =
-      localStorage.getItem("token");
+    localStorage.getItem("token");
 
     if (!token) {
       throw new Error(
@@ -673,8 +673,8 @@ const uploadData = async (
     }
 
     const chartDatasetId =
-      chart?.dataset_id ??
-      datasetId;
+    chart?.dataset_id ??
+    datasetId;
 
     if (!chartDatasetId) {
       throw new Error(
@@ -685,7 +685,7 @@ const uploadData = async (
     const requestBody = {
       ...chart,
       project_id: id,
-      dataset_id: chartDatasetId,
+      dataset_id: chartDatasetId
     };
 
     console.log(
@@ -693,36 +693,36 @@ const uploadData = async (
       requestBody
     );
 
-try {
-  const savedChartResponse =
-    await apiRequest(
-      "/charts",
-      {
-        method: "POST",
-        body: JSON.stringify(
-          requestBody,
-        ),
-      },
-    );
+    try {
+      const savedChartResponse =
+      await apiRequest(
+        "/charts",
+        {
+          method: "POST",
+          body: JSON.stringify(
+            requestBody
+          )
+        }
+      );
 
-  setSavedChart(
-    savedChartResponse,
-  );
+      setSavedChart(
+        savedChartResponse
+      );
 
-  return savedChartResponse;
-} catch (chartError) {
-  console.error(
-    "Chart saving failed:",
-    chartError,
-  );
+      return savedChartResponse;
+    } catch (chartError) {
+      console.error(
+        "Chart saving failed:",
+        chartError
+      );
 
-  setError(
-    chartError.message ??
-      "Could not save the chart.",
-  );
+      setError(
+        chartError.message ??
+        "Could not save the chart."
+      );
 
-  throw chartError;
-}
+      throw chartError;
+    }
   };
 
   return {
@@ -751,7 +751,7 @@ try {
     cancelExcelImport,
 
     saveDataset,
-    saveChartToBackend,
+    saveChartToBackend
 
   };
 }

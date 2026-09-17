@@ -1,188 +1,195 @@
 import {
   useEffect,
   useRef,
-  useState,
-} from "react";
+  useState } from
+"react";
 
 import {
-  useParams,
-} from "react-router-dom";
+  useParams } from
+"react-router-dom";
 
 import StoryChart from "../components/StoryChart";
 
 import AnnotationLayer from "../components/annotations/AnnotationLayer";
 
 import {
-  apiRequest,
-} from "../api/client";
+  apiRequest } from
+"../api/client";
 
 function PublishedStory() {
   const { storyId } =
-    useParams();
+  useParams();
 
   const [
-    story,
-    setStory,
-  ] = useState(null);
-const [
+  story,
+  setStory] =
+  useState(null);
+  const [
   loadError,
-  setLoadError,
-] = useState(null);
+  setLoadError] =
+  useState(null);
   const [
-    activeSlideIndex,
-    setActiveSlideIndex,
-  ] = useState(0);
+  activeSlideIndex,
+  setActiveSlideIndex] =
+  useState(0);
 
   const [
-    canvasSize,
-    setCanvasSize,
-  ] = useState({
+  canvasSize,
+  setCanvasSize] =
+  useState({
     width: 0,
-    height: 0,
+    height: 0
   });
 
 
   const canvasRef =
-    useRef(null);
+  useRef(null);
 
-  // =========================
-  // LOAD STORY
-  // =========================
 
-useEffect(() => {
-  let cancelled = false;
 
-  const loadStory = async () => {
-    setLoadError(null);
 
-    // =========================
-    // 1. TRY PUBLIC STORY
-    // =========================
 
-    try {
-      const publicStory =
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStory = async () => {
+      setLoadError(null);
+
+
+
+
+
+      try {
+        const publicStory =
         await apiRequest(
           `/stories/public/${storyId}`,
           {
-            auth: false,
+            auth: false
           }
         );
 
-      if (cancelled) {
+        if (cancelled) {
+          return;
+        }
+
+        setStory(publicStory);
         return;
+
+      } catch {
+
+
       }
 
-      setStory(publicStory);
-      return;
 
-    } catch {
-      // Story may simply be unpublished.
-      // Try authenticated owner access below.
-    }
 
-    // =========================
-    // 2. TRY PRIVATE OWNER VIEW
-    // =========================
 
-    try {
-      const privateStory =
+
+      try {
+        const privateStory =
         await apiRequest(
           `/stories/${storyId}`
         );
 
-      if (cancelled) {
-        return;
+        if (cancelled) {
+          return;
+        }
+
+        setStory(privateStory);
+
+      } catch (privateError) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Story load failed:",
+          privateError
+        );
+
+        setLoadError(
+          "This story does not exist, is private, or you do not have permission to view it."
+        );
       }
+    };
 
-      setStory(privateStory);
+    loadStory();
 
-    } catch (privateError) {
-      if (cancelled) {
-        return;
-      }
-
-      console.error(
-        "Story load failed:",
-        privateError
-      );
-
-      setLoadError(
-        "This story does not exist, is private, or you do not have permission to view it."
-      );
-    }
-  };
-
-  loadStory();
-
-  return () => {
-    cancelled = true;
-  };
-}, [storyId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [storyId]);
 
 
-  // =========================
-  // OBSERVE CANVAS SIZE
-  // =========================
+
+
+
 
   useEffect(() => {
     const canvas =
-      canvasRef.current;
+    canvasRef.current;
 
     if (!canvas) {
       return;
     }
 
     const updateSize =
-      () => {
-        const rect =
-          canvas.getBoundingClientRect();
+    () => {
+      const rect =
+      canvas.getBoundingClientRect();
 
-        setCanvasSize({
-          width:
-            rect.width,
+      setCanvasSize({
+        width:
+        rect.width,
 
-          height:
-            rect.height,
-        });
-      };
+        height:
+        rect.height
+      });
+    };
 
     updateSize();
 
     const observer =
-      new ResizeObserver(
-        updateSize,
-      );
+    new ResizeObserver(
+      updateSize
+    );
 
     observer.observe(
-      canvas,
+      canvas
     );
 
     return () => {
       observer.disconnect();
     };
   }, [
-    story,
-    activeSlideIndex,
-  ]);
+  story,
+  activeSlideIndex]
+  );
 
-  
 
-  // =========================
-  // LOADING
-  // =========================
+
+
+
+
 
   if (loadError) {
-  return (
-    <div
-      className="
+    return (
+      <div
+        className="
         flex
         h-screen
         items-center
         justify-center
         p-6
         text-center
-      "
-    >
+      ">
+
+
+
+
+
+
+
+        
       <div>
         <h1 className="text-xl font-bold">
           Story unavailable
@@ -192,68 +199,68 @@ useEffect(() => {
           {loadError}
         </p>
       </div>
-    </div>
-  );
-}
+    </div>);
+
+  }
   if (!story) {
     return (
       <div className="flex h-screen items-center justify-center">
         Loading story...
-      </div>
-    );
+      </div>);
+
   }
 
   const slides =
-    Array.isArray(
-      story.slides,
-    )
-      ? story.slides
-      : [];
+  Array.isArray(
+    story.slides
+  ) ?
+  story.slides :
+  [];
 
   if (
-    slides.length === 0
-  ) {
+  slides.length === 0)
+  {
     return (
       <div className="flex h-screen items-center justify-center">
         This story has no slides.
-      </div>
-    );
+      </div>);
+
   }
 
   const currentSlide =
-    slides[
-      activeSlideIndex
-    ];
+  slides[
+  activeSlideIndex];
 
-    const slideTitle =
+
+  const slideTitle =
   currentSlide?.description?.trim() ||
   story?.name?.trim() ||
   "";
 
-const showSlideTitle =
+  const showSlideTitle =
   slideTitle &&
   slideTitle !== "Untitled Story";
-  // =========================
-  // NAVIGATION
-  // =========================
+
+
+
 
   const goPrev = () => {
     setActiveSlideIndex(
       (previous) =>
-        Math.max(
-          0,
-          previous - 1,
-        ),
+      Math.max(
+        0,
+        previous - 1
+      )
     );
   };
 
   const goNext = () => {
     setActiveSlideIndex(
       (previous) =>
-        Math.min(
-          slides.length - 1,
-          previous + 1,
-        ),
+      Math.min(
+        slides.length - 1,
+        previous + 1
+      )
     );
   };
 
@@ -268,6 +275,15 @@ const showSlideTitle =
       bg-slate-100
       p-8
     ">
+
+
+
+
+
+
+
+
+      
       <div className="
         flex
         h-[520px] 
@@ -283,11 +299,23 @@ const showSlideTitle =
       ">
 
 
-        {showSlideTitle && (
-          <h1 className="mb-6 text-3xl font-bold">
+
+
+
+
+
+
+
+
+
+        
+
+
+        {showSlideTitle &&
+        <h1 className="mb-6 text-3xl font-bold">
             {slideTitle}
           </h1>
-        )}
+        }
 
         <div
           ref={canvasRef}
@@ -298,101 +326,111 @@ const showSlideTitle =
             rounded-xl
             border
             bg-slate-50
-          "
-        >
-          {/* ================= */}
-          {/* CHARTS */}
-          {/* ================= */}
+          ">
+
+
+
+
+
+
+
+          
+          {}
+          {}
+          {}
 
 {(
-  currentSlide?.content ||
-  []
-).map(
-  (item) => (
-    <div
-      key={item.id}
+          currentSlide?.content ||
+          []).
+          map(
+            (item) =>
+            <div
+              key={item.id}
 
-      className="
+              className="
         absolute
         overflow-visible
       "
 
-      style={{
-        left:
-          `${
-            item.x ??
-            0
-          }%`,
 
-        top:
-          `${
-            item.y ??
-            0
-          }%`,
 
-        width:
-          `${
-            item.width ??
-            100
-          }%`,
 
-        height:
-          `${
-            item.height ??
-            100
-          }%`,
+              style={{
+                left:
+                `${
+                item.x ??
+                0}%`,
 
-        zIndex:
-  item.zIndex ?? 1,
-      }}
-    >
+
+                top:
+                `${
+                item.y ??
+                0}%`,
+
+
+                width:
+                `${
+                item.width ??
+                100}%`,
+
+
+                height:
+                `${
+                item.height ??
+                100}%`,
+
+
+                zIndex:
+                item.zIndex ?? 1
+              }}>
+              
                 <div className="relative h-full w-full overflow-visible bg-white">
                   <StoryChart
-                    chartId={item.chartId}
-                    initialChart={item.chart}
-                    initialRows={item.rows}
-                    storyMode
-                  />
+                  chartId={item.chartId}
+                  initialChart={item.chart}
+                  initialRows={item.rows}
+                  storyMode />
+                
                 </div>
               </div>
-            ),
+
           )}
 
-          {/* ================= */}
-          {/* ANNOTATIONS */}
-          {/* ================= */}
+          {}
+          {}
+          {}
 
           <AnnotationLayer
             annotations={
-              currentSlide?.annotations ||
-              []
+            currentSlide?.annotations ||
+            []
             }
             width={
-              canvasSize.width
+            canvasSize.width
             }
             height={
-              canvasSize.height
+            canvasSize.height
             }
             interactive={
-              false
+            false
             }
-            idPrefix={`published-story-${storyId}-${activeSlideIndex}`}
-          />
+            idPrefix={`published-story-${storyId}-${activeSlideIndex}`} />
+          
         </div>
 
-        {/* ================= */}
-        {/* NAVIGATION */}
-        {/* ================= */}
+        {}
+        {}
+        {}
 
         <div className="mt-6 flex items-center justify-between">
           <button
             type="button"
             onClick={
-              goPrev
+            goPrev
             }
             disabled={
-              activeSlideIndex ===
-              0
+            activeSlideIndex ===
+            0
             }
             className="
               rounded-lg
@@ -400,15 +438,21 @@ const showSlideTitle =
               px-5
               py-2
               disabled:opacity-40
-            "
-          >
+            ">
+
+
+
+
+
+
+            
             ← Previous
           </button>
 
           <div className="text-sm text-gray-500">
             Slide{" "}
             {activeSlideIndex +
-              1}{" "}
+            1}{" "}
             /{" "}
             {slides.length}
           </div>
@@ -416,12 +460,12 @@ const showSlideTitle =
           <button
             type="button"
             onClick={
-              goNext
+            goNext
             }
             disabled={
-              activeSlideIndex ===
-              slides.length -
-                1
+            activeSlideIndex ===
+            slides.length -
+            1
             }
             className="
               rounded-lg
@@ -430,14 +474,21 @@ const showSlideTitle =
               py-2
               text-white
               disabled:opacity-40
-            "
-          >
+            ">
+
+
+
+
+
+
+
+            
             Next →
           </button>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default PublishedStory;

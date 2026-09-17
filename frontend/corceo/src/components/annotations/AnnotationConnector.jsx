@@ -1,129 +1,129 @@
-// src/components/annotations/AnnotationConnector.jsx
+
 
 function getConnectorEnd(
-  annotation,
-  width,
-  height,
-  startX,
-  startY,
-) {
+annotation,
+width,
+height,
+startX,
+startY)
+{
   let endX =
-    (Number(annotation.x ?? 0) / 100) *
-    width;
+  Number(annotation.x ?? 0) / 100 *
+  width;
 
   let endY =
-    (Number(annotation.y ?? 0) / 100) *
-    height;
+  Number(annotation.y ?? 0) / 100 *
+  height;
 
   const markerType =
-    annotation.markerType ?? "dot";
+  annotation.markerType ?? "dot";
 
-  // =========================
-  // CIRCLE / SQUARE
-  // =========================
+
+
+
   if (
-    markerType === "circle" ||
-    markerType === "square"
-  ) {
+  markerType === "circle" ||
+  markerType === "square")
+  {
     const boxWidth =
-      ((Number(annotation.width) || 15) /
-        100) *
-      width;
+    (Number(annotation.width) || 15) /
+    100 *
+    width;
 
     const boxHeight =
-      markerType === "circle"
-        ? boxWidth
-        : ((Number(annotation.height) ||
-            15) /
-            100) *
-          height;
+    markerType === "circle" ?
+    boxWidth :
+    (Number(annotation.height) ||
+    15) /
+    100 *
+    height;
 
     const centerX =
-      endX + boxWidth / 2;
+    endX + boxWidth / 2;
 
     const centerY =
-      endY + boxHeight / 2;
+    endY + boxHeight / 2;
 
     const dx =
-      centerX - startX;
+    centerX - startX;
 
     const dy =
-      centerY - startY;
+    centerY - startY;
 
     const distance =
-      Math.hypot(dx, dy) || 1;
+    Math.hypot(dx, dy) || 1;
 
     let edgeOffset =
-      boxWidth / 2;
+    boxWidth / 2;
 
     if (
-      markerType === "square"
-    ) {
+    markerType === "square")
+    {
       const absCos =
-        Math.abs(
-          dx / distance,
-        );
+      Math.abs(
+        dx / distance
+      );
 
       const absSin =
-        Math.abs(
-          dy / distance,
-        );
+      Math.abs(
+        dy / distance
+      );
 
       if (
-        boxWidth * absSin <=
-        boxHeight * absCos
-      ) {
+      boxWidth * absSin <=
+      boxHeight * absCos)
+      {
         edgeOffset =
-          (boxWidth / 2) /
-          (absCos || 1);
+        boxWidth / 2 / (
+        absCos || 1);
       } else {
         edgeOffset =
-          (boxHeight / 2) /
-          (absSin || 1);
+        boxHeight / 2 / (
+        absSin || 1);
       }
     }
 
     endX =
-      centerX -
-      (dx / distance) *
-        edgeOffset;
+    centerX -
+    dx / distance *
+    edgeOffset;
 
     endY =
-      centerY -
-      (dy / distance) *
-        edgeOffset;
+    centerY -
+    dy / distance *
+    edgeOffset;
   }
 
-  // =========================
-  // DOT
-  // =========================
+
+
+
   if (markerType === "dot") {
     const radiusPx =
-      (Number(annotation.radius) ||
-        6) *
-      1.25;
+    (Number(annotation.radius) ||
+    6) *
+    1.25;
 
     const dx =
-      endX - startX;
+    endX - startX;
 
     const dy =
-      endY - startY;
+    endY - startY;
 
     const distance =
-      Math.hypot(dx, dy) || 1;
+    Math.hypot(dx, dy) || 1;
 
     endX -=
-      (dx / distance) *
-      (radiusPx + 3);
+    dx / distance * (
+    radiusPx + 3);
 
     endY -=
-      (dy / distance) *
-      (radiusPx + 3);
+    dy / distance * (
+    radiusPx + 3);
   }
 
   return {
     endX,
-    endY,
+    endY
   };
 }
 
@@ -131,61 +131,61 @@ function AnnotationConnector({
   annotation,
   width,
   height,
-  markerId,
+  markerId
 }) {
   if (
-    !width ||
-    !height ||
-    annotation.connectorType ===
-      "none"
-  ) {
+  !width ||
+  !height ||
+  annotation.connectorType ===
+  "none")
+  {
     return null;
   }
 
   const startX =
-    (Number(
-      annotation.textX ?? 0,
-    ) /
-      100) *
-    width;
+  Number(
+    annotation.textX ?? 0
+  ) /
+  100 *
+  width;
 
   const startY =
-    (Number(
-      annotation.textY ?? 0,
-    ) /
-      100) *
-    height;
+  Number(
+    annotation.textY ?? 0
+  ) /
+  100 *
+  height;
 
   const {
     endX,
-    endY,
+    endY
   } = getConnectorEnd(
     annotation,
     width,
     height,
     startX,
-    startY,
+    startY
   );
 
   const stroke =
-    annotation.lineColor ||
-    "#64748b";
+  annotation.lineColor ||
+  "#64748b";
 
   const strokeWidth =
-    Number(
-      annotation.lineWidth,
-    ) || 1.5;
+  Number(
+    annotation.lineWidth
+  ) || 1.5;
 
   const markerEnd =
-    `url(#${markerId})`;
+  `url(#${markerId})`;
 
-  // =========================
-  // STRAIGHT
-  // =========================
+
+
+
   if (
-    annotation.connectorType ===
-    "straight"
-  ) {
+  annotation.connectorType ===
+  "straight")
+  {
     return (
       <line
         x1={startX}
@@ -194,40 +194,40 @@ function AnnotationConnector({
         y2={endY}
         stroke={stroke}
         strokeWidth={strokeWidth}
-        markerEnd={markerEnd}
-      />
-    );
+        markerEnd={markerEnd} />);
+
+
   }
 
-  // =========================
-  // CURVED
-  // =========================
+
+
+
   if (
-    annotation.connectorType ===
-    "curved"
-  ) {
+  annotation.connectorType ===
+  "curved")
+  {
     const dx =
-      endX - startX;
+    endX - startX;
 
     const dy =
-      endY - startY;
+    endY - startY;
 
     const distance =
-      Math.hypot(dx, dy) || 1;
+    Math.hypot(dx, dy) || 1;
 
     const bendFactor = 0.2;
 
     const controlX =
-      (startX + endX) / 2 -
-      (dy / distance) *
-        (distance *
-          bendFactor);
+    (startX + endX) / 2 -
+    dy / distance * (
+    distance *
+    bendFactor);
 
     const controlY =
-      (startY + endY) / 2 +
-      (dx / distance) *
-        (distance *
-          bendFactor);
+    (startY + endY) / 2 +
+    dx / distance * (
+    distance *
+    bendFactor);
 
     return (
       <path
@@ -239,18 +239,18 @@ function AnnotationConnector({
         fill="none"
         stroke={stroke}
         strokeWidth={strokeWidth}
-        markerEnd={markerEnd}
-      />
-    );
+        markerEnd={markerEnd} />);
+
+
   }
 
-  // =========================
-  // ANGLED
-  // =========================
+
+
+
   if (
-    annotation.connectorType ===
-    "angled"
-  ) {
+  annotation.connectorType ===
+  "angled")
+  {
     return (
       <path
         d={`
@@ -261,9 +261,9 @@ function AnnotationConnector({
         fill="none"
         stroke={stroke}
         strokeWidth={strokeWidth}
-        markerEnd={markerEnd}
-      />
-    );
+        markerEnd={markerEnd} />);
+
+
   }
 
   return null;

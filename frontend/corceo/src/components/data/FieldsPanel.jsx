@@ -8,18 +8,18 @@ function FieldsPanel({
   onDragStart,
   types = {},
   isUsed,
-  setChartConfig,
+  setChartConfig
 }) {
   const [searchField, setSearchField] = useState("");
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
-    col: null,
+    col: null
   });
 
   const filteredColumns = columns.filter((col) =>
-    col.toLowerCase().includes(searchField.toLowerCase())
+  col.toLowerCase().includes(searchField.toLowerCase())
   );
 
   const selectedCol = contextMenu.col;
@@ -35,24 +35,24 @@ function FieldsPanel({
     setColumns((prev) => [...prev, fieldName]);
 
     setData((prev) =>
-      prev.map((row) => ({
-        ...row,
-        [fieldName]: valueGetter(row),
-      }))
+    prev.map((row) => ({
+      ...row,
+      [fieldName]: valueGetter(row)
+    }))
     );
 
     return fieldName;
   };
-const createDateHierarchy = (field) => {
-  const newFields = [
+  const createDateHierarchy = (field) => {
+    const newFields = [
     `${field}_Year`,
     `${field}_Quarter`,
-    `${field}_Month`,
-  ];
+    `${field}_Month`];
 
-  setColumns((prev) => [...new Set([...prev, ...newFields])]);
 
-  setData((prevData) =>
+    setColumns((prev) => [...new Set([...prev, ...newFields])]);
+
+    setData((prevData) =>
     prevData.map((row) => {
       const date = new Date(row[field]);
       if (isNaN(date)) return row;
@@ -65,32 +65,32 @@ const createDateHierarchy = (field) => {
         ...row,
         [`${field}_Year`]: String(year),
         [`${field}_Quarter`]: `${year} ${quarter}`,
-        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`,
+        [`${field}_Month`]: `${year}-${String(month).padStart(2, "0")}`
       };
     })
-  );
+    );
 
-  setChartConfig((prev) => ({
-    ...prev,
-    x: `${field}_Month`,
-    xHierarchy: newFields,
-    dateHierarchySource: field,
-    sort: "asc",
-    sortBy: `${field}_Month`,
-    timeGroupBy: "hierarchy",
-  }));
+    setChartConfig((prev) => ({
+      ...prev,
+      x: `${field}_Month`,
+      xHierarchy: newFields,
+      dateHierarchySource: field,
+      sort: "asc",
+      sortBy: `${field}_Month`,
+      timeGroupBy: "hierarchy"
+    }));
 
-  closeMenu();
-};
+    closeMenu();
+  };
 
-const applyField = (fieldName, configUpdates) => {
-  setChartConfig((prev) => ({
-    ...prev,
-    ...configUpdates(fieldName),
-  }));
+  const applyField = (fieldName, configUpdates) => {
+    setChartConfig((prev) => ({
+      ...prev,
+      ...configUpdates(fieldName)
+    }));
 
-  closeMenu();
-};
+    closeMenu();
+  };
 
   const createDateField = (mode) => {
     const name = `${selectedCol}_${mode}`;
@@ -117,39 +117,39 @@ const applyField = (fieldName, configUpdates) => {
       x: f,
       dateHierarchySource: selectedCol,
       xHierarchy: [
-        `${selectedCol}_Year`,
-        `${selectedCol}_Quarter`,
-        `${selectedCol}_Month`,
-      ],
+      `${selectedCol}_Year`,
+      `${selectedCol}_Quarter`,
+      `${selectedCol}_Month`],
+
       timeGroupBy: "hierarchy",
       sortBy: f,
-      sort: "asc",
+      sort: "asc"
     }));
   };
-const createNumberField = (mode) => {
-  if (mode === "Sum" || mode === "Average") {
-    setChartConfig((prev) => ({
-      ...prev,
-      y: [selectedCol],
-      aggregation: mode === "Sum" ? "sum" : "avg",
-    }));
+  const createNumberField = (mode) => {
+    if (mode === "Sum" || mode === "Average") {
+      setChartConfig((prev) => ({
+        ...prev,
+        y: [selectedCol],
+        aggregation: mode === "Sum" ? "sum" : "avg"
+      }));
 
-    closeMenu();
-    return;
-  }
+      closeMenu();
+      return;
+    }
 
-  if (mode === "Count") {
-    const fieldName = addDerivedField("Count_Rows", () => 1);
+    if (mode === "Count") {
+      const fieldName = addDerivedField("Count_Rows", () => 1);
 
-    setChartConfig((prev) => ({
-      ...prev,
-      y: [fieldName],
-      aggregation: "sum",
-    }));
+      setChartConfig((prev) => ({
+        ...prev,
+        y: [fieldName],
+        aggregation: "sum"
+      }));
 
-    closeMenu();
-  }
-};
+      closeMenu();
+    }
+  };
 
   const createTextField = (mode) => {
     const name = `${selectedCol}_${mode}`;
@@ -164,10 +164,10 @@ const createNumberField = (mode) => {
         counts[value] = (counts[value] || 0) + 1;
       });
 
-      topValues = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([value]) => value);
+      topValues = Object.entries(counts).
+      sort((a, b) => b[1] - a[1]).
+      slice(0, 10).
+      map(([value]) => value);
     }
 
     const fieldName = addDerivedField(name, (row) => {
@@ -183,17 +183,17 @@ const createNumberField = (mode) => {
     applyField(fieldName, (f) => ({
       x: f,
       limit:
-        mode === "Top10"
-          ? 10
-          : mode === "Top20"
-            ? 20
-            : null,
+      mode === "Top10" ?
+      10 :
+      mode === "Top20" ?
+      20 :
+      null,
       groupSmallCategories:
-        mode === "GroupedOther",
+      mode === "GroupedOther",
       filterField:
-        mode === "Filter"
-          ? f
-          : null,
+      mode === "Filter" ?
+      f :
+      null
     }));
   };
 
@@ -209,7 +209,7 @@ const createNumberField = (mode) => {
       visible: true,
       x: e.clientX,
       y: e.clientY,
-      col,
+      col
     });
   };
 
@@ -226,83 +226,83 @@ const createNumberField = (mode) => {
           className="app-input w-full px-2 py-1 rounded text-sm"
           placeholder="Find a field..."
           value={searchField}
-          onChange={(e) => setSearchField(e.target.value)}
-        />
+          onChange={(e) => setSearchField(e.target.value)} />
+        
       </div>
 
       <div className="p-2 space-y-2 overflow-y-auto">
-        {filteredColumns.map((col) => (
-          <div
-            key={col}
-            draggable
-            onDoubleClick={() => {
-              if (!setChartConfig) return;
+        {filteredColumns.map((col) =>
+        <div
+          key={col}
+          draggable
+          onDoubleClick={() => {
+            if (!setChartConfig) return;
 
-              const type = types[col];
+            const type = types[col];
 
-              setChartConfig((prev) => {
-                if (type === "number") {
-                  return {
-                    ...prev,
-                    y: prev.y.includes(col) ? prev.y : [...prev.y, col],
-                  };
-                }
-
+            setChartConfig((prev) => {
+              if (type === "number") {
                 return {
                   ...prev,
-                  x: col,
-                  sortBy: col,
-                  sort: col.includes("_Year") ||
-                        col.includes("_Quarter") ||
-                        col.includes("_Month")
-                    ? "asc"
-                    : prev.sort,
+                  y: prev.y.includes(col) ? prev.y : [...prev.y, col]
                 };
-              });
-            }}
-            onContextMenu={(e) => handleContextMenu(e, col)}
-            onDragStart={(e) => {
-              e.dataTransfer.setData("col", col);
-              onDragStart?.(e, col);
-            }}
-            className={`
+              }
+
+              return {
+                ...prev,
+                x: col,
+                sortBy: col,
+                sort: col.includes("_Year") ||
+                col.includes("_Quarter") ||
+                col.includes("_Month") ?
+                "asc" :
+                prev.sort
+              };
+            });
+          }}
+          onContextMenu={(e) => handleContextMenu(e, col)}
+          onDragStart={(e) => {
+            e.dataTransfer.setData("col", col);
+            onDragStart?.(e, col);
+          }}
+          className={`
               px-3 py-2 text-sm rounded-md border flex items-center justify-between
               cursor-grab hover:bg-[rgb(var(--color-surface-hover))]
               ${
-                isUsed?.(col)
-                  ? "border-[rgb(var(--color-primary))] bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))]"
-                  : "app-border app-text-secondary app-surface"
-              }
-            `}
-          >
+          isUsed?.(col) ?
+          "border-[rgb(var(--color-primary))] bg-[rgb(var(--color-primary-soft))] text-[rgb(var(--color-primary))]" :
+          "app-border app-text-secondary app-surface"}
+            `
+          }>
+          
             <span>{col}</span>
             <span className="app-text-muted font-mono text-xs">
               {getIcon(col)}
             </span>
           </div>
-        ))}
+        )}
       </div>
 
-      {contextMenu.visible && selectedCol && (
-        <div
-          className="app-menu app-card fixed border shadow-md rounded-md z-50 p-1 w-64"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          onMouseLeave={closeMenu}
-        >
+      {contextMenu.visible && selectedCol &&
+      <div
+        className="app-menu app-card fixed border shadow-md rounded-md z-50 p-1 w-64"
+        style={{ top: contextMenu.y, left: contextMenu.x }}
+        onMouseLeave={closeMenu}>
+        
           <div className="app-border app-text-muted px-2 py-1 text-xs font-bold border-b mb-1">
             {selectedCol}
           </div>
 
-          {selectedType === "date" && (
-            <>
+          {selectedType === "date" &&
+        <>
               <MenuButton
-                onClick={() =>
-                  applyField(
-                    selectedCol,
-                    (f) => ({ x: f })
-                  )
-                }
-              >
+            onClick={() =>
+            applyField(
+              selectedCol,
+              (f) => ({ x: f })
+            )
+            }>
+            
                 Add to X Axis
               </MenuButton>
               <MenuButton onClick={() => createDateHierarchy(selectedCol)}>
@@ -314,19 +314,19 @@ const createNumberField = (mode) => {
               <MenuButton onClick={() => createDateField("5Y")}>Group by 5 Years</MenuButton>
               <MenuButton onClick={() => createDateField("Time")}>Create Time Series</MenuButton>
             </>
-          )}
+        }
 
-          {selectedType === "number" && (
-            <>
+          {selectedType === "number" &&
+        <>
               <MenuSection title="Use field">
                 <MenuButton
-                  onClick={() =>
-                    applyField(
-                      selectedCol,
-                      (f) => ({ x: f })
-                    )
-                  }
-                >
+              onClick={() =>
+              applyField(
+                selectedCol,
+                (f) => ({ x: f })
+              )
+              }>
+              
                   Add to X Axis
               </MenuButton>
               </MenuSection>
@@ -345,20 +345,20 @@ const createNumberField = (mode) => {
                 </MenuButton>
               </MenuSection>
             </>
-          )}
+        }
 
-          {selectedType !== "number" && selectedType !== "date" && (
-            <>
+          {selectedType !== "number" && selectedType !== "date" &&
+        <>
               <MenuButton
-                onClick={() =>
-                  applyField(
-                    selectedCol,
-                    (field) => ({
-                      y: [field],
-                    })
-                  )
-                }
-              >
+            onClick={() =>
+            applyField(
+              selectedCol,
+              (field) => ({
+                y: [field]
+              })
+            )
+            }>
+            
                 Add to Y Axis
               </MenuButton>
               <MenuButton onClick={() => createTextField("GroupedOther")}>
@@ -366,22 +366,22 @@ const createNumberField = (mode) => {
               </MenuButton>
               <MenuButton onClick={() => createTextField("Filter")}>Filter Values</MenuButton>
             </>
-          )}
+        }
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 function MenuButton({ children, onClick }) {
   return (
     <button
       className="app-menu-item app-text-secondary block w-full text-left px-2 py-1.5 text-sm rounded"
-      onClick={onClick}
-    >
+      onClick={onClick}>
+      
       {children}
-    </button>
-  );
+    </button>);
+
 }
 
 function MenuSection({ title, children }) {
@@ -394,8 +394,8 @@ function MenuSection({ title, children }) {
       <div className="space-y-0.5">
         {children}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default FieldsPanel;

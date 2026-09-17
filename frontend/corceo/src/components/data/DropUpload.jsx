@@ -1,6 +1,6 @@
 function DropUpload({
   handleDataFile,
-  isUploadingFile = false,
+  isUploadingFile = false
 }) {
   const handleDrop = async (event) => {
     event.preventDefault();
@@ -10,16 +10,16 @@ function DropUpload({
     }
 
     const file =
-      event.dataTransfer.files?.[0];
+    event.dataTransfer.files?.[0];
 
     if (!file) {
       return;
     }
 
     if (
-      typeof handleDataFile !==
-      "function"
-    ) {
+    typeof handleDataFile !==
+    "function")
+    {
       console.error(
         "handleDataFile was not passed to DropUpload."
       );
@@ -40,7 +40,7 @@ function DropUpload({
     <div
       onDrop={handleDrop}
       onDragOver={(event) =>
-        event.preventDefault()
+      event.preventDefault()
       }
       className="
         flex
@@ -51,13 +51,22 @@ function DropUpload({
         border-2
         border-dashed
         text-slate-400
-      "
-    >
-      {isUploadingFile
-        ? "Importing..."
-        : "Drop CSV or Excel file here"}
-    </div>
-  );
+      ">
+
+
+
+
+
+
+
+
+
+      
+      {isUploadingFile ?
+      "Importing..." :
+      "Drop CSV or Excel file here"}
+    </div>);
+
 }
 
 export default DropUpload;

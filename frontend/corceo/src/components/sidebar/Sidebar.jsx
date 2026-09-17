@@ -10,8 +10,8 @@ import {
   Radar,
   ChartNoAxesColumnIncreasing,
   LayoutGrid,
-  Grid3X3,
-} from "lucide-react";
+  Grid3X3 } from
+"lucide-react";
 
 import HeaderSection from "./sections/HeaderSection";
 import ColorsSection from "./sections/ColorsSection";
@@ -29,27 +29,27 @@ function Sidebar({
   chartConfig,
   setChartConfig,
   columns,
-  types,
+  types
 }) {
   const [openSection, setOpenSection] = useState(null);
 
-  const yKeys = Array.isArray(chartConfig.y)
-    ? chartConfig.y
-    : chartConfig.y
-      ? [chartConfig.y]
-      : [];
+  const yKeys = Array.isArray(chartConfig.y) ?
+  chartConfig.y :
+  chartConfig.y ?
+  [chartConfig.y] :
+  [];
 
   const legendShapes = [
-    "circle",
-    "square",
-    "triangle",
-    "diamond",
-    "star",
-  ];
+  "circle",
+  "square",
+  "triangle",
+  "diamond",
+  "star"];
+
 
   const toggleSection = (section) => {
     setOpenSection((current) =>
-      current === section ? null : section
+    current === section ? null : section
     );
   };
 
@@ -62,7 +62,7 @@ function Sidebar({
     const current = settings.legendFields || [];
     if (current.includes(field)) return;
 
-    // Preserves your current behavior: only one main legend field.
+
     updateSetting("legendFields", [field]);
   };
 
@@ -80,20 +80,20 @@ function Sidebar({
     const targetIndex = index + direction;
 
     if (
-      targetIndex < 0 ||
-      targetIndex >= next.length
-    ) {
+    targetIndex < 0 ||
+    targetIndex >= next.length)
+    {
       return;
     }
 
     [next[index], next[targetIndex]] = [
-      next[targetIndex],
-      next[index],
-    ];
+    next[targetIndex],
+    next[index]];
+
 
     setChartConfig((current) => ({
       ...current,
-      y: next,
+      y: next
     }));
   };
 
@@ -102,7 +102,7 @@ function Sidebar({
       ...current,
       y: current.y.filter(
         (item) => item !== field
-      ),
+      )
     }));
   };
 
@@ -113,14 +113,14 @@ function Sidebar({
     if (!field) return;
 
     const current =
-      settings.tooltipExtraFields || [];
+    settings.tooltipExtraFields || [];
 
     if (current.includes(field)) return;
 
     updateSetting("tooltipExtraFields", [
-      ...current,
-      field,
-    ]);
+    ...current,
+    field]
+    );
   };
 
   const removeTooltipField = (fieldToRemove) => {
@@ -133,42 +133,42 @@ function Sidebar({
   };
 
   const chartTypes = [
-    { id: "bar", label: "Bar", Icon: BarChart3 },
-    { id: "line", label: "Line", Icon: LineChart },
-    { id: "pie", label: "Pie", Icon: PieChart },
-    { id: "donut", label: "Donut", Icon: Circle },
-    { id: "area", label: "Area", Icon: AreaChart },
-    {
-      id: "scatter",
-      label: "Scatter",
-      Icon: ScatterChart,
-    },
-    { id: "radar", label: "Radar", Icon: Radar },
-    {
-      id: "composed",
-      label: "Composed",
-      Icon: ChartNoAxesColumnIncreasing,
-    },
-    {
-      id: "treemap",
-      label: "Treemap",
-      Icon: LayoutGrid,
-    },
-    {
-      id: "waterfall",
-      label: "Waterfall",
-      Icon: ChartColumn,
-    },
-    {
-      id: "heatmap",
-      label: "Heatmap",
-      Icon: Grid3X3,
-    },
-  ];
+  { id: "bar", label: "Bar", Icon: BarChart3 },
+  { id: "line", label: "Line", Icon: LineChart },
+  { id: "pie", label: "Pie", Icon: PieChart },
+  { id: "donut", label: "Donut", Icon: Circle },
+  { id: "area", label: "Area", Icon: AreaChart },
+  {
+    id: "scatter",
+    label: "Scatter",
+    Icon: ScatterChart
+  },
+  { id: "radar", label: "Radar", Icon: Radar },
+  {
+    id: "composed",
+    label: "Composed",
+    Icon: ChartNoAxesColumnIncreasing
+  },
+  {
+    id: "treemap",
+    label: "Treemap",
+    Icon: LayoutGrid
+  },
+  {
+    id: "waterfall",
+    label: "Waterfall",
+    Icon: ChartColumn
+  },
+  {
+    id: "heatmap",
+    label: "Heatmap",
+    Icon: Grid3X3
+  }];
+
 
   const sharedSectionProps = {
     openSection,
-    toggleSection,
+    toggleSection
   };
 
   return (
@@ -176,21 +176,21 @@ function Sidebar({
       <HeaderSection
         {...sharedSectionProps}
         settings={settings}
-        updateSetting={updateSetting}
-      />
+        updateSetting={updateSetting} />
+      
 
       <ColorsSection
         {...sharedSectionProps}
         settings={settings}
-        updateSetting={updateSetting}
-      />
+        updateSetting={updateSetting} />
+      
 
       <ConditionalFormattingSection
         {...sharedSectionProps}
         settings={settings}
         updateSetting={updateSetting}
-        chartConfig={chartConfig}
-      />
+        chartConfig={chartConfig} />
+      
 
       <ChartTypeSection
         {...sharedSectionProps}
@@ -198,22 +198,22 @@ function Sidebar({
         updateSetting={updateSetting}
         chartConfig={chartConfig}
         setChartConfig={setChartConfig}
-        chartTypes={chartTypes}
-      />
+        chartTypes={chartTypes} />
+      
 
       <DataSettingsSection
         {...sharedSectionProps}
         chartConfig={chartConfig}
         setChartConfig={setChartConfig}
         columns={columns}
-        types={types}
-      />
+        types={types} />
+      
 
       <AppearanceSection
         {...sharedSectionProps}
         chartConfig={chartConfig}
-        setChartConfig={setChartConfig}
-      />
+        setChartConfig={setChartConfig} />
+      
 
       <TooltipSection
         {...sharedSectionProps}
@@ -221,12 +221,12 @@ function Sidebar({
         updateSetting={updateSetting}
         chartConfig={chartConfig}
         handleDropTooltipField={
-          handleDropTooltipField
+        handleDropTooltipField
         }
         removeTooltipField={
-          removeTooltipField
-        }
-      />
+        removeTooltipField
+        } />
+      
 
       <LegendSection
         {...sharedSectionProps}
@@ -234,21 +234,21 @@ function Sidebar({
         updateSetting={updateSetting}
         handleDropLegend={handleDropLegend}
         removeMainLegendField={
-          removeMainLegendField
+        removeMainLegendField
         }
         yKeys={yKeys}
         legendShapes={legendShapes}
         moveLegendField={moveLegendField}
-        removeLegendField={removeLegendField}
-      />
+        removeLegendField={removeLegendField} />
+      
 
       <ValueFormattingSection
         {...sharedSectionProps}
         settings={settings}
-        updateSetting={updateSetting}
-      />
-    </aside>
-  );
+        updateSetting={updateSetting} />
+      
+    </aside>);
+
 }
 
 export default Sidebar;

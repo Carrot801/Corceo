@@ -4,28 +4,28 @@ const app = require("../app");
 const pool = require("../db");
 
 
-// =========================================
-// TEST USERS
-// =========================================
+
+
+
 
 const userA = {
   full_name: "Chart Test User A",
   username: "chart_test_user_a",
   email: "chart_user_a@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 const userB = {
   full_name: "Chart Test User B",
   username: "chart_test_user_b",
   email: "chart_user_b@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 
-// =========================================
-// TEST STATE
-// =========================================
+
+
+
 
 let tokenA = null;
 let tokenB = null;
@@ -40,9 +40,9 @@ let datasetAId = null;
 let datasetBId = null;
 
 
-// =========================================
-// CHART DATA
-// =========================================
+
+
+
 
 const chartPayload = {
   chart_type: "bar",
@@ -50,29 +50,29 @@ const chartPayload = {
   x_axis: "Category",
 
   y_axis: JSON.stringify([
-    "Revenue",
-  ]),
+  "Revenue"]
+  ),
 
   settings: {
     title: "Revenue by Category",
     showLegend: true,
     showGrid: true,
-    decimalPlaces: 2,
+    decimalPlaces: 2
   },
 
   chart_config: {
     type: "bar",
     x: "Category",
     y: [
-      "Revenue",
-    ],
+    "Revenue"],
+
     aggregation: "sum",
     sort: "desc",
-    filters: [],
+    filters: []
   },
 
   image_data:
-    "data:image/png;base64,test-image",
+  "data:image/png;base64,test-image"
 };
 
 
@@ -82,40 +82,40 @@ const updatedChartPayload = {
   x_axis: "Month",
 
   y_axis: JSON.stringify([
-    "Sales",
-  ]),
+  "Sales"]
+  ),
 
   settings: {
     title: "Monthly Sales",
     showLegend: false,
     showGrid: false,
-    decimalPlaces: 0,
+    decimalPlaces: 0
   },
 
   chart_config: {
     type: "line",
     x: "Month",
     y: [
-      "Sales",
-    ],
+    "Sales"],
+
     aggregation: "avg",
     sort: "asc",
-    filters: [],
+    filters: []
   },
 
   image_data:
-    "data:image/png;base64,updated-image",
+  "data:image/png;base64,updated-image"
 };
 
 
-// =========================================
-// HELPERS
-// =========================================
+
+
+
 
 const cleanupTestUsers =
-  async () => {
-    await pool.query(
-      `
+async () => {
+  await pool.query(
+    `
       DELETE FROM users
       WHERE LOWER(email) IN (
         LOWER($1),
@@ -126,197 +126,197 @@ const cleanupTestUsers =
         LOWER($4)
       )
       `,
-      [
-        userA.email,
-        userB.email,
-        userA.username,
-        userB.username,
-      ]
-    );
-  };
+    [
+    userA.email,
+    userB.email,
+    userA.username,
+    userB.username]
+
+  );
+};
 
 
 const registerUser =
-  async (user) => {
-    const response =
-      await request(app)
-        .post("/auth/register")
-        .send(user);
+async (user) => {
+  const response =
+  await request(app).
+  post("/auth/register").
+  send(user);
 
-    expect(
-      response.status
-    ).toBe(201);
+  expect(
+    response.status
+  ).toBe(201);
 
-    return response.body;
-  };
+  return response.body;
+};
 
 
 const createProject =
-  async (
-    token,
-    name
-  ) => {
-    const response =
-      await request(app)
-        .post("/projects")
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          name,
-          folder_id: null,
-        });
+async (
+token,
+name) =>
+{
+  const response =
+  await request(app).
+  post("/projects").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    name,
+    folder_id: null
+  });
 
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
 
-    return response.body;
-  };
+  return response.body;
+};
 
 
 const saveDataset =
-  async (
-    token,
-    projectId
-  ) => {
-    const response =
-      await request(app)
-        .post(
-          "/data/save_dataset"
-        )
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          project_id:
-            projectId,
+async (
+token,
+projectId) =>
+{
+  const response =
+  await request(app).
+  post(
+    "/data/save_dataset"
+  ).
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id:
+    projectId,
 
-          dataset_id:
-            null,
+    dataset_id:
+    null,
 
-          columns: [
-            "Category",
-            "Revenue",
-            "Month",
-            "Sales",
-          ],
+    columns: [
+    "Category",
+    "Revenue",
+    "Month",
+    "Sales"],
 
-          rows: [
-            {
-              Category: "A",
-              Revenue: 100,
-              Month: "January",
-              Sales: 50,
-            },
 
-            {
-              Category: "B",
-              Revenue: 200,
-              Month: "February",
-              Sales: 75,
-            },
-          ],
-        });
+    rows: [
+    {
+      Category: "A",
+      Revenue: 100,
+      Month: "January",
+      Sales: 50
+    },
 
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
+    {
+      Category: "B",
+      Revenue: 200,
+      Month: "February",
+      Sales: 75
+    }]
 
-    return (
-      response.body.datasetId ??
-      response.body.dataset_id ??
-      response.body.id ??
-      response.body.dataset?.id
-    );
-  };
+  });
+
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
+
+  return (
+    response.body.datasetId ??
+    response.body.dataset_id ??
+    response.body.id ??
+    response.body.dataset?.id);
+
+};
 
 
 const saveChart =
-  async ({
-    token,
+async ({
+  token,
+  projectId,
+  datasetId,
+  payload = chartPayload
+}) => {
+  return request(app).
+  post("/charts").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id:
     projectId,
+
+    dataset_id:
     datasetId,
-    payload = chartPayload,
-  }) => {
-    return request(app)
-      .post("/charts")
-      .set(
-        "Authorization",
-        `Bearer ${token}`
-      )
-      .send({
-        project_id:
-          projectId,
 
-        dataset_id:
-          datasetId,
-
-        ...payload,
-      });
-  };
+    ...payload
+  });
+};
 
 
-// =========================================
-// SETUP
-// =========================================
+
+
+
 
 beforeAll(async () => {
   await cleanupTestUsers();
 
   const accountA =
-    await registerUser(userA);
+  await registerUser(userA);
 
   const accountB =
-    await registerUser(userB);
+  await registerUser(userB);
 
   tokenA =
-    accountA.token;
+  accountA.token;
 
   tokenB =
-    accountB.token;
+  accountB.token;
 
   userAId =
-    accountA.user.id;
+  accountA.user.id;
 
   userBId =
-    accountB.user.id;
+  accountB.user.id;
 
   const projectA =
-    await createProject(
-      tokenA,
-      "Chart Project A"
-    );
+  await createProject(
+    tokenA,
+    "Chart Project A"
+  );
 
   const projectB =
-    await createProject(
-      tokenB,
-      "Chart Project B"
-    );
+  await createProject(
+    tokenB,
+    "Chart Project B"
+  );
 
   projectAId =
-    projectA.id;
+  projectA.id;
 
   projectBId =
-    projectB.id;
+  projectB.id;
 
   datasetAId =
-    await saveDataset(
-      tokenA,
-      projectAId
-    );
+  await saveDataset(
+    tokenA,
+    projectAId
+  );
 
   datasetBId =
-    await saveDataset(
-      tokenB,
-      projectBId
-    );
+  await saveDataset(
+    tokenB,
+    projectBId
+  );
 });
 
 
@@ -327,9 +327,9 @@ afterEach(async () => {
     WHERE project_id IN ($1, $2)
     `,
     [
-      projectAId,
-      projectBId,
-    ]
+    projectAId,
+    projectBId]
+
   );
 });
 
@@ -341,9 +341,9 @@ afterAll(async () => {
 });
 
 
-// =========================================
-// CREATE CHART
-// =========================================
+
+
+
 
 describe(
   "POST /charts",
@@ -352,17 +352,17 @@ describe(
       "rejects chart save without authentication",
       async () => {
         const response =
-          await request(app)
-            .post("/charts")
-            .send({
-              project_id:
-                projectAId,
+        await request(app).
+        post("/charts").
+        send({
+          project_id:
+          projectAId,
 
-              dataset_id:
-                datasetAId,
+          dataset_id:
+          datasetAId,
 
-              ...chartPayload,
-            });
+          ...chartPayload
+        });
 
         expect(
           response.status
@@ -375,13 +375,13 @@ describe(
       "allows authenticated user to save chart",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         expect(
           [200, 201]
@@ -394,18 +394,18 @@ describe(
         ).toHaveProperty("id");
 
         expect(
-          response.body
-            .project_id
+          response.body.
+          project_id
         ).toBe(projectAId);
 
         expect(
-          response.body
-            .dataset_id
+          response.body.
+          dataset_id
         ).toBe(datasetAId);
 
         expect(
-          response.body
-            .user_id
+          response.body.
+          user_id
         ).toBe(userAId);
       }
     );
@@ -415,13 +415,13 @@ describe(
       "stores chart type and axes correctly",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         expect(
           [200, 201]
@@ -430,11 +430,11 @@ describe(
         );
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               chart_type,
               x_axis,
@@ -442,31 +442,31 @@ describe(
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         expect(
-          result.rows[0]
-            .chart_type
+          result.rows[0].
+          chart_type
         ).toBe("bar");
 
         expect(
-          result.rows[0]
-            .x_axis
+          result.rows[0].
+          x_axis
         ).toBe("Category");
 
         expect(
           JSON.parse(
-            result.rows[0]
-              .y_axis
+            result.rows[0].
+            y_axis
           )
         ).toEqual([
-          "Revenue",
-        ]);
+        "Revenue"]
+        );
       }
     );
 
@@ -475,30 +475,30 @@ describe(
       "stores settings JSON correctly",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT settings
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
-          result.rows[0]
-            .settings
+          result.rows[0].
+          settings
         ).toEqual(
           chartPayload.settings
         );
@@ -510,33 +510,33 @@ describe(
       "stores chart_config JSON correctly",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT chart_config
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
-          result.rows[0]
-            .chart_config
+          result.rows[0].
+          chart_config
         ).toEqual(
-          chartPayload
-            .chart_config
+          chartPayload.
+          chart_config
         );
       }
     );
@@ -546,33 +546,33 @@ describe(
       "stores image_data",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT image_data
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
-          result.rows[0]
-            .image_data
+          result.rows[0].
+          image_data
         ).toBe(
-          chartPayload
-            .image_data
+          chartPayload.
+          image_data
         );
       }
     );
@@ -582,35 +582,35 @@ describe(
       "chart belongs to authenticated user",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT user_id
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
-          result.rows[0]
-            .user_id
+          result.rows[0].
+          user_id
         ).toBe(userAId);
 
         expect(
-          result.rows[0]
-            .user_id
+          result.rows[0].
+          user_id
         ).not.toBe(userBId);
       }
     );
@@ -620,15 +620,15 @@ describe(
       "user B cannot create chart inside user A project",
       async () => {
         const response =
-          await saveChart({
-            token: tokenB,
+        await saveChart({
+          token: tokenB,
 
-            projectId:
-              projectAId,
+          projectId:
+          projectAId,
 
-            datasetId:
-              datasetAId,
-          });
+          datasetId:
+          datasetAId
+        });
 
         expect(
           [403, 404]
@@ -637,14 +637,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM charts
             WHERE project_id = $1
             `,
-            [projectAId]
-          );
+          [projectAId]
+        );
 
         expect(
           result.rows
@@ -657,15 +657,15 @@ describe(
       "user A cannot use user B dataset for user A chart",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
+        await saveChart({
+          token: tokenA,
 
-            projectId:
-              projectAId,
+          projectId:
+          projectAId,
 
-            datasetId:
-              datasetBId,
-          });
+          datasetId:
+          datasetBId
+        });
 
         expect(
           [400, 403, 404]
@@ -674,14 +674,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM charts
             WHERE project_id = $1
             `,
-            [projectAId]
-          );
+          [projectAId]
+        );
 
         expect(
           result.rows
@@ -692,9 +692,9 @@ describe(
 );
 
 
-// =========================================
-// UPDATE / UPSERT
-// =========================================
+
+
+
 
 describe(
   "Chart update behavior",
@@ -703,13 +703,13 @@ describe(
       "saving chart again updates existing chart instead of creating second chart",
       async () => {
         const firstResponse =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         expect(
           [200, 201]
@@ -718,21 +718,21 @@ describe(
         );
 
         const firstChartId =
-          firstResponse.body.id;
+        firstResponse.body.id;
 
         const secondResponse =
-          await saveChart({
-            token: tokenA,
+        await saveChart({
+          token: tokenA,
 
-            projectId:
-              projectAId,
+          projectId:
+          projectAId,
 
-            datasetId:
-              datasetAId,
+          datasetId:
+          datasetAId,
 
-            payload:
-              updatedChartPayload,
-          });
+          payload:
+          updatedChartPayload
+        });
 
         expect(
           [200, 201]
@@ -741,14 +741,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM charts
             WHERE project_id = $1
             `,
-            [projectAId]
-          );
+          [projectAId]
+        );
 
         expect(
           result.rows
@@ -769,27 +769,27 @@ describe(
         await saveChart({
           token: tokenA,
           projectId:
-            projectAId,
+          projectAId,
           datasetId:
-            datasetAId,
+          datasetAId
         });
 
         await saveChart({
           token: tokenA,
 
           projectId:
-            projectAId,
+          projectAId,
 
           datasetId:
-            datasetAId,
+          datasetAId,
 
           payload:
-            updatedChartPayload,
+          updatedChartPayload
         });
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               chart_type,
               x_axis,
@@ -800,15 +800,15 @@ describe(
             FROM charts
             WHERE project_id = $1
             `,
-            [projectAId]
-          );
+          [projectAId]
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         const chart =
-          result.rows[0];
+        result.rows[0];
 
         expect(
           chart.chart_type
@@ -823,28 +823,28 @@ describe(
             chart.y_axis
           )
         ).toEqual([
-          "Sales",
-        ]);
+        "Sales"]
+        );
 
         expect(
           chart.settings
         ).toEqual(
-          updatedChartPayload
-            .settings
+          updatedChartPayload.
+          settings
         );
 
         expect(
           chart.chart_config
         ).toEqual(
-          updatedChartPayload
-            .chart_config
+          updatedChartPayload.
+          chart_config
         );
 
         expect(
           chart.image_data
         ).toBe(
-          updatedChartPayload
-            .image_data
+          updatedChartPayload.
+          image_data
         );
       }
     );
@@ -873,17 +873,17 @@ describe(
           )
           `,
           [
-            projectAId,
-            datasetAId,
-            "bar",
-            {},
-            {},
-            userAId,
-          ]
+          projectAId,
+          datasetAId,
+          "bar",
+          {},
+          {},
+          userAId]
+
         );
 
         let databaseError =
-          null;
+        null;
 
         try {
           await pool.query(
@@ -906,17 +906,17 @@ describe(
             )
             `,
             [
-              projectAId,
-              datasetAId,
-              "line",
-              {},
-              {},
-              userAId,
-            ]
+            projectAId,
+            datasetAId,
+            "line",
+            {},
+            {},
+            userAId]
+
           );
         } catch (error) {
           databaseError =
-            error;
+          error;
         }
 
         expect(
@@ -932,9 +932,9 @@ describe(
 );
 
 
-// =========================================
-// GET CHART
-// =========================================
+
+
+
 
 describe(
   "GET /charts",
@@ -943,10 +943,10 @@ describe(
       "rejects chart loading without authentication",
       async () => {
         const response =
-          await request(app)
-            .get(
-              `/charts?project_id=${projectAId}`
-            );
+        await request(app).
+        get(
+          `/charts?project_id=${projectAId}`
+        );
 
         expect(
           response.status
@@ -959,26 +959,26 @@ describe(
       "loads current user saved chart",
       async () => {
         const saveResponse =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          saveResponse.body.id;
+        saveResponse.body.id;
 
         const response =
-          await request(app)
-            .get(
-              `/charts?project_id=${projectAId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get(
+          `/charts?project_id=${projectAId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
@@ -989,8 +989,8 @@ describe(
         ).toBe(chartId);
 
         expect(
-          response.body
-            .project_id
+          response.body.
+          project_id
         ).toBe(projectAId);
 
         expect(
@@ -1006,38 +1006,38 @@ describe(
         await saveChart({
           token: tokenA,
           projectId:
-            projectAId,
+          projectAId,
           datasetId:
-            datasetAId,
+          datasetAId
         });
 
         const response =
-          await request(app)
-            .get(
-              `/charts?project_id=${projectAId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get(
+          `/charts?project_id=${projectAId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
         ).toBe(200);
 
         expect(
-          response.body
-            .settings
+          response.body.
+          settings
         ).toEqual(
           chartPayload.settings
         );
 
         expect(
-          response.body
-            .chart_config
+          response.body.
+          chart_config
         ).toEqual(
-          chartPayload
-            .chart_config
+          chartPayload.
+          chart_config
         );
       }
     );
@@ -1049,20 +1049,20 @@ describe(
         await saveChart({
           token: tokenA,
           projectId:
-            projectAId,
+          projectAId,
           datasetId:
-            datasetAId,
+          datasetAId
         });
 
         const response =
-          await request(app)
-            .get(
-              `/charts?project_id=${projectAId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        get(
+          `/charts?project_id=${projectAId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -1077,14 +1077,14 @@ describe(
       "returns 404 when chart does not exist",
       async () => {
         const response =
-          await request(app)
-            .get(
-              `/charts?project_id=${projectAId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get(
+          `/charts?project_id=${projectAId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
@@ -1095,9 +1095,9 @@ describe(
 );
 
 
-// =========================================
-// DATABASE RELATIONSHIPS
-// =========================================
+
+
+
 
 describe(
   "Chart database integrity",
@@ -1105,64 +1105,64 @@ describe(
     test(
       "deleting project deletes its chart",
       async () => {
-        /*
-         * Create a temporary project because
-         * deleting projectA would break the
-         * remaining test setup.
-         */
+
+
+
+
+
 
         const tempProject =
-          await createProject(
-            tokenA,
-            "Chart Cascade Project"
-          );
+        await createProject(
+          tokenA,
+          "Chart Cascade Project"
+        );
 
         const tempProjectId =
-          tempProject.id;
+        tempProject.id;
 
         const tempDatasetId =
-          await saveDataset(
-            tokenA,
-            tempProjectId
-          );
+        await saveDataset(
+          tokenA,
+          tempProjectId
+        );
 
         const chartResponse =
-          await saveChart({
-            token: tokenA,
+        await saveChart({
+          token: tokenA,
 
-            projectId:
-              tempProjectId,
+          projectId:
+          tempProjectId,
 
-            datasetId:
-              tempDatasetId,
-          });
+          datasetId:
+          tempDatasetId
+        });
 
         const chartId =
-          chartResponse.body.id;
+        chartResponse.body.id;
 
         const beforeDelete =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
           beforeDelete.rows
         ).toHaveLength(1);
 
         const deleteResponse =
-          await request(app)
-            .delete(
-              `/projects/${tempProjectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        delete(
+          `/projects/${tempProjectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 204]
@@ -1171,14 +1171,14 @@ describe(
         );
 
         const afterDelete =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM charts
             WHERE id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
           afterDelete.rows
@@ -1191,20 +1191,20 @@ describe(
       "chart dataset belongs to same user as chart",
       async () => {
         const response =
-          await saveChart({
-            token: tokenA,
-            projectId:
-              projectAId,
-            datasetId:
-              datasetAId,
-          });
+        await saveChart({
+          token: tokenA,
+          projectId:
+          projectAId,
+          datasetId:
+          datasetAId
+        });
 
         const chartId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               c.user_id
                 AS chart_user_id,
@@ -1227,26 +1227,26 @@ describe(
 
             WHERE c.id = $1
             `,
-            [chartId]
-          );
+          [chartId]
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         expect(
-          result.rows[0]
-            .chart_user_id
+          result.rows[0].
+          chart_user_id
         ).toBe(userAId);
 
         expect(
-          result.rows[0]
-            .dataset_user_id
+          result.rows[0].
+          dataset_user_id
         ).toBe(userAId);
 
         expect(
-          result.rows[0]
-            .project_user_id
+          result.rows[0].
+          project_user_id
         ).toBe(userAId);
       }
     );

@@ -1,12 +1,12 @@
 const bcrypt = require("bcrypt");
 const pool = require("../db");
-const getCurrentUser = async (req, res,next) => {
+const getCurrentUser = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
 
     if (!userId) {
       return res.status(401).json({
-        error: "Authentication required",
+        error: "Authentication required"
       });
     }
 
@@ -26,7 +26,7 @@ const getCurrentUser = async (req, res,next) => {
 
     if (!result.rows.length) {
       return res.status(404).json({
-        error: "User not found",
+        error: "User not found"
       });
     }
 
@@ -42,31 +42,31 @@ const updateCurrentUser = async (req, res, next) => {
     const {
       full_name,
       username,
-      email,
+      email
     } = req.body;
 
     const normalizedName = full_name?.trim();
-    const normalizedUsername = username
-      ?.trim()
-      .toLowerCase();
-    const normalizedEmail = email
-      ?.trim()
-      .toLowerCase();
+    const normalizedUsername = username?.
+    trim().
+    toLowerCase();
+    const normalizedEmail = email?.
+    trim().
+    toLowerCase();
 
     if (
-      !normalizedName ||
-      !normalizedUsername ||
-      !normalizedEmail
-    ) {
+    !normalizedName ||
+    !normalizedUsername ||
+    !normalizedEmail)
+    {
       return res.status(400).json({
-        error: "Full name, username, and email are required",
+        error: "Full name, username, and email are required"
       });
     }
 
     if (!/^[a-zA-Z0-9_]+$/.test(normalizedUsername)) {
       return res.status(400).json({
         error:
-          "Username may contain only letters, numbers, and underscores",
+        "Username may contain only letters, numbers, and underscores"
       });
     }
 
@@ -81,15 +81,15 @@ const updateCurrentUser = async (req, res, next) => {
         )
       `,
       [
-        userId,
-        normalizedEmail,
-        normalizedUsername,
-      ]
+      userId,
+      normalizedEmail,
+      normalizedUsername]
+
     );
 
     if (duplicate.rows.length > 0) {
       return res.status(409).json({
-        error: "Email or username is already in use",
+        error: "Email or username is already in use"
       });
     }
 
@@ -109,16 +109,16 @@ const updateCurrentUser = async (req, res, next) => {
         email
       `,
       [
-        normalizedName,
-        normalizedUsername,
-        normalizedEmail,
-        userId,
-      ]
+      normalizedName,
+      normalizedUsername,
+      normalizedEmail,
+      userId]
+
     );
 
     if (!result.rows.length) {
       return res.status(404).json({
-        error: "User not found",
+        error: "User not found"
       });
     }
 
@@ -128,7 +128,7 @@ const updateCurrentUser = async (req, res, next) => {
 
     if (err.code === "23505") {
       return res.status(409).json({
-        error: "Email or username is already in use",
+        error: "Email or username is already in use"
       });
     }
 
@@ -143,36 +143,36 @@ const changePassword = async (req, res, next) => {
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
-        error: "Current password and new password are required",
+        error: "Current password and new password are required"
       });
     }
 
     if (newPassword.length < 8) {
-  return res
-    .status(400)
-    .json({
-      error:
-        "New password must be at least 8 characters",
-    });
-}
+      return res.
+      status(400).
+      json({
+        error:
+        "New password must be at least 8 characters"
+      });
+    }
 
-if (!/[A-Z]/.test(newPassword)) {
-  return res
-    .status(400)
-    .json({
-      error:
-        "New password must contain at least one uppercase letter",
-    });
-}
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.
+      status(400).
+      json({
+        error:
+        "New password must contain at least one uppercase letter"
+      });
+    }
 
-if (!/[0-9]/.test(newPassword)) {
-  return res
-    .status(400)
-    .json({
-      error:
-        "New password must contain at least one number",
-    });
-}
+    if (!/[0-9]/.test(newPassword)) {
+      return res.
+      status(400).
+      json({
+        error:
+        "New password must contain at least one number"
+      });
+    }
 
     const result = await pool.query(
       `
@@ -187,7 +187,7 @@ if (!/[0-9]/.test(newPassword)) {
 
     if (!user) {
       return res.status(404).json({
-        error: "User not found",
+        error: "User not found"
       });
     }
 
@@ -198,7 +198,7 @@ if (!/[0-9]/.test(newPassword)) {
 
     if (!passwordIsCorrect) {
       return res.status(401).json({
-        error: "Current password is incorrect",
+        error: "Current password is incorrect"
       });
     }
 
@@ -209,7 +209,7 @@ if (!/[0-9]/.test(newPassword)) {
 
     if (samePassword) {
       return res.status(400).json({
-        error: "New password must be different from the current password",
+        error: "New password must be different from the current password"
       });
     }
 
@@ -227,7 +227,7 @@ if (!/[0-9]/.test(newPassword)) {
     );
 
     return res.json({
-      message: "Password changed successfully",
+      message: "Password changed successfully"
     });
   } catch (err) {
     next(err);
@@ -243,7 +243,7 @@ const deleteCurrentUser = async (req, res, next) => {
 
     if (!password) {
       return res.status(400).json({
-        error: "Password is required to delete the account",
+        error: "Password is required to delete the account"
       });
     }
 
@@ -265,7 +265,7 @@ const deleteCurrentUser = async (req, res, next) => {
       await client.query("ROLLBACK");
 
       return res.status(404).json({
-        error: "User not found",
+        error: "User not found"
       });
     }
 
@@ -278,7 +278,7 @@ const deleteCurrentUser = async (req, res, next) => {
       await client.query("ROLLBACK");
 
       return res.status(401).json({
-        error: "Password is incorrect",
+        error: "Password is incorrect"
       });
     }
 
@@ -293,33 +293,33 @@ const deleteCurrentUser = async (req, res, next) => {
     await client.query("COMMIT");
 
     return res.json({
-      message: "Account deleted successfully",
+      message: "Account deleted successfully"
     });
   } catch (err) {
-  try {
-    await client.query(
-      "ROLLBACK"
-    );
-  } catch (
-    rollbackError
-  ) {
-    console.error(
-      "Rollback failed:",
-      rollbackError
-    );
-  }
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch (
+    rollbackError)
+    {
+      console.error(
+        "Rollback failed:",
+        rollbackError
+      );
+    }
 
-  if (err.code === "23503") {
-    return res
-      .status(409)
-      .json({
+    if (err.code === "23503") {
+      return res.
+      status(409).
+      json({
         error:
-          "The account still owns projects or stories. Configure cascading deletion or delete those records first.",
+        "The account still owns projects or stories. Configure cascading deletion or delete those records first."
       });
-  }
+    }
 
-  next(err);
-} finally {
+    next(err);
+  } finally {
     client.release();
   }
 };
@@ -328,5 +328,5 @@ module.exports = {
   getCurrentUser,
   updateCurrentUser,
   changePassword,
-  deleteCurrentUser,
+  deleteCurrentUser
 };

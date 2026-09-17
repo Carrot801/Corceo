@@ -1,34 +1,34 @@
 import {
   useCallback,
-  useRef,
-} from "react";
+  useRef } from
+"react";
 
 import {
-  toPng,
-} from "html-to-image";
+  toPng } from
+"html-to-image";
 
 function createSafeFileName(
-  value
-) {
+value)
+{
   const safeName =
-    String(
-      value ||
-        "chart"
-    )
-      .trim()
-      .replace(
-        /[<>:"/\\|?*]/g,
-        "_"
-      )
-      .replace(
-        /\s+/g,
-        " "
-      );
+  String(
+    value ||
+    "chart"
+  ).
+  trim().
+  replace(
+    /[<>:"/\\|?*]/g,
+    "_"
+  ).
+  replace(
+    /\s+/g,
+    " "
+  );
 
   return (
     safeName ||
-    "chart"
-  );
+    "chart");
+
 }
 
 async function waitForExportRender() {
@@ -55,180 +55,180 @@ async function waitForExportRender() {
 function useChartExport({
   chartConfig,
   chartData,
-  settings,
+  settings
 }) {
   const exportChartRef =
-    useRef(null);
+  useRef(null);
 
   const createExportImage =
-    useCallback(
-      async (
-        pixelRatio = 2
-      ) => {
-        const node =
-          exportChartRef.current;
+  useCallback(
+    async (
+    pixelRatio = 2) =>
+    {
+      const node =
+      exportChartRef.current;
 
-        if (!node) {
-          throw new Error(
-            "The export chart element was not found."
-          );
-        }
+      if (!node) {
+        throw new Error(
+          "The export chart element was not found."
+        );
+      }
 
-        await waitForExportRender();
+      await waitForExportRender();
 
-        const width = 1400;
-        const height = 900;
+      const width = 1400;
+      const height = 900;
 
-        return toPng(
-          node,
-          {
-            cacheBust: true,
+      return toPng(
+        node,
+        {
+          cacheBust: true,
 
-            pixelRatio,
+          pixelRatio,
+
+          backgroundColor:
+          "#ffffff",
+
+          width,
+          height,
+
+          canvasWidth:
+          width *
+          pixelRatio,
+
+          canvasHeight:
+          height *
+          pixelRatio,
+
+          style: {
+            width:
+            `${width}px`,
+
+            height:
+            `${height}px`,
+
+            minWidth:
+            `${width}px`,
+
+            minHeight:
+            `${height}px`,
+
+            maxWidth:
+            "none",
+
+            maxHeight:
+            "none",
+
+            overflow:
+            "hidden",
+
+            transform:
+            "none",
 
             backgroundColor:
-              "#ffffff",
+            "#ffffff"
+          },
 
-            width,
-            height,
-
-            canvasWidth:
-              width *
-              pixelRatio,
-
-            canvasHeight:
-              height *
-              pixelRatio,
-
-            style: {
-              width:
-                `${width}px`,
-
-              height:
-                `${height}px`,
-
-              minWidth:
-                `${width}px`,
-
-              minHeight:
-                `${height}px`,
-
-              maxWidth:
-                "none",
-
-              maxHeight:
-                "none",
-
-              overflow:
-                "hidden",
-
-              transform:
-                "none",
-
-              backgroundColor:
-                "#ffffff",
-            },
-
-            filter:
-              (element) =>
-                !element
-                  ?.classList
-                  ?.contains(
-                    "no-export"
-                  ),
-          }
-        );
-      },
-      []
-    );
+          filter:
+          (element) =>
+          !element?.
+          classList?.
+          contains(
+            "no-export"
+          )
+        }
+      );
+    },
+    []
+  );
 
   const exportPNG =
-    useCallback(
-      async () => {
-        try {
-          if (
-            !chartConfig.x
-          ) {
-            throw new Error(
-              "Select a field for the X axis before exporting."
-            );
-          }
-
-          if (
-            !Array.isArray(
-              chartConfig.y
-            ) ||
-            chartConfig.y
-              .length === 0
-          ) {
-            throw new Error(
-              "Select at least one field for the Y axis before exporting."
-            );
-          }
-
-          if (
-            !Array.isArray(
-              chartData
-            ) ||
-            chartData.length ===
-              0
-          ) {
-            throw new Error(
-              "There is no chart data to export."
-            );
-          }
-
-          const dataUrl =
-            await createExportImage(
-              2
-            );
-
-          const link =
-            document.createElement(
-              "a"
-            );
-
-          link.download =
-            `${createSafeFileName(
-              settings.title
-            )}.png`;
-
-          link.href =
-            dataUrl;
-
-          document.body
-            .appendChild(
-              link
-            );
-
-          link.click();
-          link.remove();
-
-        } catch (error) {
-          console.error(
-            "Export failed:",
-            error
-          );
-
-          alert(
-            error.message ||
-              "The chart could not be exported."
+  useCallback(
+    async () => {
+      try {
+        if (
+        !chartConfig.x)
+        {
+          throw new Error(
+            "Select a field for the X axis before exporting."
           );
         }
-      },
-      [
-        chartConfig.x,
-        chartConfig.y,
-        chartData,
-        createExportImage,
-        settings.title,
-      ]
-    );
+
+        if (
+        !Array.isArray(
+          chartConfig.y
+        ) ||
+        chartConfig.y.
+        length === 0)
+        {
+          throw new Error(
+            "Select at least one field for the Y axis before exporting."
+          );
+        }
+
+        if (
+        !Array.isArray(
+          chartData
+        ) ||
+        chartData.length ===
+        0)
+        {
+          throw new Error(
+            "There is no chart data to export."
+          );
+        }
+
+        const dataUrl =
+        await createExportImage(
+          2
+        );
+
+        const link =
+        document.createElement(
+          "a"
+        );
+
+        link.download =
+        `${createSafeFileName(
+          settings.title
+        )}.png`;
+
+        link.href =
+        dataUrl;
+
+        document.body.
+        appendChild(
+          link
+        );
+
+        link.click();
+        link.remove();
+
+      } catch (error) {
+        console.error(
+          "Export failed:",
+          error
+        );
+
+        alert(
+          error.message ||
+          "The chart could not be exported."
+        );
+      }
+    },
+    [
+    chartConfig.x,
+    chartConfig.y,
+    chartData,
+    createExportImage,
+    settings.title]
+
+  );
 
   return {
     exportChartRef,
     createExportImage,
-    exportPNG,
+    exportPNG
   };
 }
 

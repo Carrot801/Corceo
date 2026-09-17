@@ -32,12 +32,12 @@ export const DEFAULT_ANNOTATION = {
   textAlign: "left",
 
   lineWidth: 1.5,
-  lineColor: "#64748b",
+  lineColor: "#64748b"
 };
 
 export const EMPTY_SLIDE = () => ({
   id: `temp-${crypto.randomUUID()}`,
   content: [],
   description: "",
-  annotations: [],
+  annotations: []
 });

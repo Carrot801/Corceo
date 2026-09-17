@@ -1,12 +1,9 @@
 const pool = require("../db");
 
-// ==========================================
-// GET STORIES
-// ==========================================
 
 async function getStories({
   userId,
-  folderId = null,
+  folderId = null
 }) {
   if (folderId) {
     const result = await pool.query(
@@ -37,34 +34,34 @@ async function getStories({
   return result.rows;
 }
 
-// ==========================================
-// GET STORY
-// ==========================================
+
+
+
 
 async function getStory({
   storyId,
-  userId,
+  userId
 }) {
   const storyResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT *
         FROM stories
         WHERE id = $1
           AND user_id = $2
       `,
-      [storyId, userId]
-    );
+    [storyId, userId]
+  );
 
   if (
-    storyResult.rows.length === 0
-  ) {
+  storyResult.rows.length === 0)
+  {
     return null;
   }
 
   const slidesResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT
           s.id AS slide_id,
           s.position AS slide_position,
@@ -95,12 +92,12 @@ async function getStory({
           s.position,
           sc.position
       `,
-      [storyId]
-    );
+    [storyId]
+  );
 
   const annotationsResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT
           sa.slide_id,
           sa.annotation
@@ -112,25 +109,25 @@ async function getStory({
 
         WHERE s.story_id = $1
       `,
-      [storyId]
-    );
+    [storyId]
+  );
 
   const slidesMap = {};
 
   slidesResult.rows.forEach(
     (row) => {
       if (
-        !slidesMap[row.slide_id]
-      ) {
+      !slidesMap[row.slide_id])
+      {
         slidesMap[row.slide_id] = {
           id: row.slide_id,
 
           description:
-            row.description,
+          row.description,
 
           content: [],
 
-          annotations: [],
+          annotations: []
         };
       }
 
@@ -139,24 +136,24 @@ async function getStory({
       }
 
       slidesMap[
-        row.slide_id
-      ].content.push({
+      row.slide_id].
+      content.push({
         id:
-          row.slide_content_id ??
-          `${row.slide_id}-${row.chart_id}`,
+        row.slide_content_id ??
+        `${row.slide_id}-${row.chart_id}`,
 
         type: "chart",
 
         chartId:
-          row.chart_id,
+        row.chart_id,
 
         name:
-          row.chart_name ||
-          "Chart",
+        row.chart_name ||
+        "Chart",
 
         imageUrl:
-          row.chart_image_url ||
-          null,
+        row.chart_image_url ||
+        null,
 
         x: Number(
           row.layout?.x ?? 0
@@ -176,8 +173,8 @@ async function getStory({
 
         zIndex: Number(
           row.layout?.zIndex ??
-            row.content_position + 1
-        ),
+          row.content_position + 1
+        )
       });
     }
   );
@@ -185,11 +182,11 @@ async function getStory({
   annotationsResult.rows.forEach(
     (row) => {
       if (
-        slidesMap[row.slide_id]
-      ) {
+      slidesMap[row.slide_id])
+      {
         slidesMap[
-          row.slide_id
-        ].annotations.push(
+        row.slide_id].
+        annotations.push(
           row.annotation
         );
       }
@@ -200,23 +197,23 @@ async function getStory({
     ...storyResult.rows[0],
 
     slides:
-      Object.values(
-        slidesMap
-      ),
+    Object.values(
+      slidesMap
+    )
   };
 }
 
-// ==========================================
-// PUBLISH STORY
-// ==========================================
+
+
+
 
 async function publishStory({
   storyId,
-  userId,
+  userId
 }) {
   const result =
-    await pool.query(
-      `
+  await pool.query(
+    `
         UPDATE stories
 
         SET is_published = TRUE
@@ -226,12 +223,12 @@ async function publishStory({
 
         RETURNING id
       `,
-      [storyId, userId]
-    );
+    [storyId, userId]
+  );
 
   return (
-    result.rows[0] || null
-  );
+    result.rows[0] || null);
+
 }
 
 async function createStory({
@@ -239,84 +236,84 @@ async function createStory({
   name,
   slides,
   folderId: rawFolderId = null,
-  imageUrl = null,
+  imageUrl = null
 }) {
   const client =
-    await pool.connect();
+  await pool.connect();
 
   try {
     await client.query(
       "BEGIN"
     );
 
-    // =========================
-    // VALIDATE FOLDER
-    // =========================
+
+
+
 
     let folderId = null;
 
     if (
-      rawFolderId !== null &&
-      rawFolderId !== undefined
-    ) {
+    rawFolderId !== null &&
+    rawFolderId !== undefined)
+    {
       folderId =
-        Number(
-          rawFolderId
-        );
+      Number(
+        rawFolderId
+      );
 
       if (
-        !Number.isInteger(
-          folderId
-        )
-      ) {
+      !Number.isInteger(
+        folderId
+      ))
+      {
         const error =
-          new Error(
-            "Invalid folder ID"
-          );
+        new Error(
+          "Invalid folder ID"
+        );
 
         error.statusCode =
-          400;
+        400;
 
         throw error;
       }
 
       const folderResult =
-        await client.query(
-          `
+      await client.query(
+        `
             SELECT id
             FROM folders
             WHERE id = $1
               AND user_id = $2
           `,
-          [
-            folderId,
-            userId,
-          ]
-        );
+        [
+        folderId,
+        userId]
+
+      );
 
       if (
-        folderResult.rows.length ===
-        0
-      ) {
+      folderResult.rows.length ===
+      0)
+      {
         const error =
-          new Error(
-            "Folder not found"
-          );
+        new Error(
+          "Folder not found"
+        );
 
         error.statusCode =
-          404;
+        404;
 
         throw error;
       }
     }
 
-    // =========================
-    // CREATE STORY
-    // =========================
+
+
+
 
     const storyResult =
-      await client.query(
-        `
+    await client.query(
+      `
           INSERT INTO stories (
             name,
             user_id,
@@ -331,35 +328,35 @@ async function createStory({
           )
           RETURNING id
         `,
-        [
-          name,
-          userId,
-          folderId,
-          imageUrl,
-        ]
-      );
+      [
+      name,
+      userId,
+      folderId,
+      imageUrl]
+
+    );
 
     const storyId =
-      storyResult.rows[0].id;
+    storyResult.rows[0].id;
 
-    // =========================
-    // CREATE SLIDES
-    // =========================
+
+
+
 
     for (
-      let slideIndex = 0;
-      slideIndex <
-      slides.length;
-      slideIndex++
-    ) {
+    let slideIndex = 0;
+    slideIndex <
+    slides.length;
+    slideIndex++)
+    {
       const slide =
-        slides[
-          slideIndex
-        ];
+      slides[
+      slideIndex];
+
 
       const slideResult =
-        await client.query(
-          `
+      await client.query(
+        `
             INSERT INTO slides (
               story_id,
               position,
@@ -374,37 +371,37 @@ async function createStory({
             )
             RETURNING id
           `,
-          [
-            storyId,
-            slideIndex,
-            slide.description ||
-              "",
-            userId,
-          ]
-        );
+        [
+        storyId,
+        slideIndex,
+        slide.description ||
+        "",
+        userId]
+
+      );
 
       const slideId =
-        slideResult.rows[0].id;
+      slideResult.rows[0].id;
 
-      // =========================
-      // CREATE CHART CONTENT
-      // =========================
+
+
+
 
       if (
-        Array.isArray(
-          slide.content
-        )
-      ) {
+      Array.isArray(
+        slide.content
+      ))
+      {
         for (
-          let contentIndex = 0;
-          contentIndex <
-          slide.content.length;
-          contentIndex++
-        ) {
+        let contentIndex = 0;
+        contentIndex <
+        slide.content.length;
+        contentIndex++)
+        {
           const item =
-            slide.content[
-              contentIndex
-            ];
+          slide.content[
+          contentIndex];
+
 
           await client.query(
             `
@@ -424,70 +421,70 @@ async function createStory({
               )
             `,
             [
-              slideId,
+            slideId,
 
-              item.chartId,
+            item.chartId,
 
-              contentIndex,
+            contentIndex,
 
-              JSON.stringify({
-                x:
-                  Number(
-                    item.x ??
-                      0
-                  ),
+            JSON.stringify({
+              x:
+              Number(
+                item.x ??
+                0
+              ),
 
-                y:
-                  Number(
-                    item.y ??
-                      0
-                  ),
+              y:
+              Number(
+                item.y ??
+                0
+              ),
 
-                width:
-                  Number(
-                    item.width ??
-                      100
-                  ),
+              width:
+              Number(
+                item.width ??
+                100
+              ),
 
-                height:
-                  Number(
-                    item.height ??
-                      100
-                  ),
+              height:
+              Number(
+                item.height ??
+                100
+              ),
 
-                zIndex:
-                  Number(
-                    item.zIndex ??
-                      contentIndex +
-                        1
-                  ),
-              }),
+              zIndex:
+              Number(
+                item.zIndex ??
+                contentIndex +
+                1
+              )
+            }),
 
-              userId,
-            ]
+            userId]
+
           );
         }
       }
 
-      // =========================
-      // CREATE ANNOTATIONS
-      // =========================
+
+
+
 
       if (
-        Array.isArray(
-          slide.annotations
-        )
-      ) {
+      Array.isArray(
+        slide.annotations
+      ))
+      {
         for (
-          let annotationIndex = 0;
-          annotationIndex <
-          slide.annotations.length;
-          annotationIndex++
-        ) {
+        let annotationIndex = 0;
+        annotationIndex <
+        slide.annotations.length;
+        annotationIndex++)
+        {
           const annotation =
-            slide.annotations[
-              annotationIndex
-            ];
+          slide.annotations[
+          annotationIndex];
+
 
           await client.query(
             `
@@ -503,22 +500,22 @@ async function createStory({
               )
             `,
             [
-              slideId,
+            slideId,
 
-              JSON.stringify(
-                annotation
-              ),
+            JSON.stringify(
+              annotation
+            ),
 
-              userId,
-            ]
+            userId]
+
           );
         }
       }
     }
 
-    // =========================
-    // SUCCESS
-    // =========================
+
+
+
 
     await client.query(
       "COMMIT"
@@ -526,7 +523,7 @@ async function createStory({
 
     return {
       id:
-        storyId,
+      storyId
     };
 
   } catch (error) {
@@ -535,8 +532,8 @@ async function createStory({
         "ROLLBACK"
       );
     } catch (
-      rollbackError
-    ) {
+    rollbackError)
+    {
       console.error(
         "Create story rollback failed:",
         rollbackError
@@ -555,23 +552,23 @@ async function updateStory({
   userId,
   name,
   slides,
-  imageUrl = null,
+  imageUrl = null
 }) {
   const client =
-    await pool.connect();
+  await pool.connect();
 
   try {
     await client.query(
       "BEGIN"
     );
 
-    // =========================
-    // VERIFY + UPDATE STORY
-    // =========================
+
+
+
 
     const storyUpdate =
-      await client.query(
-        `
+    await client.query(
+      `
           UPDATE stories
 
           SET
@@ -583,32 +580,32 @@ async function updateStory({
 
           RETURNING id
         `,
-        [
-          name,
-          storyId,
-          userId,
-          imageUrl,
-        ]
-      );
+      [
+      name,
+      storyId,
+      userId,
+      imageUrl]
+
+    );
 
     if (
-      storyUpdate.rows.length ===
-      0
-    ) {
+    storyUpdate.rows.length ===
+    0)
+    {
       const error =
-        new Error(
-          "Story not found"
-        );
+      new Error(
+        "Story not found"
+      );
 
       error.statusCode =
-        404;
+      404;
 
       throw error;
     }
 
-    // =========================
-    // DELETE OLD ANNOTATIONS
-    // =========================
+
+
+
 
     await client.query(
       `
@@ -623,14 +620,14 @@ async function updateStory({
         )
       `,
       [
-        storyId,
-        userId,
-      ]
+      storyId,
+      userId]
+
     );
 
-    // =========================
-    // DELETE OLD SLIDES
-    // =========================
+
+
+
 
     await client.query(
       `
@@ -640,27 +637,27 @@ async function updateStory({
           AND user_id = $2
       `,
       [
-        storyId,
-        userId,
-      ]
+      storyId,
+      userId]
+
     );
 
-    // =========================
-    // RECREATE SLIDES
-    // =========================
+
+
+
 
     for (
-      let slideIndex = 0;
-      slideIndex <
-      slides.length;
-      slideIndex++
-    ) {
+    let slideIndex = 0;
+    slideIndex <
+    slides.length;
+    slideIndex++)
+    {
       const slide =
-        slides[slideIndex];
+      slides[slideIndex];
 
       const slideResult =
-        await client.query(
-          `
+      await client.query(
+        `
             INSERT INTO slides (
               story_id,
               position,
@@ -677,39 +674,39 @@ async function updateStory({
 
             RETURNING id
           `,
-          [
-            storyId,
-            slideIndex,
+        [
+        storyId,
+        slideIndex,
 
-            slide.description ||
-              "",
+        slide.description ||
+        "",
 
-            userId,
-          ]
-        );
+        userId]
+
+      );
 
       const slideId =
-        slideResult.rows[0].id;
+      slideResult.rows[0].id;
 
-      // =========================
-      // RECREATE CHART CONTENT
-      // =========================
+
+
+
 
       if (
-        Array.isArray(
-          slide.content
-        )
-      ) {
+      Array.isArray(
+        slide.content
+      ))
+      {
         for (
-          let contentIndex = 0;
-          contentIndex <
-          slide.content.length;
-          contentIndex++
-        ) {
+        let contentIndex = 0;
+        contentIndex <
+        slide.content.length;
+        contentIndex++)
+        {
           const item =
-            slide.content[
-              contentIndex
-            ];
+          slide.content[
+          contentIndex];
+
 
           await client.query(
             `
@@ -730,64 +727,64 @@ async function updateStory({
               )
             `,
             [
-              slideId,
+            slideId,
 
-              item.chartId,
+            item.chartId,
 
-              contentIndex,
+            contentIndex,
 
-              JSON.stringify({
-                x:
-                  Number(
-                    item.x ??
-                      0
-                  ),
+            JSON.stringify({
+              x:
+              Number(
+                item.x ??
+                0
+              ),
 
-                y:
-                  Number(
-                    item.y ??
-                      0
-                  ),
+              y:
+              Number(
+                item.y ??
+                0
+              ),
 
-                width:
-                  Number(
-                    item.width ??
-                      100
-                  ),
+              width:
+              Number(
+                item.width ??
+                100
+              ),
 
-                height:
-                  Number(
-                    item.height ??
-                      100
-                  ),
+              height:
+              Number(
+                item.height ??
+                100
+              ),
 
-                zIndex:
-                  Number(
-                    item.zIndex ??
-                      contentIndex +
-                        1
-                  ),
-              }),
+              zIndex:
+              Number(
+                item.zIndex ??
+                contentIndex +
+                1
+              )
+            }),
 
-              userId,
-            ]
+            userId]
+
           );
         }
       }
 
-      // =========================
-      // RECREATE ANNOTATIONS
-      // =========================
+
+
+
 
       if (
-        Array.isArray(
-          slide.annotations
-        )
-      ) {
+      Array.isArray(
+        slide.annotations
+      ))
+      {
         for (
-          const annotation
-          of slide.annotations
-        ) {
+        const annotation of
+        slide.annotations)
+        {
           await client.query(
             `
               INSERT INTO slide_annotations (
@@ -803,22 +800,22 @@ async function updateStory({
               )
             `,
             [
-              slideId,
+            slideId,
 
-              JSON.stringify(
-                annotation
-              ),
+            JSON.stringify(
+              annotation
+            ),
 
-              userId,
-            ]
+            userId]
+
           );
         }
       }
     }
 
-    // =========================
-    // COMMIT
-    // =========================
+
+
+
 
     await client.query(
       "COMMIT"
@@ -826,7 +823,7 @@ async function updateStory({
 
     return {
       id:
-        Number(storyId),
+      Number(storyId)
     };
 
   } catch (error) {
@@ -835,8 +832,8 @@ async function updateStory({
         "ROLLBACK"
       );
     } catch (
-      rollbackError
-    ) {
+    rollbackError)
+    {
       console.error(
         "Update story rollback failed:",
         rollbackError
@@ -851,15 +848,15 @@ async function updateStory({
 }
 
 async function getPublicStory({
-  storyId,
+  storyId
 }) {
-  // =========================
-  // STORY
-  // =========================
+
+
+
 
   const storyResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT
           id,
           name,
@@ -872,23 +869,23 @@ async function getPublicStory({
         WHERE id = $1
           AND is_published = TRUE
       `,
-      [storyId]
-    );
+    [storyId]
+  );
 
   if (
-    storyResult.rows.length ===
-    0
-  ) {
+  storyResult.rows.length ===
+  0)
+  {
     return null;
   }
 
-  // =========================
-  // SLIDES + CONTENT
-  // =========================
+
+
+
 
   const slidesResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT
           s.id AS slide_id,
           s.position AS slide_position,
@@ -918,16 +915,16 @@ async function getPublicStory({
           s.position,
           sc.position
       `,
-      [storyId]
-    );
+    [storyId]
+  );
 
-  // =========================
-  // ANNOTATIONS
-  // =========================
+
+
+
 
   const annotationsResult =
-    await pool.query(
-      `
+  await pool.query(
+    `
         SELECT
           sa.slide_id,
           sa.annotation
@@ -940,39 +937,39 @@ async function getPublicStory({
 
         WHERE s.story_id = $1
       `,
-      [storyId]
-    );
+    [storyId]
+  );
 
-  // =========================
-  // CHART IDS
-  // =========================
+
+
+
 
   const chartIds = [
-    ...new Set(
-      slidesResult.rows
-        .map(
-          (row) =>
-            row.chart_id
-        )
-        .filter(
-          (id) =>
-            id != null
-        )
-    ),
-  ];
+  ...new Set(
+    slidesResult.rows.
+    map(
+      (row) =>
+      row.chart_id
+    ).
+    filter(
+      (id) =>
+      id != null
+    )
+  )];
+
 
   let charts = [];
 
-  // =========================
-  // CHART CONFIGURATION
-  // =========================
+
+
+
 
   if (
-    chartIds.length > 0
-  ) {
+  chartIds.length > 0)
+  {
     const chartsResult =
-      await pool.query(
-        `
+    await pool.query(
+      `
           SELECT
             c.id,
             c.dataset_id,
@@ -1012,46 +1009,46 @@ async function getPublicStory({
                     TRUE
             )
         `,
-        [
-          chartIds,
-          storyId,
-        ]
-      );
+      [
+      chartIds,
+      storyId]
+
+    );
 
     charts =
-      chartsResult.rows;
+    chartsResult.rows;
   }
 
-  // =========================
-  // DATASETS
-  // =========================
+
+
+
 
   const datasetIds = [
-    ...new Set(
-      charts
-        .map(
-          (chart) =>
-            chart.dataset_id
-        )
-        .filter(
-          (id) =>
-            id != null
-        )
-    ),
-  ];
+  ...new Set(
+    charts.
+    map(
+      (chart) =>
+      chart.dataset_id
+    ).
+    filter(
+      (id) =>
+      id != null
+    )
+  )];
+
 
   let rawRows = [];
 
-  // =========================
-  // DATASET ROWS
-  // =========================
+
+
+
 
   if (
-    datasetIds.length > 0
-  ) {
+  datasetIds.length > 0)
+  {
     const rowsResult =
-      await pool.query(
-        `
+    await pool.query(
+      `
           SELECT
             dataset_id,
             data
@@ -1063,87 +1060,87 @@ async function getPublicStory({
 
           ORDER BY id
         `,
-        [
-          datasetIds,
-        ]
-      );
+      [
+      datasetIds]
+
+    );
 
     rawRows =
-      rowsResult.rows;
+    rowsResult.rows;
   }
 
-  // =========================
-  // GROUP ROWS
-  // =========================
+
+
+
 
   const rowsByDataset = {};
 
   rawRows.forEach(
     (row) => {
       if (
-        !rowsByDataset[
-          row.dataset_id
-        ]
-      ) {
+      !rowsByDataset[
+      row.dataset_id])
+
+      {
         rowsByDataset[
-          row.dataset_id
-        ] = [];
+        row.dataset_id] =
+        [];
       }
 
       rowsByDataset[
-        row.dataset_id
-      ].push(
+      row.dataset_id].
+      push(
         row.data
       );
     }
   );
 
-  // =========================
-  // GROUP CHARTS
-  // =========================
+
+
+
 
   const chartsById = {};
 
   charts.forEach(
     (chart) => {
       chartsById[
-        chart.id
-      ] = {
+      chart.id] =
+      {
         ...chart,
 
         rows:
-          rowsByDataset[
-            chart.dataset_id
-          ] || [],
+        rowsByDataset[
+        chart.dataset_id] ||
+        []
       };
     }
   );
 
-  // =========================
-  // BUILD SLIDES
-  // =========================
+
+
+
 
   const slidesMap = {};
 
   slidesResult.rows.forEach(
     (row) => {
       if (
-        !slidesMap[
-          row.slide_id
-        ]
-      ) {
+      !slidesMap[
+      row.slide_id])
+
+      {
         slidesMap[
-          row.slide_id
-        ] = {
+        row.slide_id] =
+        {
           id:
-            row.slide_id,
+          row.slide_id,
 
           description:
-            row.description,
+          row.description,
 
           content: [],
 
-          annotations: [],
+          annotations: []
         };
       }
 
@@ -1152,125 +1149,125 @@ async function getPublicStory({
       }
 
       const chart =
-        chartsById[
-          row.chart_id
-        ];
+      chartsById[
+      row.chart_id];
+
 
       if (!chart) {
         return;
       }
 
       slidesMap[
-        row.slide_id
-      ].content.push({
+      row.slide_id].
+      content.push({
         id:
-          row.slide_content_id ??
-          `${row.slide_id}-${row.chart_id}`,
+        row.slide_content_id ??
+        `${row.slide_id}-${row.chart_id}`,
 
         type:
-          "chart",
+        "chart",
 
         chartId:
-          row.chart_id,
+        row.chart_id,
 
         name:
-          row.chart_name ||
-          "Chart",
+        row.chart_name ||
+        "Chart",
 
-        // Public data needed by
-        // StoryChart without private APIs.
+
+
         chart,
 
         rows:
-          chart.rows || [],
+        chart.rows || [],
 
         x:
-          Number(
-            row.layout?.x ??
-              0
-          ),
+        Number(
+          row.layout?.x ??
+          0
+        ),
 
         y:
-          Number(
-            row.layout?.y ??
-              0
-          ),
+        Number(
+          row.layout?.y ??
+          0
+        ),
 
         width:
-          Number(
-            row.layout?.width ??
-              100
-          ),
+        Number(
+          row.layout?.width ??
+          100
+        ),
 
         height:
-          Number(
-            row.layout?.height ??
-              100
-          ),
+        Number(
+          row.layout?.height ??
+          100
+        ),
 
         zIndex:
-          Number(
-            row.layout?.zIndex ??
-              row.content_position +
-                1
-          ),
+        Number(
+          row.layout?.zIndex ??
+          row.content_position +
+          1
+        )
       });
     }
   );
 
-  // =========================
-  // ADD ANNOTATIONS
-  // =========================
+
+
+
 
   annotationsResult.rows.forEach(
     (row) => {
       if (
+      slidesMap[
+      row.slide_id])
+
+      {
         slidesMap[
-          row.slide_id
-        ]
-      ) {
-        slidesMap[
-          row.slide_id
-        ].annotations.push(
+        row.slide_id].
+        annotations.push(
           row.annotation
         );
       }
     }
   );
 
-  // =========================
-  // RESULT
-  // =========================
+
+
+
 
   return {
     ...storyResult.rows[0],
 
     slides:
-      Object.values(
-        slidesMap
-      ),
+    Object.values(
+      slidesMap
+    )
   };
 }
 
 async function duplicateStory({
   storyId,
-  userId,
+  userId
 }) {
   const client =
-    await pool.connect();
+  await pool.connect();
 
   try {
     await client.query(
       "BEGIN"
     );
 
-    // =========================
-    // DUPLICATE STORY
-    // =========================
+
+
+
 
     const storyResult =
-      await client.query(
-        `
+    await client.query(
+      `
           INSERT INTO stories (
             name,
             folder_id,
@@ -1291,37 +1288,37 @@ async function duplicateStory({
 
           RETURNING *
         `,
-        [
-          storyId,
-          userId,
-        ]
-      );
+      [
+      storyId,
+      userId]
+
+    );
 
     if (
-      storyResult.rows.length ===
-      0
-    ) {
+    storyResult.rows.length ===
+    0)
+    {
       const error =
-        new Error(
-          "Story not found"
-        );
+      new Error(
+        "Story not found"
+      );
 
       error.statusCode =
-        404;
+      404;
 
       throw error;
     }
 
     const newStory =
-      storyResult.rows[0];
+    storyResult.rows[0];
 
-    // =========================
-    // ORIGINAL SLIDES
-    // =========================
+
+
+
 
     const slidesResult =
-      await client.query(
-        `
+    await client.query(
+      `
           SELECT *
 
           FROM slides
@@ -1331,23 +1328,23 @@ async function duplicateStory({
 
           ORDER BY position
         `,
-        [
-          storyId,
-          userId,
-        ]
-      );
+      [
+      storyId,
+      userId]
 
-    // =========================
-    // DUPLICATE SLIDES
-    // =========================
+    );
+
+
+
+
 
     for (
-      const slide
-      of slidesResult.rows
-    ) {
+    const slide of
+    slidesResult.rows)
+    {
       const newSlideResult =
-        await client.query(
-          `
+      await client.query(
+        `
             INSERT INTO slides (
               story_id,
               position,
@@ -1364,25 +1361,25 @@ async function duplicateStory({
 
             RETURNING id
           `,
-          [
-            newStory.id,
+        [
+        newStory.id,
 
-            slide.position,
+        slide.position,
 
-            slide.description,
+        slide.description,
 
-            userId,
-          ]
-        );
+        userId]
+
+      );
 
       const newSlideId =
-        newSlideResult
-          .rows[0]
-          .id;
+      newSlideResult.
+      rows[0].
+      id;
 
-      // =========================
-      // DUPLICATE CONTENT
-      // =========================
+
+
+
 
       await client.query(
         `
@@ -1407,15 +1404,15 @@ async function duplicateStory({
             AND user_id = $3
         `,
         [
-          newSlideId,
-          slide.id,
-          userId,
-        ]
+        newSlideId,
+        slide.id,
+        userId]
+
       );
 
-      // =========================
-      // DUPLICATE ANNOTATIONS
-      // =========================
+
+
+
 
       await client.query(
         `
@@ -1436,16 +1433,16 @@ async function duplicateStory({
             AND user_id = $3
         `,
         [
-          newSlideId,
-          slide.id,
-          userId,
-        ]
+        newSlideId,
+        slide.id,
+        userId]
+
       );
     }
 
-    // =========================
-    // SUCCESS
-    // =========================
+
+
+
 
     await client.query(
       "COMMIT"
@@ -1459,8 +1456,8 @@ async function duplicateStory({
         "ROLLBACK"
       );
     } catch (
-      rollbackError
-    ) {
+    rollbackError)
+    {
       console.error(
         "Duplicate story rollback failed:",
         rollbackError
@@ -1476,11 +1473,11 @@ async function duplicateStory({
 async function setStoryFavorite({
   storyId,
   userId,
-  isFavorite,
+  isFavorite
 }) {
   const result =
-    await pool.query(
-      `
+  await pool.query(
+    `
         UPDATE stories
 
         SET is_favorite = $1
@@ -1490,17 +1487,17 @@ async function setStoryFavorite({
 
         RETURNING *
       `,
-      [
-        isFavorite,
-        storyId,
-        userId,
-      ]
-    );
+    [
+    isFavorite,
+    storyId,
+    userId]
+
+  );
 
   return (
     result.rows[0] ||
-    null
-  );
+    null);
+
 }
 
 module.exports = {

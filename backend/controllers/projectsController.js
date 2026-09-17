@@ -1,6 +1,6 @@
 const pool = require("../db");
 
-const { getProjects, createProject,getAllProjects } = require("../models/projectsModel");
+const { getProjects, createProject, getAllProjects } = require("../models/projectsModel");
 const fetchProjects = async (req, res, next) => {
   try {
     const userId = req.user.userId;
@@ -26,17 +26,17 @@ const fetchProjects = async (req, res, next) => {
   }
 };
 const fetchAllProjects = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         SELECT
           p.*,
 
@@ -62,8 +62,8 @@ const fetchAllProjects = async (
           p.is_favorite DESC,
           p.id DESC
         `,
-        [userId]
-      );
+      [userId]
+    );
 
     return res.json(
       result.rows
@@ -74,68 +74,68 @@ const fetchAllProjects = async (
   }
 };
 const addProject = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const {
       name,
-      folder_id,
+      folder_id
     } = req.body;
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     let folderId = null;
 
     if (
-      folder_id !== null &&
-      folder_id !== undefined
-    ) {
+    folder_id !== null &&
+    folder_id !== undefined)
+    {
       folderId =
-        Number(folder_id);
+      Number(folder_id);
 
       if (
-        !Number.isInteger(folderId)
-      ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Invalid folder ID",
-          });
+      !Number.isInteger(folderId))
+      {
+        return res.
+        status(400).
+        json({
+          error:
+          "Invalid folder ID"
+        });
       }
 
       const folder =
-        await pool.query(
-          `
+      await pool.query(
+        `
           SELECT id
           FROM folders
           WHERE id = $1
             AND user_id = $2
           `,
-          [
-            folderId,
-            userId,
-          ]
-        );
+        [
+        folderId,
+        userId]
+
+      );
 
       if (
-        folder.rows.length === 0
-      ) {
-        return res
-          .status(404)
-          .json({
-            error:
-              "Folder not found",
-          });
+      folder.rows.length === 0)
+      {
+        return res.
+        status(404).
+        json({
+          error:
+          "Folder not found"
+        });
       }
     }
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         INSERT INTO projects (
           name,
           folder_id,
@@ -144,94 +144,91 @@ const addProject = async (
         VALUES ($1, $2, $3)
         RETURNING *
         `,
-        [
-          name?.trim() ||
-            "New Project",
-          folderId,
-          userId,
-        ]
-      );
+      [
+      name?.trim() ||
+      "New Project",
+      folderId,
+      userId]
 
-    return res
-      .status(201)
-      .json(
-        result.rows[0]
-      );
+    );
+
+    return res.
+    status(201).
+    json(
+      result.rows[0]
+    );
 
   } catch (error) {
     next(error);
   }
 };
 const renameProject = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const { project_id } =
-      req.params;
+    req.params;
 
     const { name } =
-      req.body;
+    req.body;
 
     const userId =
-      req.user.userId;
+    req.user.userId;
 
-    // Validate project id
     if (
-      !project_id ||
-      Number.isNaN(
-        Number(project_id)
-      )
-    ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid project ID",
-        });
+    !project_id ||
+    Number.isNaN(
+      Number(project_id)
+    ))
+    {
+      return res.
+      status(400).
+      json({
+        error:
+        "Invalid project ID"
+      });
     }
 
-    // Validate name
+
     const normalizedName =
-      name?.trim();
+    name?.trim();
 
     if (!normalizedName) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Project name is required",
-        });
+      return res.
+      status(400).
+      json({
+        error:
+        "Project name is required"
+      });
     }
 
     const result =
-      await pool.query(
-        `
+    await pool.query(
+      `
         UPDATE projects
         SET name = $1
         WHERE id = $2
           AND user_id = $3
         RETURNING *
         `,
-        [
-          normalizedName,
-          project_id,
-          userId,
-        ]
-      );
+      [
+      normalizedName,
+      project_id,
+      userId]
 
-    // Project doesn't exist
-    // OR belongs to another user
+    );
+
     if (
-      result.rows.length === 0
-    ) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Project not found",
-        });
+    result.rows.length === 0)
+    {
+      return res.
+      status(404).
+      json({
+        error:
+        "Project not found"
+      });
     }
 
     return res.json(
@@ -261,7 +258,7 @@ const deleteProject = async (req, res, next) => {
       [project_id, userId]
     );
 
-    const datasetIds = datasets.rows.map(d => d.id);
+    const datasetIds = datasets.rows.map((d) => d.id);
 
     if (datasetIds.length > 0) {
       await client.query(
@@ -329,18 +326,18 @@ const getCopyableColumns = async (client, tableName, excludedColumns = []) => {
     [tableName]
   );
 
-  return result.rows
-    .map((row) => row.column_name)
-    .filter((column) => !excludedColumns.includes(column));
+  return result.rows.
+  map((row) => row.column_name).
+  filter((column) => !excludedColumns.includes(column));
 };
 
 const copyDatabaseRow = async (
-  client,
-  tableName,
-  originalRow,
-  overrides = {},
-  excludedColumns = ["id"]
-) => {
+client,
+tableName,
+originalRow,
+overrides = {},
+excludedColumns = ["id"]) =>
+{
   const availableColumns = await getCopyableColumns(
     client,
     tableName,
@@ -349,7 +346,7 @@ const copyDatabaseRow = async (
 
   const finalRow = {
     ...originalRow,
-    ...overrides,
+    ...overrides
   };
 
   const columns = availableColumns.filter(
@@ -385,13 +382,12 @@ const duplicateProject = async (req, res, next) => {
 
     if (!project_id || Number.isNaN(Number(project_id))) {
       return res.status(400).json({
-        error: "Invalid project ID",
+        error: "Invalid project ID"
       });
     }
 
     await client.query("BEGIN");
 
-    // 1. Load original project
     const originalProjectResult = await client.query(
       `
       SELECT *
@@ -406,13 +402,12 @@ const duplicateProject = async (req, res, next) => {
       await client.query("ROLLBACK");
 
       return res.status(404).json({
-        error: "Project not found",
+        error: "Project not found"
       });
     }
 
     const originalProject = originalProjectResult.rows[0];
 
-    // 2. Copy project
     const newProject = await copyDatabaseRow(
       client,
       "projects",
@@ -420,15 +415,13 @@ const duplicateProject = async (req, res, next) => {
       {
         name: `${originalProject.name} Copy`,
         user_id: userId,
-        is_favorite: false,
+        is_favorite: false
       },
       ["id"]
     );
 
-    // old dataset ID -> new dataset ID
     const datasetIdMap = new Map();
 
-    // 3. Load and copy datasets
     const originalDatasetsResult = await client.query(
       `
       SELECT *
@@ -447,14 +440,13 @@ const duplicateProject = async (req, res, next) => {
         originalDataset,
         {
           project_id: newProject.id,
-          user_id: userId,
+          user_id: userId
         },
         ["id"]
       );
 
       datasetIdMap.set(originalDataset.id, newDataset.id);
 
-      // 4. Copy dataset rows
       const originalRowsResult = await client.query(
         `
         SELECT *
@@ -473,14 +465,13 @@ const duplicateProject = async (req, res, next) => {
           originalRow,
           {
             dataset_id: newDataset.id,
-            user_id: userId,
+            user_id: userId
           },
           ["id"]
         );
       }
     }
 
-    // 5. Load and copy charts
     const originalChartsResult = await client.query(
       `
       SELECT *
@@ -512,7 +503,7 @@ const duplicateProject = async (req, res, next) => {
         {
           project_id: newProject.id,
           dataset_id: newDatasetId,
-          user_id: userId,
+          user_id: userId
         },
         ["id"]
       );
@@ -535,7 +526,7 @@ const getProjectChart = async (req, res, next) => {
   try {
     const { project_id } = req.params;
 
-    const userId = req.user.userId; // Get the user ID from the request object
+    const userId = req.user.userId;
     const chart = await pool.query(
       `
       SELECT * FROM charts WHERE project_id = $1 AND user_id = $2
@@ -557,13 +548,13 @@ const updateProjectFavorite = async (req, res) => {
 
     if (!project_id || Number.isNaN(Number(project_id))) {
       return res.status(400).json({
-        error: "Invalid project ID",
+        error: "Invalid project ID"
       });
     }
 
     if (typeof is_favorite !== "boolean") {
       return res.status(400).json({
-        error: "is_favorite must be a boolean",
+        error: "is_favorite must be a boolean"
       });
     }
 
@@ -576,15 +567,15 @@ const updateProjectFavorite = async (req, res) => {
       RETURNING *
       `,
       [
-        is_favorite,
-        project_id,
-        userId,
-      ],
+      is_favorite,
+      project_id,
+      userId]
+
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        error: "Project not found",
+        error: "Project not found"
       });
     }
 
@@ -595,13 +586,13 @@ const updateProjectFavorite = async (req, res) => {
 };
 
 
-module.exports = { 
-  fetchProjects, 
-  addProject, 
-  renameProject, 
-  deleteProject, 
-  duplicateProject, 
+module.exports = {
+  fetchProjects,
+  addProject,
+  renameProject,
+  deleteProject,
+  duplicateProject,
   fetchAllProjects,
   getProjectChart,
-  updateProjectFavorite,
- };
+  updateProjectFavorite
+};

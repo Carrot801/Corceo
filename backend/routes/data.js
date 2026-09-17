@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { getColumns, getColumnValues, getDataset, getAllRows, deleteDataset, saveDataset, getPublishedChart, renameColumn, deleteColumn, addColumn} = require("../controllers/dataController");
+const { getColumns, getColumnValues, getDataset, getAllRows, deleteDataset, saveDataset, getPublishedChart, renameColumn, deleteColumn, addColumn } = require("../controllers/dataController");
 
 const authMiddleware = require("../middleware/authMiddleware");
-router.get("/columns",authMiddleware, getColumns);
+router.get("/columns", authMiddleware, getColumns);
 router.put("/columns/rename", authMiddleware, renameColumn);
 router.delete("/columns/delete", authMiddleware, deleteColumn);
 router.post("/columns/add", authMiddleware, addColumn);

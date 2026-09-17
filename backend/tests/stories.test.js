@@ -4,28 +4,28 @@ const app = require("../app");
 const pool = require("../db");
 
 
-// =========================================
-// TEST USERS
-// =========================================
+
+
+
 
 const userA = {
   full_name: "Story Test User A",
   username: "story_test_user_a",
   email: "story_user_a@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 const userB = {
   full_name: "Story Test User B",
   username: "story_test_user_b",
   email: "story_user_b@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 
-// =========================================
-// TEST STATE
-// =========================================
+
+
+
 
 let tokenA = null;
 let tokenB = null;
@@ -38,9 +38,9 @@ let datasetAId = null;
 let chartAId = null;
 
 
-// =========================================
-// HELPERS
-// =========================================
+
+
+
 
 const cleanupTestUsers = async () => {
   await pool.query(
@@ -56,43 +56,43 @@ const cleanupTestUsers = async () => {
     )
     `,
     [
-      userA.email,
-      userB.email,
-      userA.username,
-      userB.username,
-    ]
+    userA.email,
+    userB.email,
+    userA.username,
+    userB.username]
+
   );
 };
 
 
 const registerUser = async (user) => {
   const response =
-    await request(app)
-      .post("/auth/register")
-      .send(user);
+  await request(app).
+  post("/auth/register").
+  send(user);
 
-  expect(response.status)
-    .toBe(201);
+  expect(response.status).
+  toBe(201);
 
   return response.body;
 };
 
 
 const createProject = async (
-  token,
-  name
-) => {
+token,
+name) =>
+{
   const response =
-    await request(app)
-      .post("/projects")
-      .set(
-        "Authorization",
-        `Bearer ${token}`
-      )
-      .send({
-        name,
-        folder_id: null,
-      });
+  await request(app).
+  post("/projects").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    name,
+    folder_id: null
+  });
 
   expect(
     [200, 201]
@@ -105,30 +105,30 @@ const createProject = async (
 
 
 const createDataset = async (
-  token,
-  projectId
-) => {
+token,
+projectId) =>
+{
   const response =
-    await request(app)
-      .post("/data/save_dataset")
-      .set(
-        "Authorization",
-        `Bearer ${token}`
-      )
-      .send({
-        project_id: projectId,
+  await request(app).
+  post("/data/save_dataset").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id: projectId,
 
-        rows: [
-          {
-            Category: "A",
-            Revenue: 100,
-          },
-          {
-            Category: "B",
-            Revenue: 200,
-          },
-        ],
-      });
+    rows: [
+    {
+      Category: "A",
+      Revenue: 100
+    },
+    {
+      Category: "B",
+      Revenue: 200
+    }]
+
+  });
 
   expect(
     [200, 201]
@@ -139,49 +139,49 @@ const createDataset = async (
   return (
     response.body.datasetId ??
     response.body.dataset_id ??
-    response.body.id
-  );
+    response.body.id);
+
 };
 
 
 const createChart = async (
-  token,
-  projectId,
-  datasetId
-) => {
+token,
+projectId,
+datasetId) =>
+{
   const response =
-    await request(app)
-      .post("/charts")
-      .set(
-        "Authorization",
-        `Bearer ${token}`
-      )
-      .send({
-        project_id: projectId,
-        dataset_id: datasetId,
+  await request(app).
+  post("/charts").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id: projectId,
+    dataset_id: datasetId,
 
-        chart_type: "bar",
+    chart_type: "bar",
 
-        x_axis: "Category",
+    x_axis: "Category",
 
-        y_axis:
-          JSON.stringify([
-            "Revenue",
-          ]),
+    y_axis:
+    JSON.stringify([
+    "Revenue"]
+    ),
 
-        settings: {
-          title:
-            "Story Test Chart",
-        },
+    settings: {
+      title:
+      "Story Test Chart"
+    },
 
-        chart_config: {
-          type: "bar",
-          x: "Category",
-          y: ["Revenue"],
-        },
+    chart_config: {
+      type: "bar",
+      x: "Category",
+      y: ["Revenue"]
+    },
 
-        image_data: null,
-      });
+    image_data: null
+  });
 
   expect(
     [200, 201]
@@ -194,9 +194,9 @@ const createChart = async (
 
 
 const createStory = async (
-  token,
-  overrides = {}
-) => {
+token,
+overrides = {}) =>
+{
   const payload = {
     name: "Integration Test Story",
 
@@ -205,126 +205,126 @@ const createStory = async (
     image_url: null,
 
     slides: [
+    {
+      description:
+      "First test slide",
+
+      content: [
       {
-        description:
-          "First test slide",
+        chartId: chartAId,
 
-        content: [
-          {
-            chartId: chartAId,
+        x: 5,
+        y: 10,
+        width: 80,
+        height: 60,
+        zIndex: 1
+      }],
 
-            x: 5,
-            y: 10,
-            width: 80,
-            height: 60,
-            zIndex: 1,
-          },
-        ],
 
-        annotations: [
-          {
-            id: "test-annotation-1",
-            type: "text",
-            text:
-              "Important value",
-            x: 20,
-            y: 30,
-          },
-        ],
-      },
-
+      annotations: [
       {
-        description:
-          "Second test slide",
+        id: "test-annotation-1",
+        type: "text",
+        text:
+        "Important value",
+        x: 20,
+        y: 30
+      }]
 
-        content: [],
+    },
 
-        annotations: [],
-      },
-    ],
+    {
+      description:
+      "Second test slide",
 
-    ...overrides,
+      content: [],
+
+      annotations: []
+    }],
+
+
+    ...overrides
   };
 
-  return request(app)
-    .post("/stories")
-    .set(
-      "Authorization",
-      `Bearer ${token}`
-    )
-    .send(payload);
+  return request(app).
+  post("/stories").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send(payload);
 };
 
 
-// =========================================
-// SETUP
-// =========================================
+
+
+
 
 beforeAll(async () => {
   await cleanupTestUsers();
 
   const accountA =
-    await registerUser(userA);
+  await registerUser(userA);
 
   const accountB =
-    await registerUser(userB);
+  await registerUser(userB);
 
   tokenA =
-    accountA.token;
+  accountA.token;
 
   tokenB =
-    accountB.token;
+  accountB.token;
 
   userAId =
-    accountA.user.id;
+  accountA.user.id;
 
   userBId =
-    accountB.user.id;
+  accountB.user.id;
 
   const projectA =
-    await createProject(
-      tokenA,
-      "Story Chart Project"
-    );
+  await createProject(
+    tokenA,
+    "Story Chart Project"
+  );
 
   projectAId =
-    projectA.id;
+  projectA.id;
 
   datasetAId =
-    await createDataset(
-      tokenA,
-      projectAId
-    );
+  await createDataset(
+    tokenA,
+    projectAId
+  );
 
   chartAId =
-    await createChart(
-      tokenA,
-      projectAId,
-      datasetAId
-    );
+  await createChart(
+    tokenA,
+    projectAId,
+    datasetAId
+  );
 });
 
 
 afterEach(async () => {
-  /*
-   * Keep the test user's project,
-   * dataset and chart.
-   *
-   * Remove stories created by
-   * individual tests.
-   *
-   * ON DELETE CASCADE removes slides,
-   * slide_content and annotations.
-   */
+
+
+
+
+
+
+
+
+
+
   await pool.query(
     `
     DELETE FROM stories
     WHERE user_id IN ($1, $2)
     `,
     [
-      userAId,
-      userBId,
-    ]
+    userAId,
+    userBId]
+
   );
 });
 
@@ -336,9 +336,9 @@ afterAll(async () => {
 });
 
 
-// =========================================
-// CREATE STORY
-// =========================================
+
+
+
 
 describe(
   "POST /stories",
@@ -347,13 +347,13 @@ describe(
       "rejects story creation without authentication",
       async () => {
         const response =
-          await request(app)
-            .post("/stories")
-            .send({
-              name:
-                "Unauthorized Story",
-              slides: [],
-            });
+        await request(app).
+        post("/stories").
+        send({
+          name:
+          "Unauthorized Story",
+          slides: []
+        });
 
         expect(
           response.status
@@ -366,9 +366,9 @@ describe(
       "creates story for authenticated user",
       async () => {
         const response =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         expect(
           [200, 201]
@@ -383,24 +383,24 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM stories
             WHERE id = $1
             `,
-            [
-              response.body.id,
-            ]
-          );
+          [
+          response.body.id]
+
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         expect(
-          result.rows[0]
-            .user_id
+          result.rows[0].
+          user_id
         ).toBe(userAId);
 
         expect(
@@ -416,16 +416,16 @@ describe(
       "stores slides in correct positions",
       async () => {
         const response =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          response.body.id;
+        response.body.id;
 
         const slides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               position,
               description,
@@ -434,33 +434,33 @@ describe(
             WHERE story_id = $1
             ORDER BY position
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           slides.rows
         ).toHaveLength(2);
 
         expect(
-          slides.rows[0]
-            .position
+          slides.rows[0].
+          position
         ).toBe(0);
 
         expect(
-          slides.rows[1]
-            .position
+          slides.rows[1].
+          position
         ).toBe(1);
 
         expect(
-          slides.rows[0]
-            .description
+          slides.rows[0].
+          description
         ).toBe(
           "First test slide"
         );
 
         expect(
-          slides.rows[1]
-            .description
+          slides.rows[1].
+          description
         ).toBe(
           "Second test slide"
         );
@@ -480,16 +480,16 @@ describe(
       "stores slide chart content and layout",
       async () => {
         const response =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               sc.chart_id,
               sc.position,
@@ -504,15 +504,15 @@ describe(
 
             WHERE s.story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         const item =
-          result.rows[0];
+        result.rows[0];
 
         expect(
           item.chart_id
@@ -533,7 +533,7 @@ describe(
           y: 10,
           width: 80,
           height: 60,
-          zIndex: 1,
+          zIndex: 1
         });
       }
     );
@@ -543,16 +543,16 @@ describe(
       "stores slide annotations",
       async () => {
         const response =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               sa.annotation,
               sa.user_id
@@ -565,23 +565,23 @@ describe(
 
             WHERE s.story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           result.rows
         ).toHaveLength(1);
 
         expect(
-          result.rows[0]
-            .annotation.text
+          result.rows[0].
+          annotation.text
         ).toBe(
           "Important value"
         );
 
         expect(
-          result.rows[0]
-            .user_id
+          result.rows[0].
+          user_id
         ).toBe(userAId);
       }
     );
@@ -591,16 +591,16 @@ describe(
       "all created story records belong to authenticated user",
       async () => {
         const response =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          response.body.id;
+        response.body.id;
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               st.user_id
                 AS story_user,
@@ -630,8 +630,8 @@ describe(
 
             WHERE st.id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         result.rows.forEach(
           (row) => {
@@ -644,18 +644,18 @@ describe(
             ).toBe(userAId);
 
             if (
-              row.content_user !==
-              null
-            ) {
+            row.content_user !==
+            null)
+            {
               expect(
                 row.content_user
               ).toBe(userAId);
             }
 
             if (
-              row.annotation_user !==
-              null
-            ) {
+            row.annotation_user !==
+            null)
+            {
               expect(
                 row.annotation_user
               ).toBe(userAId);
@@ -668,9 +668,9 @@ describe(
 );
 
 
-// =========================================
-// GET STORIES
-// =========================================
+
+
+
 
 describe(
   "GET /stories",
@@ -679,8 +679,8 @@ describe(
       "rejects story list without authentication",
       async () => {
         const response =
-          await request(app)
-            .get("/stories");
+        await request(app).
+        get("/stories");
 
         expect(
           response.status
@@ -697,12 +697,12 @@ describe(
         );
 
         const response =
-          await request(app)
-            .get("/stories")
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get("/stories").
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
@@ -737,23 +737,23 @@ describe(
         );
 
         const response =
-          await request(app)
-            .get("/stories")
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        get("/stories").
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           response.status
         ).toBe(200);
 
         const containsAStory =
-          response.body.some(
-            (story) =>
-              story.user_id ===
-              userAId
-          );
+        response.body.some(
+          (story) =>
+          story.user_id ===
+          userAId
+        );
 
         expect(
           containsAStory
@@ -764,9 +764,9 @@ describe(
 );
 
 
-// =========================================
-// GET ONE STORY
-// =========================================
+
+
+
 
 describe(
   "GET /stories/:id",
@@ -775,22 +775,22 @@ describe(
       "owner can load story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .get(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
@@ -807,22 +807,22 @@ describe(
       "user B cannot load user A story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .get(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        get(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -837,19 +837,19 @@ describe(
       "story response contains slides",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const response =
-          await request(app)
-            .get(
-              `/stories/${created.body.id}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get(
+          `/stories/${created.body.id}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
@@ -870,9 +870,9 @@ describe(
 );
 
 
-// =========================================
-// UPDATE STORY
-// =========================================
+
+
+
 
 describe(
   "PUT /stories/:id",
@@ -881,86 +881,86 @@ describe(
       "owner can update story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .put(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            )
-            .send({
-              name:
-                "Updated Story",
+        await request(app).
+        put(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        ).
+        send({
+          name:
+          "Updated Story",
 
-              image_url:
-                "updated-preview.png",
+          image_url:
+          "updated-preview.png",
 
-              slides: [
-                {
-                  description:
-                    "Updated Slide",
+          slides: [
+          {
+            description:
+            "Updated Slide",
 
-                  content: [
-                    {
-                      chartId:
-                        chartAId,
+            content: [
+            {
+              chartId:
+              chartAId,
 
-                      x: 10,
-                      y: 15,
-                      width: 60,
-                      height: 50,
-                      zIndex: 1,
-                    },
-                  ],
+              x: 10,
+              y: 15,
+              width: 60,
+              height: 50,
+              zIndex: 1
+            }],
 
-                  annotations: [
-                    {
-                      id:
-                        "updated-annotation",
-                      type: "text",
-                      text:
-                        "Updated annotation",
-                    },
-                  ],
-                },
-              ],
-            });
+
+            annotations: [
+            {
+              id:
+              "updated-annotation",
+              type: "text",
+              text:
+              "Updated annotation"
+            }]
+
+          }]
+
+        });
 
         expect(
           response.status
         ).toBe(200);
 
         const storyResult =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               name,
               image_url
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
-          storyResult
-            .rows[0].name
+          storyResult.
+          rows[0].name
         ).toBe(
           "Updated Story"
         );
 
         expect(
-          storyResult
-            .rows[0].image_url
+          storyResult.
+          rows[0].image_url
         ).toBe(
           "updated-preview.png"
         );
@@ -972,67 +972,67 @@ describe(
       "update replaces old slides",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const oldSlides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             ORDER BY position
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           oldSlides.rows
         ).toHaveLength(2);
 
         const oldIds =
-          oldSlides.rows.map(
-            (slide) =>
-              slide.id
-          );
+        oldSlides.rows.map(
+          (slide) =>
+          slide.id
+        );
 
-        await request(app)
-          .put(
-            `/stories/${storyId}`
-          )
-          .set(
-            "Authorization",
-            `Bearer ${tokenA}`
-          )
-          .send({
-            name:
-              "Rebuilt Story",
+        await request(app).
+        put(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        ).
+        send({
+          name:
+          "Rebuilt Story",
 
-            slides: [
-              {
-                description:
-                  "Only New Slide",
+          slides: [
+          {
+            description:
+            "Only New Slide",
 
-                content: [],
+            content: [],
 
-                annotations: [],
-              },
-            ],
-          });
+            annotations: []
+          }]
+
+        });
 
         const newSlides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           newSlides.rows
@@ -1051,28 +1051,28 @@ describe(
       "user B cannot update user A story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .put(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            )
-            .send({
-              name:
-                "Hacked Story",
+        await request(app).
+        put(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        ).
+        send({
+          name:
+          "Hacked Story",
 
-              slides: [],
-            });
+          slides: []
+        });
 
         expect(
           [403, 404]
@@ -1081,14 +1081,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT name
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           result.rows[0].name
@@ -1101,9 +1101,9 @@ describe(
 );
 
 
-// =========================================
-// DUPLICATE STORY
-// =========================================
+
+
+
 
 describe(
   "POST /stories/duplicate/:id",
@@ -1112,22 +1112,22 @@ describe(
       "owner can duplicate story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .post(
-              `/stories/duplicate/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        post(
+          `/stories/duplicate/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 201]
@@ -1156,47 +1156,47 @@ describe(
       "duplicated story has copied slides",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const originalId =
-          created.body.id;
+        created.body.id;
 
         const duplicate =
-          await request(app)
-            .post(
-              `/stories/duplicate/${originalId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        post(
+          `/stories/duplicate/${originalId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         const duplicateId =
-          duplicate.body.id;
+        duplicate.body.id;
 
         const originalSlides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM slides
             WHERE story_id = $1
             ORDER BY position
             `,
-            [originalId]
-          );
+          [originalId]
+        );
 
         const copiedSlides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM slides
             WHERE story_id = $1
             ORDER BY position
             `,
-            [duplicateId]
-          );
+          [duplicateId]
+        );
 
         expect(
           copiedSlides.rows
@@ -1207,16 +1207,16 @@ describe(
         expect(
           copiedSlides.rows[0].id
         ).not.toBe(
-          originalSlides
-            .rows[0].id
+          originalSlides.
+          rows[0].id
         );
 
         expect(
-          copiedSlides
-            .rows[0].description
+          copiedSlides.
+          rows[0].description
         ).toBe(
-          originalSlides
-            .rows[0].description
+          originalSlides.
+          rows[0].description
         );
       }
     );
@@ -1226,49 +1226,49 @@ describe(
       "duplicated story copies content and annotations",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const originalId =
-          created.body.id;
+        created.body.id;
 
         const duplicate =
-          await request(app)
-            .post(
-              `/stories/duplicate/${originalId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        post(
+          `/stories/duplicate/${originalId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         const duplicateId =
-          duplicate.body.id;
+        duplicate.body.id;
 
         const content =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT sc.*
             FROM slide_content sc
             JOIN slides s
               ON s.id = sc.slide_id
             WHERE s.story_id = $1
             `,
-            [duplicateId]
-          );
+          [duplicateId]
+        );
 
         const annotations =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT sa.*
             FROM slide_annotations sa
             JOIN slides s
               ON s.id = sa.slide_id
             WHERE s.story_id = $1
             `,
-            [duplicateId]
-          );
+          [duplicateId]
+        );
 
         expect(
           content.rows.length
@@ -1279,14 +1279,14 @@ describe(
         ).toBeGreaterThan(0);
 
         expect(
-          content.rows[0]
-            .chart_id
+          content.rows[0].
+          chart_id
         ).toBe(chartAId);
 
         expect(
-          annotations
-            .rows[0]
-            .annotation.text
+          annotations.
+          rows[0].
+          annotation.text
         ).toBe(
           "Important value"
         );
@@ -1298,19 +1298,19 @@ describe(
       "user B cannot duplicate user A story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const response =
-          await request(app)
-            .post(
-              `/stories/duplicate/${created.body.id}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        post(
+          `/stories/duplicate/${created.body.id}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -1323,9 +1323,9 @@ describe(
 );
 
 
-// =========================================
-// PUBLISH STORY
-// =========================================
+
+
+
 
 describe(
   "PUT /stories/:id/publish",
@@ -1334,40 +1334,40 @@ describe(
       "owner can publish story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .put(
-              `/stories/${storyId}/publish`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        put(
+          `/stories/${storyId}/publish`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           response.status
         ).toBe(200);
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT is_published
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
-          result.rows[0]
-            .is_published
+          result.rows[0].
+          is_published
         ).toBe(true);
       }
     );
@@ -1377,19 +1377,19 @@ describe(
       "user B cannot publish user A story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const response =
-          await request(app)
-            .put(
-              `/stories/${created.body.id}/publish`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        put(
+          `/stories/${created.body.id}/publish`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -1402,9 +1402,9 @@ describe(
 );
 
 
-// =========================================
-// DELETE STORY
-// =========================================
+
+
+
 
 describe(
   "DELETE /stories/:id",
@@ -1413,22 +1413,22 @@ describe(
       "user B cannot delete user A story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .delete(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        delete(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -1437,14 +1437,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           result.rows
@@ -1457,22 +1457,22 @@ describe(
       "owner can delete story",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .delete(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        delete(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 204]
@@ -1481,14 +1481,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           result.rows
@@ -1501,73 +1501,73 @@ describe(
       "deleting story cascades to slides content and annotations",
       async () => {
         const created =
-          await createStory(
-            tokenA
-          );
+        await createStory(
+          tokenA
+        );
 
         const storyId =
-          created.body.id;
+        created.body.id;
 
         const slides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         const slideIds =
-          slides.rows.map(
-            (slide) =>
-              slide.id
-          );
+        slides.rows.map(
+          (slide) =>
+          slide.id
+        );
 
         expect(
           slideIds.length
         ).toBeGreaterThan(0);
 
-        await request(app)
-          .delete(
-            `/stories/${storyId}`
-          )
-          .set(
-            "Authorization",
-            `Bearer ${tokenA}`
-          );
+        await request(app).
+        delete(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         const slidesAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         const contentAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM slide_content
             WHERE slide_id =
               ANY($1::int[])
             `,
-            [slideIds]
-          );
+          [slideIds]
+        );
 
         const annotationsAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT *
             FROM slide_annotations
             WHERE slide_id =
               ANY($1::int[])
             `,
-            [slideIds]
-          );
+          [slideIds]
+        );
 
         expect(
           slidesAfter.rows

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 
 import ChartPreview from "../components/charts/ChartPreview";
 import useChartData from "../hooks/useChartData";
-import { defaultChartConfig,defaultChartSettings } from "../components/config/chartDefaults";
+import { defaultChartConfig, defaultChartSettings } from "../components/config/chartDefaults";
 import { apiRequest } from "../api/client";
 
 function safeParse(value, fallback = {}) {
@@ -22,13 +22,13 @@ function safeParse(value, fallback = {}) {
 }
 
 function addDateHierarchyFields(
-  rows,
-  dateHierarchySource
-) {
+rows,
+dateHierarchySource)
+{
   if (
-    !Array.isArray(rows) ||
-    !dateHierarchySource
-  ) {
+  !Array.isArray(rows) ||
+  !dateHierarchySource)
+  {
     return rows;
   }
 
@@ -43,19 +43,19 @@ function addDateHierarchyFields(
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const quarter =
-      Math.floor((month - 1) / 3) + 1;
+    Math.floor((month - 1) / 3) + 1;
 
     return {
       ...row,
 
       [`${dateHierarchySource}_Year`]:
-        String(year),
+      String(year),
 
       [`${dateHierarchySource}_Quarter`]:
-        `${year} Q${quarter}`,
+      `${year} Q${quarter}`,
 
       [`${dateHierarchySource}_Month`]:
-        `${year}-${String(month).padStart(2, "0")}`,
+      `${year}-${String(month).padStart(2, "0")}`
     };
   });
 }
@@ -68,17 +68,17 @@ function PublishedChart() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-const parsedSettings = useMemo(() => {
-  const savedSettings = safeParse(
-    chart?.settings,
-    {}
-  );
+  const parsedSettings = useMemo(() => {
+    const savedSettings = safeParse(
+      chart?.settings,
+      {}
+    );
 
-  return {
-    ...defaultChartSettings,
-    ...savedSettings,
-  };
-}, [chart]);
+    return {
+      ...defaultChartSettings,
+      ...savedSettings
+    };
+  }, [chart]);
 
   const savedChartConfig = useMemo(() => {
     return safeParse(chart?.chart_config, {});
@@ -86,8 +86,8 @@ const parsedSettings = useMemo(() => {
 
   const parsedY = useMemo(() => {
     const savedY =
-      savedChartConfig.y ??
-      safeParse(chart?.y_axis, []);
+    savedChartConfig.y ??
+    safeParse(chart?.y_axis, []);
 
     if (Array.isArray(savedY)) {
       return savedY;
@@ -96,150 +96,150 @@ const parsedSettings = useMemo(() => {
     return savedY ? [savedY] : [];
   }, [chart, savedChartConfig]);
 
-const chartConfig = useMemo(() => {
-  return {
-    ...defaultChartConfig,
-    ...savedChartConfig,
+  const chartConfig = useMemo(() => {
+    return {
+      ...defaultChartConfig,
+      ...savedChartConfig,
 
-    x:
+      x:
       savedChartConfig.x ??
       chart?.x_axis ??
       null,
 
-    y: parsedY,
+      y: parsedY,
 
-    type:
+      type:
       savedChartConfig.type ??
       chart?.chart_type ??
       "bar",
 
-    aggregation:
+      aggregation:
       savedChartConfig.aggregation ??
       "none",
 
-    sorting:
+      sorting:
       savedChartConfig.sorting ?? {
         field: null,
-        direction: "none",
+        direction: "none"
       },
 
-    ranking: {
-      ...defaultChartConfig.ranking,
-      ...(savedChartConfig.ranking || {}),
-    },
-
-    dateGrouping: {
-      ...defaultChartConfig.dateGrouping,
-      ...(savedChartConfig.dateGrouping || {}),
-    },
-
-    filters: Array.isArray(
-      savedChartConfig.filters
-    )
-      ? savedChartConfig.filters
-      : [],
-
-    appearance: {
-      ...defaultChartConfig.appearance,
-      ...(savedChartConfig.appearance || {}),
-
-      xAxis: {
-        ...defaultChartConfig.appearance.xAxis,
-        ...(savedChartConfig.appearance?.xAxis ||
-          {}),
+      ranking: {
+        ...defaultChartConfig.ranking,
+        ...(savedChartConfig.ranking || {})
       },
 
-      yAxis: {
-        ...defaultChartConfig.appearance.yAxis,
-        ...(savedChartConfig.appearance?.yAxis ||
-          {}),
+      dateGrouping: {
+        ...defaultChartConfig.dateGrouping,
+        ...(savedChartConfig.dateGrouping || {})
       },
-    },
 
-    xHierarchy: Array.isArray(
-      savedChartConfig.xHierarchy
-    )
-      ? savedChartConfig.xHierarchy
-      : [],
+      filters: Array.isArray(
+        savedChartConfig.filters
+      ) ?
+      savedChartConfig.filters :
+      [],
 
-    dateHierarchySource:
+      appearance: {
+        ...defaultChartConfig.appearance,
+        ...(savedChartConfig.appearance || {}),
+
+        xAxis: {
+          ...defaultChartConfig.appearance.xAxis,
+          ...(savedChartConfig.appearance?.xAxis ||
+          {})
+        },
+
+        yAxis: {
+          ...defaultChartConfig.appearance.yAxis,
+          ...(savedChartConfig.appearance?.yAxis ||
+          {})
+        }
+      },
+
+      xHierarchy: Array.isArray(
+        savedChartConfig.xHierarchy
+      ) ?
+      savedChartConfig.xHierarchy :
+      [],
+
+      dateHierarchySource:
       savedChartConfig.dateHierarchySource ??
       null,
 
-    groupSmallCategories:
+      groupSmallCategories:
       savedChartConfig.groupSmallCategories ??
       false,
 
-    timeGroupBy:
-      savedChartConfig.timeGroupBy ?? "none",
-  };
-}, [
+      timeGroupBy:
+      savedChartConfig.timeGroupBy ?? "none"
+    };
+  }, [
   chart,
   parsedY,
-  savedChartConfig,
-]);
-const preparedRows = useMemo(() => {
-  return addDateHierarchyFields(
-    rows,
-    chartConfig.dateHierarchySource
+  savedChartConfig]
   );
-}, [
+  const preparedRows = useMemo(() => {
+    return addDateHierarchyFields(
+      rows,
+      chartConfig.dateHierarchySource
+    );
+  }, [
   rows,
-  chartConfig.dateHierarchySource,
-]);
-useEffect(() => {
-  const loadChart = async () => {
-    try {
-      setLoading(true);
-      setLoadError("");
+  chartConfig.dateHierarchySource]
+  );
+  useEffect(() => {
+    const loadChart = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
 
-      const result =
+        const result =
         await apiRequest(
           `/charts/public/${chartId}`,
           {
-            auth: false,
+            auth: false
           }
         );
 
-      setChart(
-        result.chart
-      );
+        setChart(
+          result.chart
+        );
 
-      setRows(
-        Array.isArray(result.rows)
-          ? result.rows
-          : []
-      );
+        setRows(
+          Array.isArray(result.rows) ?
+          result.rows :
+          []
+        );
 
-    } catch (error) {
-      console.error(
-        "Failed to load published chartsdfsf:",
-        error
-      );
+      } catch (error) {
+        console.error(
+          "Failed to load published chartsdfsf:",
+          error
+        );
 
-      setLoadError(
-        error.message ||
+        setLoadError(
+          error.message ||
           "Failed to load published chartsafdfs."
-      );
+        );
 
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  loadChart();
+    loadChart();
 
-}, [chartId]);
+  }, [chartId]);
 
-const {
-  chartData,
-  generatedColors,
-  visibleYKeys,
-} = useChartData({
-  data: preparedRows,
-  chartConfig,
-  settings: parsedSettings,
-});
+  const {
+    chartData,
+    generatedColors,
+    visibleYKeys
+  } = useChartData({
+    data: preparedRows,
+    chartConfig,
+    settings: parsedSettings
+  });
 
 
   if (loading) {
@@ -248,8 +248,8 @@ const {
         <p className="app-text-muted font-medium">
           Loading interactive chart...
         </p>
-      </div>
-    );
+      </div>);
+
   }
 
   if (loadError) {
@@ -260,8 +260,8 @@ const {
             {loadError}
           </p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (!chart) {
@@ -270,8 +270,8 @@ const {
         <p className="app-text-muted">
           Chart not found.
         </p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -286,19 +286,28 @@ const {
           max-w-[1400px]
           rounded-xl
           p-6
-        "
-      >
+        ">
+
+
+
+
+
+
+
+
+
+        
         <ChartPreview
           chartData={chartData}
           rawData={preparedRows}
           chartConfig={chartConfig}
           generatedColors={generatedColors}
           visibleYKeys={visibleYKeys}
-          settings={parsedSettings}
-        />
+          settings={parsedSettings} />
+        
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default PublishedChart;

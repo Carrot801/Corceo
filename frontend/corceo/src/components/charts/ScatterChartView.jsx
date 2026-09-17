@@ -9,15 +9,15 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Label,
-  Symbols,
-} from "recharts";
+  Symbols } from
+"recharts";
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
 import { getTotal } from "../../utils/chartValueHelpers";
 import {
-  getConditionalColor,
-} from "../../utils/conditionalFormatting";
+  getConditionalColor } from
+"../../utils/conditionalFormatting";
 function CustomScatterPoint({
   cx,
   cy,
@@ -27,12 +27,12 @@ function CustomScatterPoint({
   size,
   shape,
   opacity,
-  onClick,
+  onClick
 }) {
   if (
-    typeof cx !== "number" ||
-    typeof cy !== "number"
-  ) {
+  typeof cx !== "number" ||
+  typeof cy !== "number")
+  {
     return null;
   }
 
@@ -40,11 +40,11 @@ function CustomScatterPoint({
     <g
       onClick={onClick}
       style={{
-        cursor: onClick
-          ? "pointer"
-          : "default",
-      }}
-    >
+        cursor: onClick ?
+        "pointer" :
+        "default"
+      }}>
+      
       <Symbols
         cx={cx}
         cy={cy}
@@ -53,10 +53,10 @@ function CustomScatterPoint({
         fill={fill}
         stroke={stroke}
         strokeWidth={strokeWidth}
-        opacity={opacity}
-      />
-    </g>
-  );
+        opacity={opacity} />
+      
+    </g>);
+
 }
 
 function ScatterChartView({
@@ -66,26 +66,26 @@ function ScatterChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
-  exportMode = false,
+  exportMode = false
 }) {
   const appearance =
-    chartConfig.appearance || {};
+  chartConfig.appearance || {};
 
   const xAxisSettings =
-    appearance.xAxis || {};
+  appearance.xAxis || {};
 
   const yAxisSettings =
-    appearance.yAxis || {};
+  appearance.yAxis || {};
 
   const yKey = Array.isArray(
-    chartConfig.y,
-  )
-    ? chartConfig.y[0]
-    : chartConfig.y;
+    chartConfig.y
+  ) ?
+  chartConfig.y[0] :
+  chartConfig.y;
 
   const total = getTotal(
     chartData,
-    yKey,
+    yKey
   );
 
   const getDynamicWidth = () => {
@@ -94,9 +94,9 @@ function ScatterChartView({
     }
 
     if (
-      settings.numberFormat ===
-      "currency"
-    ) {
+    settings.numberFormat ===
+    "currency")
+    {
       return 90;
     }
 
@@ -110,194 +110,194 @@ function ScatterChartView({
       xIndex: index + 1,
 
       xLabel:
-        item.x ??
-        `Item ${index + 1}`,
+      item.x ??
+      `Item ${index + 1}`,
 
       y:
-        Number(item[yKey]) || 0,
+      Number(item[yKey]) || 0,
 
       color:
-        item.color ||
-        generatedColors[
-          index %
-            Math.max(
-              generatedColors.length,
-              1,
-            )
-        ] ||
-        "#3b82f6",
-    }),
+      item.color ||
+      generatedColors[
+      index %
+      Math.max(
+        generatedColors.length,
+        1
+      )] ||
+
+      "#3b82f6"
+    })
   );
 
   const labelLayout =
-    xAxisSettings.labelLayout ??
-    "auto";
+  xAxisSettings.labelLayout ??
+  "auto";
 
   const resolvedLayout =
-    labelLayout === "auto"
-      ? data.length > 12
-        ? "angled"
-        : "horizontal"
-      : labelLayout;
+  labelLayout === "auto" ?
+  data.length > 12 ?
+  "angled" :
+  "horizontal" :
+  labelLayout;
 
   const xAxisAngle =
-    resolvedLayout === "angled"
-      ? -35
-      : resolvedLayout ===
-          "vertical"
-        ? -90
-        : 0;
+  resolvedLayout === "angled" ?
+  -35 :
+  resolvedLayout ===
+  "vertical" ?
+  -90 :
+  0;
 
   const showXAxisLabels =
-    xAxisSettings.showLabels ??
-    true;
+  xAxisSettings.showLabels ??
+  true;
 
   const showYAxisLabels =
-    yAxisSettings.showLabels ??
-    true;
+  yAxisSettings.showLabels ??
+  true;
 
   const showXAxisTitle =
-    (
-      xAxisSettings.showTitle ??
-      true
-    ) &&
-    Boolean(
-      xAxisSettings.title?.trim(),
-    );
+  (
+  xAxisSettings.showTitle ??
+  true) &&
+
+  Boolean(
+    xAxisSettings.title?.trim()
+  );
 
   const showYAxisTitle =
-    (
-      yAxisSettings.showTitle ??
-      true
-    ) &&
-    Boolean(
-      yAxisSettings.title?.trim(),
-    );
+  (
+  yAxisSettings.showTitle ??
+  true) &&
+
+  Boolean(
+    yAxisSettings.title?.trim()
+  );
 
   const xTitleSize =
-    Number(
-      xAxisSettings.titleSize ??
-        12,
-    );
+  Number(
+    xAxisSettings.titleSize ??
+    12
+  );
 
   const yTitleSize =
-    Number(
-      yAxisSettings.titleSize ??
-        12,
-    );
+  Number(
+    yAxisSettings.titleSize ??
+    12
+  );
 
   const xTitleDistance =
-    Number(
-      xAxisSettings.titleOffset ??
-        10,
-    );
+  Number(
+    xAxisSettings.titleOffset ??
+    10
+  );
 
   const yTitleDistance =
-    Number(
-      yAxisSettings.titleOffset ??
-        10,
-    );
+  Number(
+    yAxisSettings.titleOffset ??
+    10
+  );
 
   const xTickAreaHeight =
-    !showXAxisLabels
-      ? 5
-      : resolvedLayout ===
-          "vertical"
-        ? 85
-        : resolvedLayout ===
-            "angled"
-          ? 55
-          : 28;
+  !showXAxisLabels ?
+  5 :
+  resolvedLayout ===
+  "vertical" ?
+  85 :
+  resolvedLayout ===
+  "angled" ?
+  55 :
+  28;
 
   const xTitleAreaHeight =
-    showXAxisTitle
-      ? xTitleSize +
-        8 +
-        xTitleDistance
-      : 0;
+  showXAxisTitle ?
+  xTitleSize +
+  8 +
+  xTitleDistance :
+  0;
 
   const xAxisHeight =
-    xTickAreaHeight +
-    xTitleAreaHeight;
+  xTickAreaHeight +
+  xTitleAreaHeight;
 
   const yTickAreaWidth =
-    showYAxisLabels
-      ? getDynamicWidth()
-      : 10;
+  showYAxisLabels ?
+  getDynamicWidth() :
+  10;
 
   const yTitleAreaWidth =
-    showYAxisTitle
-      ? yTitleSize +
-        8 +
-        yTitleDistance
-      : 0;
+  showYAxisTitle ?
+  yTitleSize +
+  8 +
+  yTitleDistance :
+  0;
 
   const yAxisWidth =
-    yAxisSettings.width ??
-    (
-      yTickAreaWidth +
-      yTitleAreaWidth
-    );
+  yAxisSettings.width ??
+
+  yTickAreaWidth +
+  yTitleAreaWidth;
+
 
   const showXGrid =
-    xAxisSettings.showGrid ??
-    false;
+  xAxisSettings.showGrid ??
+  false;
 
   const showYGrid =
-    yAxisSettings.showGrid ??
-    settings.showGrid ??
-    true;
+  yAxisSettings.showGrid ??
+  settings.showGrid ??
+  true;
 
   const showGrid =
-    showXGrid || showYGrid;
+  showXGrid || showYGrid;
 
   const rawYMinimum =
-    typeof yAxisSettings.min ===
-    "number"
-      ? yAxisSettings.min
-      : null;
+  typeof yAxisSettings.min ===
+  "number" ?
+  yAxisSettings.min :
+  null;
 
   const rawYMaximum =
-    typeof yAxisSettings.max ===
-    "number"
-      ? yAxisSettings.max
-      : null;
+  typeof yAxisSettings.max ===
+  "number" ?
+  yAxisSettings.max :
+  null;
 
   const validYRange =
-    rawYMinimum === null ||
-    rawYMaximum === null ||
-    rawYMinimum <
-      rawYMaximum;
+  rawYMinimum === null ||
+  rawYMaximum === null ||
+  rawYMinimum <
+  rawYMaximum;
 
   const yMinimum =
-    validYRange &&
-    rawYMinimum !== null
-      ? rawYMinimum
-      : yAxisSettings.includeZero !==
-          false
-        ? 0
-        : "auto";
+  validYRange &&
+  rawYMinimum !== null ?
+  rawYMinimum :
+  yAxisSettings.includeZero !==
+  false ?
+  0 :
+  "auto";
 
   const yMaximum =
-    validYRange &&
-    rawYMaximum !== null
-      ? rawYMaximum
-      : "auto";
+  validYRange &&
+  rawYMaximum !== null ?
+  rawYMaximum :
+  "auto";
 
   const pointSize =
-    Math.max(
-      2,
-      Number(
-        appearance.pointSize ?? 8,
-      ),
-    );
+  Math.max(
+    2,
+    Number(
+      appearance.pointSize ?? 8
+    )
+  );
 
-  /*
-   * Recharts Symbols receives an area-like
-   * value rather than a direct pixel radius.
-   */
+
+
+
+
   const symbolSize =
-    pointSize * pointSize * 4;
+  pointSize * pointSize * 4;
 
   const pointShapeMap = {
     circle: "circle",
@@ -305,367 +305,367 @@ function ScatterChartView({
     diamond: "diamond",
     triangle: "triangle",
     star: "star",
-    wye: "wye",
+    wye: "wye"
   };
 
   const pointShape =
-    pointShapeMap[
-      appearance.pointShape ??
-        "circle"
-    ] || "circle";
+  pointShapeMap[
+  appearance.pointShape ??
+  "circle"] ||
+  "circle";
 
   const pointOpacity =
-    Number(
-      appearance.opacity ?? 0.8,
-    );
+  Number(
+    appearance.opacity ?? 0.8
+  );
 
   const showPointBorder =
-    appearance.showPointBorder ??
-    false;
+  appearance.showPointBorder ??
+  false;
 
   const pointBorderWidth =
-    Number(
-      appearance.pointBorderWidth ??
-        1,
-    );
+  Number(
+    appearance.pointBorderWidth ??
+    1
+  );
 
   const pointBorderColor =
-    appearance.pointBorderColor ??
-    "#ffffff";
+  appearance.pointBorderColor ??
+  "#ffffff";
 
   const animate =
-    appearance.animate ?? true;
+  appearance.animate ?? true;
 
   if (
-    !yKey ||
-    chartData.length === 0
-  ) {
+  !yKey ||
+  chartData.length === 0)
+  {
     return (
       <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
         Select category and value fields to display the scatter chart.
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="h-full min-h-0 w-full">
       <ResponsiveContainer
         width="100%"
-        height="100%"
-      >
+        height="100%">
+        
         <ScatterChart
           margin={{
             top: 10,
             right: 10,
             left: 5,
-            bottom: 5,
-          }}
-        >
-          {showGrid && (
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={showYGrid}
-              vertical={showXGrid}
-              opacity={
-                appearance.gridOpacity ??
-                0.35
-              }
-            />
-          )}
+            bottom: 5
+          }}>
+          
+          {showGrid &&
+          <CartesianGrid
+            strokeDasharray="3 3"
+            horizontal={showYGrid}
+            vertical={showXGrid}
+            opacity={
+            appearance.gridOpacity ??
+            0.35
+            } />
+
+          }
 
           {xAxisSettings.visible !==
-            false && (
-            <XAxis
-              type="number"
-              dataKey="xIndex"
-              domain={[
-                0.5,
-                data.length + 0.5,
-              ]}
-              ticks={data.map(
-                (item) =>
-                  item.xIndex,
-              )}
-              height={
-                xAxisHeight
-              }
-              angle={
-                xAxisAngle
-              }
-              interval={
-                xAxisSettings.showEveryLabel
-                  ? 0
-                  : "preserveStartEnd"
-              }
-              minTickGap={
-                xAxisSettings.minTickGap ??
-                16
-              }
-              axisLine={
-                xAxisSettings.showLine ??
-                true
-              }
-              tickLine={
-                xAxisSettings.showTicks ??
-                false
-              }
-              tickMargin={
-                xAxisSettings.tickMargin ??
-                8
-              }
-              tick={
-                showXAxisLabels
-                  ? {
-                      fontSize:
-                        xAxisSettings.tickSize ??
-                        11,
+          false &&
+          <XAxis
+            type="number"
+            dataKey="xIndex"
+            domain={[
+            0.5,
+            data.length + 0.5]
+            }
+            ticks={data.map(
+              (item) =>
+              item.xIndex
+            )}
+            height={
+            xAxisHeight
+            }
+            angle={
+            xAxisAngle
+            }
+            interval={
+            xAxisSettings.showEveryLabel ?
+            0 :
+            "preserveStartEnd"
+            }
+            minTickGap={
+            xAxisSettings.minTickGap ??
+            16
+            }
+            axisLine={
+            xAxisSettings.showLine ??
+            true
+            }
+            tickLine={
+            xAxisSettings.showTicks ??
+            false
+            }
+            tickMargin={
+            xAxisSettings.tickMargin ??
+            8
+            }
+            tick={
+            showXAxisLabels ?
+            {
+              fontSize:
+              xAxisSettings.tickSize ??
+              11,
 
-                      textAnchor:
-                        xAxisAngle ===
-                        0
-                          ? "middle"
-                          : "end",
-                    }
-                  : false
+              textAnchor:
+              xAxisAngle ===
+              0 ?
+              "middle" :
+              "end"
+            } :
+            false
+            }
+            tickFormatter={(
+            value) =>
+            {
+              const item =
+              data.find(
+                (row) =>
+                row.xIndex ===
+                Number(value)
+              );
+
+              if (!item) {
+                return "";
               }
-              tickFormatter={(
-                value,
-              ) => {
-                const item =
-                  data.find(
-                    (row) =>
-                      row.xIndex ===
-                      Number(value),
-                  );
 
-                if (!item) {
-                  return "";
-                }
+              const text =
+              String(
+                item.xLabel ??
+                ""
+              );
 
-                const text =
-                  String(
-                    item.xLabel ??
-                      "",
-                  );
+              const maximumLength =
+              xAxisSettings.maxLabelLength ??
+              18;
 
-                const maximumLength =
-                  xAxisSettings.maxLabelLength ??
-                  18;
+              return text.length >
+              maximumLength ?
+              `${text.slice(
+                0,
+                maximumLength -
+                1
+              )}…` :
+              text;
+            }}>
+            
+              {showXAxisTitle &&
+            <Label
+              value={
+              xAxisSettings.title
+              }
+              position="insideBottom"
+              offset={2}
+              style={{
+                fontSize:
+                xTitleSize,
 
-                return text.length >
-                  maximumLength
-                  ? `${text.slice(
-                      0,
-                      maximumLength -
-                        1,
-                    )}…`
-                  : text;
-              }}
-            >
-              {showXAxisTitle && (
-                <Label
-                  value={
-                    xAxisSettings.title
-                  }
-                  position="insideBottom"
-                  offset={2}
-                  style={{
-                    fontSize:
-                      xTitleSize,
+                fontWeight:
+                xAxisSettings.titleWeight ??
+                600,
 
-                    fontWeight:
-                      xAxisSettings.titleWeight ??
-                      600,
+                textAnchor:
+                "middle"
+              }} />
 
-                    textAnchor:
-                      "middle",
-                  }}
-                />
-              )}
+            }
             </XAxis>
-          )}
+          }
 
           {yAxisSettings.visible !==
-            false && (
-            <YAxis
-              type="number"
-              dataKey="y"
-              domain={[
-                yMinimum,
-                yMaximum,
-              ]}
-              allowDataOverflow={
-                typeof yAxisSettings.min ===
-                  "number" ||
-                typeof yAxisSettings.max ===
-                  "number"
-              }
-              width={
-                yAxisWidth
-              }
-              axisLine={
-                yAxisSettings.showLine ??
-                false
-              }
-              tickLine={
-                yAxisSettings.showTicks ??
-                false
-              }
-              tickMargin={
-                yAxisSettings.tickMargin ??
-                8
-              }
-              tick={
-                showYAxisLabels
-                  ? {
-                      fontSize:
-                        yAxisSettings.tickSize ??
-                        11,
-                    }
-                  : false
-              }
-              tickFormatter={(
-                value,
-              ) =>
-                formatValue(
-                  value,
-                  settings,
-                  total,
-                )
-              }
-            >
-              {showYAxisTitle && (
-                <Label
-                  value={
-                    yAxisSettings.title
-                  }
-                  angle={-90}
-                  position="insideLeft"
-                  offset={4}
-                  style={{
-                    fontSize:
-                      yTitleSize,
+          false &&
+          <YAxis
+            type="number"
+            dataKey="y"
+            domain={[
+            yMinimum,
+            yMaximum]
+            }
+            allowDataOverflow={
+            typeof yAxisSettings.min ===
+            "number" ||
+            typeof yAxisSettings.max ===
+            "number"
+            }
+            width={
+            yAxisWidth
+            }
+            axisLine={
+            yAxisSettings.showLine ??
+            false
+            }
+            tickLine={
+            yAxisSettings.showTicks ??
+            false
+            }
+            tickMargin={
+            yAxisSettings.tickMargin ??
+            8
+            }
+            tick={
+            showYAxisLabels ?
+            {
+              fontSize:
+              yAxisSettings.tickSize ??
+              11
+            } :
+            false
+            }
+            tickFormatter={(
+            value) =>
 
-                    fontWeight:
-                      yAxisSettings.titleWeight ??
-                      600,
+            formatValue(
+              value,
+              settings,
+              total
+            )
+            }>
+            
+              {showYAxisTitle &&
+            <Label
+              value={
+              yAxisSettings.title
+              }
+              angle={-90}
+              position="insideLeft"
+              offset={4}
+              style={{
+                fontSize:
+                yTitleSize,
 
-                    textAnchor:
-                      "middle",
-                  }}
-                />
-              )}
+                fontWeight:
+                yAxisSettings.titleWeight ??
+                600,
+
+                textAnchor:
+                "middle"
+              }} />
+
+            }
             </YAxis>
-          )}
+          }
 
           <ZAxis
             type="number"
             range={[
-              symbolSize,
-              symbolSize,
-            ]}
-          />
+            symbolSize,
+            symbolSize]
+            } />
+          
 
           {settings.showTooltip !==
-            false && (
-            <Tooltip
-              cursor={
-                appearance.showHoverCursor ===
-                false
-                  ? false
-                  : {
-                      strokeDasharray:
-                        "3 3",
-                    }
+          false &&
+          <Tooltip
+            cursor={
+            appearance.showHoverCursor ===
+            false ?
+            false :
+            {
+              strokeDasharray:
+              "3 3"
+            }
+            }
+            content={
+            <CustomChartTooltip
+              settings={
+              settings
               }
-              content={
-                <CustomChartTooltip
-                  settings={
-                    settings
-                  }
-                  chartConfig={
-                    chartConfig
-                  }
-                  total={total}
-                />
+              chartConfig={
+              chartConfig
               }
-            />
-          )}
+              total={total} />
+
+            } />
+
+          }
 
           <Scatter
             data={data}
             dataKey="y"
             isAnimationActive={!exportMode}
             animationDuration={
-              appearance.animationDuration ??
-              500
+            appearance.animationDuration ??
+            500
             }
             shape={(props) => {
-  const entry =
-    props.payload;
+              const entry =
+              props.payload;
 
-  const isSelected =
-    selectedChartValues.length ===
-      0 ||
-    selectedChartValues.some(
-      (selectedValue) =>
-        String(selectedValue) ===
-        String(
-          entry?.xLabel ??
-            entry?.x,
-        ),
-    );
+              const isSelected =
+              selectedChartValues.length ===
+              0 ||
+              selectedChartValues.some(
+                (selectedValue) =>
+                String(selectedValue) ===
+                String(
+                  entry?.xLabel ??
+                  entry?.x
+                )
+              );
 
-  const resolvedColor =
-    getConditionalColor({
-      entry,
-      seriesKey: yKey,
-      settings,
-      fallbackColor:
-        entry?.color ||
-        props.fill ||
-        "#3b82f6",
-    });
-
-  return (
-    <CustomScatterPoint
-      cx={props.cx}
-      cy={props.cy}
-      fill={resolvedColor}
-      stroke={
-        showPointBorder
-          ? pointBorderColor
-          : "none"
-      }
-      strokeWidth={
-        showPointBorder
-          ? pointBorderWidth
-          : 0
-      }
-      size={symbolSize}
-      shape={pointShape}
-      opacity={
-        isSelected
-          ? pointOpacity
-          : 0.25
-      }
-      onClick={
-        onChartItemClick
-          ? () =>
-              onChartItemClick(
+              const resolvedColor =
+              getConditionalColor({
                 entry,
-              )
-          : undefined
-      }
-    />
-  );
-}}
-          >
+                seriesKey: yKey,
+                settings,
+                fallbackColor:
+                entry?.color ||
+                props.fill ||
+                "#3b82f6"
+              });
+
+              return (
+                <CustomScatterPoint
+                  cx={props.cx}
+                  cy={props.cy}
+                  fill={resolvedColor}
+                  stroke={
+                  showPointBorder ?
+                  pointBorderColor :
+                  "none"
+                  }
+                  strokeWidth={
+                  showPointBorder ?
+                  pointBorderWidth :
+                  0
+                  }
+                  size={symbolSize}
+                  shape={pointShape}
+                  opacity={
+                  isSelected ?
+                  pointOpacity :
+                  0.25
+                  }
+                  onClick={
+                  onChartItemClick ?
+                  () =>
+                  onChartItemClick(
+                    entry
+                  ) :
+                  undefined
+                  } />);
+
+
+            }}>
+            
           </Scatter>
         </ScatterChart>
       </ResponsiveContainer>
-    </div>
-  );
+    </div>);
+
 }
 
 export default ScatterChartView;

@@ -26,9 +26,9 @@ function Header() {
       <button
         type="button"
         onClick={() => navigate("/")}
-        className="font-bold text-slate-800 dark:text-white"
-      >
-        Analytics Builder
+        className="font-bold text-slate-800 dark:text-white">
+        
+        Corceo
       </button>
 
       <div className="ml-auto flex items-center gap-3">
@@ -36,39 +36,39 @@ function Header() {
           type="button"
           onClick={() => setDarkMode((current) => !current)}
           className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center"
-          title="Toggle theme"
-        >
+          title="Toggle theme">
+          
           {darkMode ? "☀️" : "🌙"}
         </button>
 
-        {token && user ? (
-          <>
+        {token && user ?
+        <>
             <span className="hidden sm:block text-sm text-slate-600 dark:text-slate-300">
               {user.full_name || user.username || user.email}
             </span>
 
             <button
-              type="button"
-              onClick={() => navigate("/account")}
-              className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
-              title="Account settings"
-            >
+            type="button"
+            onClick={() => navigate("/account")}
+            className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
+            title="Account settings">
+            
               👤
             </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
-            title="Log in"
-          >
+          </> :
+
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:ring-2 hover:ring-blue-500"
+          title="Log in">
+          
             ❔
           </button>
-        )}
+        }
       </div>
-    </header>
-  );
+    </header>);
+
 }
 
 export default Header;

@@ -13,15 +13,15 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 
 
-import { BrowserRouter, Routes, Route, } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 function ChartsPage() {
 
   return (
     <div>
       <BasePage />  
-    </div>
-  );
+    </div>);
+
 }
 
 function App() {
@@ -29,41 +29,41 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<ChartsPage />} />
-        <Route path="/base" element={<BasePage/>} />
+        <Route path="/base" element={<BasePage />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/account" 
+        <Route path="/account"
         element={
-            <ProtectedRoute>
+        <ProtectedRoute>
               <AccountSettings />
             </ProtectedRoute>
-          }
-        />
+        } />
+        
         <Route
           path="/projects/new/:id"
           element={
-            <ProtectedRoute>
+          <ProtectedRoute>
               <NewVisualization />
             </ProtectedRoute>
-          }
-        />
+          } />
+        
 
         <Route
           path="/stories/new/:storyId"
           element={
-            <ProtectedRoute>
+          <ProtectedRoute>
               <NewStory />
             </ProtectedRoute>
-          }
-        />        
+          } />
+                
         <Route path="/publishedStory/:storyId" element={<PublishedStory />} />
-        <Route path="/NewVisualization/:id" element={<NewVisualization/>} />
-        <Route path="/published/:chartId" element={<PublishedChart/>} />
+        <Route path="/NewVisualization/:id" element={<NewVisualization />} />
+        <Route path="/published/:chartId" element={<PublishedChart />} />
         <Route path="/newStory/:storyId" element={<NewStory />} />
       </Routes>
-    </BrowserRouter>
-  );
+    </BrowserRouter>);
+
 }
 
 export default App;

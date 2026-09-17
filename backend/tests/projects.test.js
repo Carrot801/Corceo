@@ -4,28 +4,28 @@ const app = require("../app");
 const pool = require("../db");
 
 
-// =========================================
-// TEST USERS
-// =========================================
+
+
+
 
 const userA = {
   full_name: "Project Test User A",
   username: "project_test_user_a",
   email: "project_user_a@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 const userB = {
   full_name: "Project Test User B",
   username: "project_test_user_b",
   email: "project_user_b@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 
-// =========================================
-// TEST STATE
-// =========================================
+
+
+
 
 let tokenA = null;
 let tokenB = null;
@@ -34,18 +34,18 @@ let userAId = null;
 let userBId = null;
 
 
-// =========================================
-// HELPERS
-// =========================================
+
+
+
 
 const cleanupTestUsers = async () => {
-  /*
-   * Because your database now uses
-   * ON DELETE CASCADE from users,
-   * deleting these users should also
-   * delete their test projects,
-   * datasets, charts, etc.
-   */
+
+
+
+
+
+
+
 
   await pool.query(
     `
@@ -60,22 +60,22 @@ const cleanupTestUsers = async () => {
     )
     `,
     [
-      userA.email,
-      userB.email,
-      userA.username,
-      userB.username,
-    ]
+    userA.email,
+    userB.email,
+    userA.username,
+    userB.username]
+
   );
 };
 
 
 const registerUser = async (
-  user
-) => {
+user) =>
+{
   const response =
-    await request(app)
-      .post("/auth/register")
-      .send(user);
+  await request(app).
+  post("/auth/register").
+  send(user);
 
   expect(
     response.status
@@ -86,44 +86,44 @@ const registerUser = async (
 
 
 const createProject = async (
-  token,
-  name = "Test Project",
-  folderId = null
-) => {
-  return request(app)
-    .post("/projects")
-    .set(
-      "Authorization",
-      `Bearer ${token}`
-    )
-    .send({
-      name,
-      folder_id: folderId,
-    });
+token,
+name = "Test Project",
+folderId = null) =>
+{
+  return request(app).
+  post("/projects").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    name,
+    folder_id: folderId
+  });
 };
 
 
-// =========================================
-// BEFORE / AFTER
-// =========================================
+
+
+
 
 beforeAll(async () => {
   await cleanupTestUsers();
 
   const accountA =
-    await registerUser(userA);
+  await registerUser(userA);
 
   const accountB =
-    await registerUser(userB);
+  await registerUser(userB);
 
   tokenA = accountA.token;
   tokenB = accountB.token;
 
   userAId =
-    accountA.user.id;
+  accountA.user.id;
 
   userBId =
-    accountB.user.id;
+  accountB.user.id;
 });
 
 
@@ -134,9 +134,9 @@ afterAll(async () => {
 });
 
 
-// =========================================
-// CREATE PROJECT
-// =========================================
+
+
+
 
 describe(
   "POST /projects",
@@ -145,12 +145,12 @@ describe(
       "rejects project creation without authentication",
       async () => {
         const response =
-          await request(app)
-            .post("/projects")
-            .send({
-              name:
-                "Unauthorized Project",
-            });
+        await request(app).
+        post("/projects").
+        send({
+          name:
+          "Unauthorized Project"
+        });
 
         expect(
           response.status
@@ -163,22 +163,22 @@ describe(
       "creates a project for authenticated user",
       async () => {
         const response =
-          await createProject(
-            tokenA,
-            "User A Project"
-          );
+        await createProject(
+          tokenA,
+          "User A Project"
+        );
 
         expect(
           response.status
-        ).toBeOneOf
-          ? undefined
-          : undefined;
+        ).toBeOneOf ?
+        undefined :
+        undefined;
 
-        /*
-         * Use an ordinary condition here
-         * because your current controller
-         * may return either 200 or 201.
-         */
+
+
+
+
+
         expect(
           [200, 201]
         ).toContain(
@@ -206,10 +206,10 @@ describe(
       "created project is stored with authenticated user ownership",
       async () => {
         const response =
-          await createProject(
-            tokenA,
-            "Ownership Test Project"
-          );
+        await createProject(
+          tokenA,
+          "Ownership Test Project"
+        );
 
         expect(
           [200, 201]
@@ -218,11 +218,11 @@ describe(
         );
 
         const projectId =
-          response.body.id;
+        response.body.id;
 
         const dbResult =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               id,
               name,
@@ -230,8 +230,8 @@ describe(
             FROM projects
             WHERE id = $1
             `,
-            [projectId]
-          );
+          [projectId]
+        );
 
         expect(
           dbResult.rows
@@ -248,16 +248,16 @@ describe(
       "allows different users to create their own projects",
       async () => {
         const projectA =
-          await createProject(
-            tokenA,
-            "Project A"
-          );
+        await createProject(
+          tokenA,
+          "Project A"
+        );
 
         const projectB =
-          await createProject(
-            tokenB,
-            "Project B"
-          );
+        await createProject(
+          tokenB,
+          "Project B"
+        );
 
         expect(
           [200, 201]
@@ -290,9 +290,9 @@ describe(
 );
 
 
-// =========================================
-// GET PROJECTS
-// =========================================
+
+
+
 
 describe(
   "GET /projects",
@@ -301,8 +301,8 @@ describe(
       "rejects project list without authentication",
       async () => {
         const response =
-          await request(app)
-            .get("/projects");
+        await request(app).
+        get("/projects");
 
         expect(
           response.status
@@ -325,12 +325,12 @@ describe(
         );
 
         const responseA =
-          await request(app)
-            .get("/projects")
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        get("/projects").
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           responseA.status
@@ -343,11 +343,11 @@ describe(
         ).toBe(true);
 
         const hasUserBProject =
-          responseA.body.some(
-            (project) =>
-              project.user_id ===
-              userBId
-          );
+        responseA.body.some(
+          (project) =>
+          project.user_id ===
+          userBId
+        );
 
         expect(
           hasUserBProject
@@ -366,9 +366,9 @@ describe(
 );
 
 
-// =========================================
-// RENAME PROJECT
-// =========================================
+
+
+
 
 describe(
   "PUT /projects/:id",
@@ -377,27 +377,27 @@ describe(
       "allows owner to rename project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Old Project Name"
-          );
+        await createProject(
+          tokenA,
+          "Old Project Name"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .put(
-              `/projects/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            )
-            .send({
-              name:
-                "New Project Name",
-            });
+        await request(app).
+        put(
+          `/projects/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        ).
+        send({
+          name:
+          "New Project Name"
+        });
 
         expect(
           response.status
@@ -420,35 +420,35 @@ describe(
       "user B cannot rename user A project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "User A Protected Project"
-          );
+        await createProject(
+          tokenA,
+          "User A Protected Project"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .put(
-              `/projects/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            )
-            .send({
-              name:
-                "Hacked Name",
-            });
+        await request(app).
+        put(
+          `/projects/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        ).
+        send({
+          name:
+          "Hacked Name"
+        });
 
-        /*
-         * 403 and 404 are both defensible.
-         *
-         * 404 is often preferable because
-         * it doesn't reveal that another
-         * user's resource exists.
-         */
+
+
+
+
+
+
+
         expect(
           [403, 404]
         ).toContain(
@@ -456,14 +456,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT name
             FROM projects
             WHERE id = $1
             `,
-            [projectId]
-          );
+          [projectId]
+        );
 
         expect(
           result.rows[0].name
@@ -476,9 +476,9 @@ describe(
 );
 
 
-// =========================================
-// DELETE PROJECT
-// =========================================
+
+
+
 
 describe(
   "DELETE /projects/:id",
@@ -487,23 +487,23 @@ describe(
       "user B cannot delete user A project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Protected Delete Project"
-          );
+        await createProject(
+          tokenA,
+          "Protected Delete Project"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .delete(
-              `/projects/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        delete(
+          `/projects/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -512,14 +512,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM projects
             WHERE id = $1
             `,
-            [projectId]
-          );
+          [projectId]
+        );
 
         expect(
           result.rows
@@ -532,23 +532,23 @@ describe(
       "allows owner to delete project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Delete Me"
-          );
+        await createProject(
+          tokenA,
+          "Delete Me"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .delete(
-              `/projects/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        delete(
+          `/projects/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 204]
@@ -557,14 +557,14 @@ describe(
         );
 
         const result =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM projects
             WHERE id = $1
             `,
-            [projectId]
-          );
+          [projectId]
+        );
 
         expect(
           result.rows
@@ -575,9 +575,9 @@ describe(
 );
 
 
-// =========================================
-// DUPLICATE PROJECT
-// =========================================
+
+
+
 
 describe(
   "POST /projects/duplicate/:id",
@@ -586,23 +586,23 @@ describe(
       "allows owner to duplicate project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Original Project"
-          );
+        await createProject(
+          tokenA,
+          "Original Project"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .post(
-              `/projects/duplicate/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        post(
+          `/projects/duplicate/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 201]
@@ -629,23 +629,23 @@ describe(
       "user B cannot duplicate user A project",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Private Original"
-          );
+        await createProject(
+          tokenA,
+          "Private Original"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
         const response =
-          await request(app)
-            .post(
-              `/projects/duplicate/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenB}`
-            );
+        await request(app).
+        post(
+          `/projects/duplicate/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenB}`
+        );
 
         expect(
           [403, 404]
@@ -658,9 +658,9 @@ describe(
 );
 
 
-// =========================================
-// DATABASE CASCADE
-// =========================================
+
+
+
 
 describe(
   "Project database cascade",
@@ -669,21 +669,21 @@ describe(
       "deleting project also deletes its dataset",
       async () => {
         const created =
-          await createProject(
-            tokenA,
-            "Cascade Test Project"
-          );
+        await createProject(
+          tokenA,
+          "Cascade Test Project"
+        );
 
         const projectId =
-          created.body.id;
+        created.body.id;
 
-        /*
-         * Insert a dataset directly into
-         * the TEST database.
-         */
+
+
+
+
         const datasetResult =
-          await pool.query(
-            `
+        await pool.query(
+          `
             INSERT INTO datasets (
               project_id,
               name,
@@ -692,39 +692,39 @@ describe(
             VALUES ($1, $2, $3)
             RETURNING id
             `,
-            [
-              projectId,
-              "Cascade Test Dataset",
-              userAId,
-            ]
-          );
+          [
+          projectId,
+          "Cascade Test Dataset",
+          userAId]
+
+        );
 
         const datasetId =
-          datasetResult.rows[0].id;
+        datasetResult.rows[0].id;
 
         const beforeDelete =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM datasets
             WHERE id = $1
             `,
-            [datasetId]
-          );
+          [datasetId]
+        );
 
         expect(
           beforeDelete.rows
         ).toHaveLength(1);
 
         const deleteResponse =
-          await request(app)
-            .delete(
-              `/projects/${projectId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${tokenA}`
-            );
+        await request(app).
+        delete(
+          `/projects/${projectId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${tokenA}`
+        );
 
         expect(
           [200, 204]
@@ -733,14 +733,14 @@ describe(
         );
 
         const afterDelete =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM datasets
             WHERE id = $1
             `,
-            [datasetId]
-          );
+          [datasetId]
+        );
 
         expect(
           afterDelete.rows

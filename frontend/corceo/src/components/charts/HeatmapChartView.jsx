@@ -8,8 +8,8 @@ import {
   Cell,
   ResponsiveContainer,
   CartesianGrid,
-  LabelList,
-} from "recharts";
+  LabelList } from
+"recharts";
 
 import CustomChartTooltip from "../sidebar/CustomChartTooltip";
 import { formatValue } from "../../utils/formatters";
@@ -28,27 +28,27 @@ function HeatmapCellShape({
   showValue,
   valueColor,
   valueSize,
-  onClick,
+  onClick
 }) {
   if (
-    typeof cx !== "number" ||
-    typeof cy !== "number"
-  ) {
+  typeof cx !== "number" ||
+  typeof cy !== "number")
+  {
     return null;
   }
 
   const sideLength = Math.max(
     10,
-    Math.sqrt(Number(size) || 400),
+    Math.sqrt(Number(size) || 400)
   );
 
   return (
     <g
       onClick={onClick}
       style={{
-        cursor: onClick ? "pointer" : "default",
-      }}
-    >
+        cursor: onClick ? "pointer" : "default"
+      }}>
+      
       <rect
         x={cx - sideLength / 2}
         y={cy - sideLength / 2}
@@ -59,43 +59,43 @@ function HeatmapCellShape({
         fill={fill}
         fillOpacity={opacity}
         stroke={
-          showBorder
-            ? borderColor
-            : "none"
+        showBorder ?
+        borderColor :
+        "none"
         }
         strokeWidth={
-          showBorder
-            ? borderWidth
-            : 0
-        }
-      />
+        showBorder ?
+        borderWidth :
+        0
+        } />
+      
 
-      {showValue && (
-        <text
-          x={cx}
-          y={cy}
-          fill={valueColor}
-          fontSize={valueSize}
-          fontWeight={600}
-          textAnchor="middle"
-          dominantBaseline="central"
-          pointerEvents="none"
-        >
+      {showValue &&
+      <text
+        x={cx}
+        y={cy}
+        fill={valueColor}
+        fontSize={valueSize}
+        fontWeight={600}
+        textAnchor="middle"
+        dominantBaseline="central"
+        pointerEvents="none">
+        
           {value}
         </text>
-      )}
-    </g>
-  );
+      }
+    </g>);
+
 }
 
 function interpolateColor(
-  startColor,
-  endColor,
-  factor,
-) {
+startColor,
+endColor,
+factor)
+{
   const normalizedFactor = Math.max(
     0,
-    Math.min(1, factor),
+    Math.min(1, factor)
   );
 
   const parseHex = (color) => {
@@ -104,16 +104,16 @@ function interpolateColor(
     return {
       red: Number.parseInt(
         hex.slice(0, 2),
-        16,
+        16
       ),
       green: Number.parseInt(
         hex.slice(2, 4),
-        16,
+        16
       ),
       blue: Number.parseInt(
         hex.slice(4, 6),
-        16,
-      ),
+        16
+      )
     };
   };
 
@@ -122,20 +122,20 @@ function interpolateColor(
 
   const red = Math.round(
     start.red +
-      (end.red - start.red) *
-        normalizedFactor,
+    (end.red - start.red) *
+    normalizedFactor
   );
 
   const green = Math.round(
     start.green +
-      (end.green - start.green) *
-        normalizedFactor,
+    (end.green - start.green) *
+    normalizedFactor
   );
 
   const blue = Math.round(
     start.blue +
-      (end.blue - start.blue) *
-        normalizedFactor,
+    (end.blue - start.blue) *
+    normalizedFactor
   );
 
   return `rgb(${red}, ${green}, ${blue})`;
@@ -148,332 +148,332 @@ function HeatmapChartView({
   chartConfig = {},
   onChartItemClick,
   selectedChartValues = [],
-  exportMode = false,
+  exportMode = false
 }) {
   const appearance =
-    chartConfig.appearance || {};
+  chartConfig.appearance || {};
 
   const yKey = Array.isArray(
-    chartConfig?.y,
-  )
-    ? chartConfig.y[0]
-    : chartConfig?.y || null;
+    chartConfig?.y
+  ) ?
+  chartConfig.y[0] :
+  chartConfig?.y || null;
 
   if (
-    !yKey ||
-    chartData.length === 0
-  ) {
+  !yKey ||
+  chartData.length === 0)
+  {
     return (
       <div className="app-text-muted flex h-full w-full items-center justify-center text-sm">
         Select X and Y fields to display the heatmap.
-      </div>
-    );
+      </div>);
+
   }
 
   const total = chartData.reduce(
     (sum, row) =>
-      sum +
-      (Number(row[yKey]) || 0),
-    0,
+    sum + (
+    Number(row[yKey]) || 0),
+    0
   );
 
   const numericValues =
-    chartData.map(
-      (row) =>
-        Number(row[yKey]) || 0,
-    );
+  chartData.map(
+    (row) =>
+    Number(row[yKey]) || 0
+  );
 
   const minimumValue = Math.min(
     ...numericValues,
-    0,
+    0
   );
 
   const maximumValue = Math.max(
     ...numericValues,
-    1,
+    1
   );
 
   const valueRange =
-    maximumValue - minimumValue || 1;
+  maximumValue - minimumValue || 1;
 
   const colorScale =
-    appearance.colorScale ??
-    "sequential";
+  appearance.colorScale ??
+  "sequential";
 
   const lowColor =
-    appearance.lowColor ??
-    generatedColors[0] ??
-    "#dbeafe";
+  appearance.lowColor ??
+  generatedColors[0] ??
+  "#dbeafe";
 
   const highColor =
-    appearance.highColor ??
-    generatedColors[
-      generatedColors.length - 1
-    ] ??
-    "#1d4ed8";
+  appearance.highColor ??
+  generatedColors[
+  generatedColors.length - 1] ??
+
+  "#1d4ed8";
 
   const negativeColor =
-    appearance.negativeColor ??
-    "#ef4444";
+  appearance.negativeColor ??
+  "#ef4444";
 
   const neutralColor =
-    appearance.neutralColor ??
-    "#f8fafc";
+  appearance.neutralColor ??
+  "#f8fafc";
 
   const positiveColor =
-    appearance.positiveColor ??
-    "#22c55e";
+  appearance.positiveColor ??
+  "#22c55e";
 
   const getCellColor = (value) => {
     if (
-      colorScale === "diverging"
-    ) {
+    colorScale === "diverging")
+    {
       if (value < 0) {
         const negativeFactor =
-          minimumValue === 0
-            ? 0
-            : Math.abs(value) /
-              Math.abs(minimumValue);
+        minimumValue === 0 ?
+        0 :
+        Math.abs(value) /
+        Math.abs(minimumValue);
 
         return interpolateColor(
           neutralColor,
           negativeColor,
-          negativeFactor,
+          negativeFactor
         );
       }
 
       const positiveFactor =
-        maximumValue === 0
-          ? 0
-          : value / maximumValue;
+      maximumValue === 0 ?
+      0 :
+      value / maximumValue;
 
       return interpolateColor(
         neutralColor,
         positiveColor,
-        positiveFactor,
+        positiveFactor
       );
     }
 
     const factor =
-      (value - minimumValue) /
-      valueRange;
+    (value - minimumValue) /
+    valueRange;
 
     return interpolateColor(
       lowColor,
       highColor,
-      factor,
+      factor
     );
   };
 
   const getPercentage = (value) =>
-    total
-      ? (Number(value) / total) * 100
-      : 0;
+  total ?
+  Number(value) / total * 100 :
+  0;
 
   const cellSize =
-    Number(
-      appearance.cellSize ?? 32,
-    );
+  Number(
+    appearance.cellSize ?? 32
+  );
 
   const cellGap =
-    Number(
-      appearance.cellGap ?? 3,
-    );
+  Number(
+    appearance.cellGap ?? 3
+  );
 
   const cellRadius =
-    Number(
-      appearance.cellRadius ?? 3,
-    );
+  Number(
+    appearance.cellRadius ?? 3
+  );
 
   const cellOpacity =
-    Number(
-      appearance.opacity ?? 1,
-    );
+  Number(
+    appearance.opacity ?? 1
+  );
 
   const showCellBorders =
-    appearance.showCellBorders ??
-    true;
+  appearance.showCellBorders ??
+  true;
 
   const showValues =
-    appearance.showValues ??
-    true;
+  appearance.showValues ??
+  true;
 
   const showGrid =
-    appearance.showGrid ??
-    settings.showGrid ??
-    false;
+  appearance.showGrid ??
+  settings.showGrid ??
+  false;
 
   const data = chartData.map(
     (item, index) => {
       const value =
-        Number(item[yKey]) || 0;
+      Number(item[yKey]) || 0;
 
       return {
         ...item,
 
         xIndex:
-          index + 1,
+        index + 1,
 
         xLabel:
-          item.x,
+        item.x,
 
         yIndex: 1,
 
         value,
 
         percentage:
-          getPercentage(value),
+        getPercentage(value),
 
         cellColor:
-          item.color ||
-          getCellColor(value),
+        item.color ||
+        getCellColor(value),
 
-        /*
-         * ZAxis expects area, not width.
-         */
+
+
+
         cellArea:
-          Math.pow(
-            Math.max(
-              8,
-              cellSize - cellGap,
-            ),
-            2,
+        Math.pow(
+          Math.max(
+            8,
+            cellSize - cellGap
           ),
+          2
+        )
       };
-    },
+    }
   );
 
   return (
     <div className="h-full min-h-0 w-full">
       <ResponsiveContainer
         width="100%"
-        height="100%"
-      >
+        height="100%">
+        
         <ScatterChart
           margin={{
             top: 20,
             right: 30,
             left: 20,
-            bottom: 40,
-          }}
-        >
-          {showGrid && (
-            <CartesianGrid
-              strokeDasharray="3 3"
-              opacity={
-                appearance.gridOpacity ??
-                0.25
-              }
-              vertical
-              horizontal={false}
-            />
-          )}
+            bottom: 40
+          }}>
+          
+          {showGrid &&
+          <CartesianGrid
+            strokeDasharray="3 3"
+            opacity={
+            appearance.gridOpacity ??
+            0.25
+            }
+            vertical
+            horizontal={false} />
+
+          }
 
           <XAxis
             type="number"
             dataKey="xIndex"
             domain={[
-              0.5,
-              data.length + 0.5,
-            ]}
+            0.5,
+            data.length + 0.5]
+            }
             ticks={data.map(
               (item) =>
-                item.xIndex,
+              item.xIndex
             )}
             interval={0}
             tickLine={false}
             axisLine={
-              appearance.showXAxisLine ??
-              false
+            appearance.showXAxisLine ??
+            false
             }
             tickMargin={8}
             tick={{
               fontSize:
-                appearance.labelSize ??
-                11,
+              appearance.labelSize ??
+              11
             }}
             tickFormatter={(value) => {
               const item =
-                data[value - 1];
+              data[value - 1];
 
               if (!item) {
                 return "";
               }
 
               const text = String(
-                item.xLabel ?? "",
+                item.xLabel ?? ""
               );
 
               const maximumLength =
-                appearance.maxLabelLength ??
-                15;
+              appearance.maxLabelLength ??
+              15;
 
               return text.length >
-                maximumLength
-                ? `${text.slice(
-                    0,
-                    maximumLength - 1,
-                  )}…`
-                : text;
-            }}
-          />
+              maximumLength ?
+              `${text.slice(
+                0,
+                maximumLength - 1
+              )}…` :
+              text;
+            }} />
+          
 
           <YAxis
             type="number"
             dataKey="yIndex"
             hide
-            domain={[0.5, 1.5]}
-          />
+            domain={[0.5, 1.5]} />
+          
 
           <ZAxis
             type="number"
             dataKey="cellArea"
             range={[
-              Math.pow(
-                Math.max(
-                  8,
-                  cellSize - cellGap,
-                ),
-                2,
+            Math.pow(
+              Math.max(
+                8,
+                cellSize - cellGap
               ),
-              Math.pow(
-                Math.max(
-                  8,
-                  cellSize - cellGap,
-                ),
-                2,
+              2
+            ),
+            Math.pow(
+              Math.max(
+                8,
+                cellSize - cellGap
               ),
-            ]}
-          />
+              2
+            )]
+            } />
+          
 
           {settings.showTooltip !==
-            false && (
-            <Tooltip
-              cursor={
-                appearance.showHoverCursor ===
-                false
-                  ? false
-                  : {
-                      strokeDasharray:
-                        "3 3",
-                    }
+          false &&
+          <Tooltip
+            cursor={
+            appearance.showHoverCursor ===
+            false ?
+            false :
+            {
+              strokeDasharray:
+              "3 3"
+            }
+            }
+            content={({
+              active,
+              payload
+            }) => {
+              if (
+              !active ||
+              !payload?.length)
+              {
+                return null;
               }
-              content={({
-                active,
-                payload,
-              }) => {
-                if (
-                  !active ||
-                  !payload?.length
-                ) {
-                  return null;
-                }
 
-                const row =
-                  payload[0].payload;
+              const row =
+              payload[0].payload;
 
-                return (
-                  <div className="app-menu app-border min-w-44 rounded-lg border p-3 text-sm shadow-lg">
+              return (
+                <div className="app-menu app-border min-w-44 rounded-lg border p-3 text-sm shadow-lg">
                     <p className="app-text font-bold">
                       {row.xLabel}
                     </p>
@@ -481,158 +481,158 @@ function HeatmapChartView({
                     <p className="app-text-secondary mt-1">
                       {yKey}:{" "}
                       {formatValue(
-                        row.value,
-                        settings,
-                        total,
-                      )}
+                      row.value,
+                      settings,
+                      total
+                    )}
                     </p>
 
                     {settings.tooltipFields?.includes(
-                      "percentage",
-                    ) && (
-                      <p className="app-text-secondary">
+                    "percentage"
+                  ) &&
+                  <p className="app-text-secondary">
                         Percentage:{" "}
                         {row.percentage.toFixed(
-                          1,
-                        )}
+                      1
+                    )}
                         %
                       </p>
-                    )}
+                  }
 
                     {(
-                      settings.tooltipExtraFields ||
-                      []
-                    ).map(
-                      (field) => (
-                        <p
-                          key={field}
-                          className="app-text-secondary"
-                        >
+                  settings.tooltipExtraFields ||
+                  []).
+                  map(
+                    (field) =>
+                    <p
+                      key={field}
+                      className="app-text-secondary">
+                      
                           {field}:{" "}
                           {String(
-                            row[field] ??
-                              "—",
-                          )}
+                        row[field] ??
+                        "—"
+                      )}
                         </p>
-                      ),
-                    )}
-                  </div>
-                );
-              }}
-            />
-          )}
+
+                  )}
+                  </div>);
+
+            }} />
+
+          }
 
           <Scatter
             data={data}
             isAnimationActive={!exportMode}
             shape={(props) => {
               const entry =
-                props.payload;
+              props.payload;
 
               const isSelected =
-                selectedChartValues.length ===
-                  0 ||
-                selectedChartValues.some(
-                  (selectedValue) =>
-                    String(
-                      selectedValue,
-                    ) ===
-                    String(
-                      entry.xLabel,
-                    ),
-                );
+              selectedChartValues.length ===
+              0 ||
+              selectedChartValues.some(
+                (selectedValue) =>
+                String(
+                  selectedValue
+                ) ===
+                String(
+                  entry.xLabel
+                )
+              );
 
               return (
                 <HeatmapCellShape
                   {...props}
                   fill={
-                    entry.cellColor
+                  entry.cellColor
                   }
                   opacity={
-                    isSelected
-                      ? cellOpacity
-                      : 0.25
+                  isSelected ?
+                  cellOpacity :
+                  0.25
                   }
                   radius={
-                    cellRadius
+                  cellRadius
                   }
                   showBorder={
-                    showCellBorders
+                  showCellBorders
                   }
                   borderColor={
-                    appearance.cellBorderColor ??
-                    "#ffffff"
+                  appearance.cellBorderColor ??
+                  "#ffffff"
                   }
                   borderWidth={
-                    appearance.cellBorderWidth ??
-                    1
+                  appearance.cellBorderWidth ??
+                  1
                   }
                   value={
-                    formatValue(
-                      entry.value,
-                      settings,
-                      total,
-                    )
+                  formatValue(
+                    entry.value,
+                    settings,
+                    total
+                  )
                   }
                   showValue={
-                    showValues
+                  showValues
                   }
                   valueColor={
-                    appearance.valueColor ??
-                    "#0f172a"
+                  appearance.valueColor ??
+                  "#0f172a"
                   }
                   valueSize={
-                    appearance.valueSize ??
-                    11
+                  appearance.valueSize ??
+                  11
                   }
                   onClick={
-                    onChartItemClick
-                      ? () =>
-                          onChartItemClick(
-                            entry,
-                          )
-                      : undefined
-                  }
-                />
-              );
-            }}
-          />
+                  onChartItemClick ?
+                  () =>
+                  onChartItemClick(
+                    entry
+                  ) :
+                  undefined
+                  } />);
+
+
+            }} />
+          
         </ScatterChart>
       </ResponsiveContainer>
 
       {appearance.showColorLegend !==
-        false && (
-        <div className="app-text-muted mt-2 flex items-center justify-center gap-2 text-[10px]">
+      false &&
+      <div className="app-text-muted mt-2 flex items-center justify-center gap-2 text-[10px]">
           <span>
             {formatValue(
-              minimumValue,
-              settings,
-              total,
-            )}
+            minimumValue,
+            settings,
+            total
+          )}
           </span>
 
           <div
-            className="h-2 w-32 rounded-full"
-            style={{
-              background:
-                colorScale ===
-                "diverging"
-                  ? `linear-gradient(to right, ${negativeColor}, ${neutralColor}, ${positiveColor})`
-                  : `linear-gradient(to right, ${lowColor}, ${highColor})`,
-            }}
-          />
+          className="h-2 w-32 rounded-full"
+          style={{
+            background:
+            colorScale ===
+            "diverging" ?
+            `linear-gradient(to right, ${negativeColor}, ${neutralColor}, ${positiveColor})` :
+            `linear-gradient(to right, ${lowColor}, ${highColor})`
+          }} />
+        
 
           <span>
             {formatValue(
-              maximumValue,
-              settings,
-              total,
-            )}
+            maximumValue,
+            settings,
+            total
+          )}
           </span>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 export default HeatmapChartView;

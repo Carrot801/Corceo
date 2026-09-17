@@ -9,60 +9,60 @@ const registerUser = async (req, res, next) => {
       full_name,
       username,
       email,
-      password,
+      password
     } = req.body;
 
     const normalizedName = full_name?.trim();
-    const normalizedUsername = username
-      ?.trim()
-      .toLowerCase();
-    const normalizedEmail = email
-      ?.trim()
-      .toLowerCase();
+    const normalizedUsername = username?.
+    trim().
+    toLowerCase();
+    const normalizedEmail = email?.
+    trim().
+    toLowerCase();
 
     if (
-      !normalizedName ||
-      !normalizedUsername ||
-      !normalizedEmail ||
-      !password
-    ) {
+    !normalizedName ||
+    !normalizedUsername ||
+    !normalizedEmail ||
+    !password)
+    {
       return res.status(400).json({
-        error: "All fields are required",
+        error: "All fields are required"
       });
     }
 
     if (
-      normalizedUsername.length < 3 ||
-      normalizedUsername.length > 30
-    ) {
+    normalizedUsername.length < 3 ||
+    normalizedUsername.length > 30)
+    {
       return res.status(400).json({
-        error: "Username must be between 3 and 30 characters",
+        error: "Username must be between 3 and 30 characters"
       });
     }
 
     if (!/^[a-zA-Z0-9_]+$/.test(normalizedUsername)) {
       return res.status(400).json({
         error:
-          "Username may contain only letters, numbers, and underscores",
+        "Username may contain only letters, numbers, and underscores"
       });
     }
 
     if (password.length < 8) {
       return res.status(400).json({
-        error: "Password must be at least 8 characters",
+        error: "Password must be at least 8 characters"
       });
     }
 
     if (!/[A-Z]/.test(password)) {
       return res.status(400).json({
         error:
-          "Password must contain at least one uppercase letter",
+        "Password must contain at least one uppercase letter"
       });
     }
 
     if (!/[0-9]/.test(password)) {
       return res.status(400).json({
-        error: "Password must contain at least one number",
+        error: "Password must contain at least one number"
       });
     }
 
@@ -80,16 +80,16 @@ const registerUser = async (req, res, next) => {
       const existing = existingUser.rows[0];
 
       if (
-        existing.email?.toLowerCase() ===
-        normalizedEmail
-      ) {
+      existing.email?.toLowerCase() ===
+      normalizedEmail)
+      {
         return res.status(409).json({
-          error: "An account with this email already exists",
+          error: "An account with this email already exists"
         });
       }
 
       return res.status(409).json({
-        error: "This username is already taken",
+        error: "This username is already taken"
       });
     }
 
@@ -111,11 +111,11 @@ const registerUser = async (req, res, next) => {
         email
       `,
       [
-        normalizedName,
-        normalizedUsername,
-        normalizedEmail,
-        passwordHash,
-      ]
+      normalizedName,
+      normalizedUsername,
+      normalizedEmail,
+      passwordHash]
+
     );
 
     const user = result.rows[0];
@@ -123,22 +123,22 @@ const registerUser = async (req, res, next) => {
     const token = jwt.sign(
       {
         userId: user.id,
-        email: user.email,
+        email: user.email
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: "30d",
+        expiresIn: "30d"
       }
     );
 
     return res.status(201).json({
       token,
-      user,
+      user
     });
   } catch (err) {
     if (err.code === "23505") {
       return res.status(409).json({
-        error: "Email or username is already in use",
+        error: "Email or username is already in use"
       });
     }
 
@@ -152,7 +152,7 @@ const loginUser = async (req, res, next) => {
 
     if (!normalizedEmail || !password) {
       return res.status(400).json({
-        error: "Email and password are required",
+        error: "Email and password are required"
       });
     }
 
@@ -169,7 +169,7 @@ const loginUser = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({
-        error: "Invalid email or password",
+        error: "Invalid email or password"
       });
     }
 
@@ -180,18 +180,18 @@ const loginUser = async (req, res, next) => {
 
     if (!valid) {
       return res.status(401).json({
-        error: "Invalid email or password",
+        error: "Invalid email or password"
       });
     }
 
     const token = jwt.sign(
       {
         userId: user.id,
-        email: user.email,
+        email: user.email
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: "30d",
+        expiresIn: "30d"
       }
     );
 
@@ -201,8 +201,8 @@ const loginUser = async (req, res, next) => {
         id: user.id,
         full_name: user.full_name,
         username: user.username,
-        email: user.email,
-      },
+        email: user.email
+      }
     });
   } catch (err) {
     next(err);
@@ -211,5 +211,5 @@ const loginUser = async (req, res, next) => {
 
 module.exports = {
   registerUser,
-  loginUser,
+  loginUser
 };

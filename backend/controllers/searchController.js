@@ -8,7 +8,7 @@ const search = async (req, res, next) => {
       return res.json({
         folders: [],
         projects: [],
-        stories: [],
+        stories: []
       });
     }
 
@@ -16,8 +16,8 @@ const search = async (req, res, next) => {
 
     res.json(result);
   } catch (error) {
-    
+
   }
 };
 
-module.exports = {search};
+module.exports = { search };

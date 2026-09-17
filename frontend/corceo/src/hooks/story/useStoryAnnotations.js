@@ -1,6 +1,6 @@
 import {
-  useCallback,
-} from "react";
+  useCallback } from
+"react";
 
 
 export default function useStoryAnnotations({
@@ -11,236 +11,236 @@ export default function useStoryAnnotations({
   setSlides,
 
   selectedAnnoId,
-  setSelectedAnnoId,
+  setSelectedAnnoId
 }) {
 
-  // =========================
-  // ADD ANNOTATION
-  // =========================
+
+
+
 
   const addAnnotation =
-    useCallback(() => {
-      const newId =
-        `anno-${crypto.randomUUID()}`;
+  useCallback(() => {
+    const newId =
+    `anno-${crypto.randomUUID()}`;
 
-      const count =
+    const count =
+    (
+    currentSlide?.
+    annotations ||
+    []).
+    length + 1;
+
+    const newAnnotation = {
+      id:
+      newId,
+
+      text:
+      `Annotation point #${count}`,
+
+      markerType:
+      "dot",
+
+      connectorType:
+      "curved",
+
+      x: 50,
+      y: 40,
+
+      textX: 55,
+      textY: 55,
+
+      width: 15,
+      height: 15,
+
+      fillColor:
+      "#3b82f6",
+
+      radius: 6,
+
+      labelWidth: 12,
+
+      textSize: 0.85,
+
+      textColor:
+      "#1e293b",
+
+      textBgEnabled:
+      true,
+      textBgColor:
+      "#ffffff",
+
+      textBorderEnabled:
+      false,
+      textBorderColor:
+      "#1e293b",
+
+      fontWeight:
+      "normal",
+
+      textAlign:
+      "left",
+
+      lineWidth: 1.5,
+
+      lineColor:
+      "#64748b"
+    };
+
+    setSlides(
+      (previousSlides) =>
+      previousSlides.map(
         (
-          currentSlide
-            ?.annotations ||
-          []
-        ).length + 1;
+        slide,
+        index) =>
+        {
+          if (
+          index !==
+          activeSlideIndex)
+          {
+            return slide;
+          }
 
-      const newAnnotation = {
-        id:
-          newId,
+          return {
+            ...slide,
 
-        text:
-          `Annotation point #${count}`,
-
-        markerType:
-          "dot",
-
-        connectorType:
-          "curved",
-
-        x: 50,
-        y: 40,
-
-        textX: 55,
-        textY: 55,
-
-        width: 15,
-        height: 15,
-
-        fillColor:
-          "#3b82f6",
-
-        radius: 6,
-
-        labelWidth: 12,
-
-        textSize: 0.85,
-
-        textColor:
-          "#1e293b",
-
-        textBgEnabled:
-         true,
-        textBgColor:
-         "#ffffff",
-
-        textBorderEnabled:
-         false,
-        textBorderColor:
-         "#1e293b",
-
-        fontWeight:
-          "normal",
-
-        textAlign:
-          "left",
-
-        lineWidth: 1.5,
-
-        lineColor:
-          "#64748b",
-      };
-
-      setSlides(
-        (previousSlides) =>
-          previousSlides.map(
-            (
-              slide,
-              index
-            ) => {
-              if (
-                index !==
-                activeSlideIndex
-              ) {
-                return slide;
-              }
-
-              return {
-                ...slide,
-
-                annotations: [
-                  ...(
-                    slide.annotations ||
-                    []
-                  ),
-
-                  newAnnotation,
-                ],
-              };
-            }
-          )
-      );
-
-      setSelectedAnnoId(
-        newId
-      );
-
-    }, [
-      activeSlideIndex,
-      currentSlide,
-      setSelectedAnnoId,
-      setSlides,
-    ]);
+            annotations: [
+            ...(
+            slide.annotations ||
+            []),
 
 
-  // =========================
-  // UPDATE ANNOTATION
-  // =========================
+            newAnnotation]
+
+          };
+        }
+      )
+    );
+
+    setSelectedAnnoId(
+      newId
+    );
+
+  }, [
+  activeSlideIndex,
+  currentSlide,
+  setSelectedAnnoId,
+  setSlides]
+  );
+
+
+
+
+
 
   const updateAnnotation =
-    useCallback(
-      (
-        annotationId,
-        key,
-        value
-      ) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+  useCallback(
+    (
+    annotationId,
+    key,
+    value) =>
+    {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                return {
-                  ...slide,
+            return {
+              ...slide,
 
-                  annotations: (
-                    slide.annotations ||
-                    []
-                  ).map(
-                    (annotation) =>
-                      annotation.id ===
-                      annotationId
-                        ? {
-                            ...annotation,
+              annotations: (
+              slide.annotations ||
+              []).
+              map(
+                (annotation) =>
+                annotation.id ===
+                annotationId ?
+                {
+                  ...annotation,
 
-                            [key]:
-                              value,
-                          }
-                        : annotation
-                  ),
-                };
-              }
-            )
-        );
-      },
-      [
-        activeSlideIndex,
-        setSlides,
-      ]
-    );
+                  [key]:
+                  value
+                } :
+                annotation
+              )
+            };
+          }
+        )
+      );
+    },
+    [
+    activeSlideIndex,
+    setSlides]
+
+  );
 
 
-  // =========================
-  // REMOVE ANNOTATION
-  // =========================
+
+
+
 
   const removeAnnotation =
-    useCallback(
-      (annotationId) => {
-        setSlides(
-          (previousSlides) =>
-            previousSlides.map(
-              (
-                slide,
-                index
-              ) => {
-                if (
-                  index !==
-                  activeSlideIndex
-                ) {
-                  return slide;
-                }
+  useCallback(
+    (annotationId) => {
+      setSlides(
+        (previousSlides) =>
+        previousSlides.map(
+          (
+          slide,
+          index) =>
+          {
+            if (
+            index !==
+            activeSlideIndex)
+            {
+              return slide;
+            }
 
-                return {
-                  ...slide,
+            return {
+              ...slide,
 
-                  annotations: (
-                    slide.annotations ||
-                    []
-                  ).filter(
-                    (annotation) =>
-                      annotation.id !==
-                      annotationId
-                  ),
-                };
-              }
-            )
+              annotations: (
+              slide.annotations ||
+              []).
+              filter(
+                (annotation) =>
+                annotation.id !==
+                annotationId
+              )
+            };
+          }
+        )
+      );
+
+      if (
+      selectedAnnoId ===
+      annotationId)
+      {
+        setSelectedAnnoId(
+          null
         );
+      }
+    },
+    [
+    activeSlideIndex,
+    selectedAnnoId,
+    setSelectedAnnoId,
+    setSlides]
 
-        if (
-          selectedAnnoId ===
-          annotationId
-        ) {
-          setSelectedAnnoId(
-            null
-          );
-        }
-      },
-      [
-        activeSlideIndex,
-        selectedAnnoId,
-        setSelectedAnnoId,
-        setSlides,
-      ]
-    );
+  );
 
 
   return {
     addAnnotation,
     updateAnnotation,
-    removeAnnotation,
+    removeAnnotation
   };
 }

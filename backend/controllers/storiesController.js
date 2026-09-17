@@ -18,10 +18,7 @@ const createStory = async (
     const userId =
       req.user.userId;
 
-    // =========================
-    // BASIC VALIDATION
-    // =========================
-
+  
     if (
       !Array.isArray(
         slides
@@ -96,9 +93,6 @@ const updateStory = async (
       image_url,
     } = req.body;
 
-    // =========================
-    // VALIDATION
-    // =========================
 
     if (
       !Number.isInteger(
@@ -661,9 +655,6 @@ const deleteSlide = async (
       "BEGIN"
     );
 
-    // =========================
-    // FIND SLIDE
-    // =========================
 
     const slideCheck =
       await client.query(
@@ -703,16 +694,6 @@ const deleteSlide = async (
       slideCheck.rows[0]
         .position;
 
-    // =========================
-    // DELETE SLIDE
-    // =========================
-
-    /*
-     * Because slide_content and
-     * slide_annotations should cascade,
-     * deleting the slide is enough if
-     * your FK schema is configured.
-     */
 
     await client.query(
       `
@@ -728,18 +709,7 @@ const deleteSlide = async (
       ]
     );
 
-    // =========================
-    // SHIFT POSITIONS SAFELY
-    // =========================
 
-    /*
-     * Only slides AFTER the deleted
-     * position need to move.
-     *
-     * We first move them temporarily
-     * far away so the UNIQUE constraint
-     * cannot collide.
-     */
 
     await client.query(
       `
@@ -757,13 +727,6 @@ const deleteSlide = async (
       ]
     );
 
-    /*
-     * Move them back down by one.
-     *
-     * Original:
-     * 2 → 1000002 → 1
-     * 3 → 1000003 → 2
-     */
     await client.query(
       `
       UPDATE slides

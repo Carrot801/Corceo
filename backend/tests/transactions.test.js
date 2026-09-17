@@ -4,21 +4,21 @@ const app = require("../app");
 const pool = require("../db");
 
 
-// =========================================
-// TEST USER
-// =========================================
+
+
+
 
 const testUser = {
   full_name: "Transaction Test User",
   username: "transaction_test_user",
   email: "transaction_test@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 
-// =========================================
-// TEST STATE
-// =========================================
+
+
+
 
 let token = null;
 let userId = null;
@@ -28,225 +28,225 @@ let datasetId = null;
 let chartId = null;
 
 
-// =========================================
-// HELPERS
-// =========================================
+
+
+
 
 const cleanupTestUser =
-  async () => {
-    await pool.query(
-      `
+async () => {
+  await pool.query(
+    `
       DELETE FROM users
       WHERE LOWER(email) =
             LOWER($1)
          OR LOWER(username) =
             LOWER($2)
       `,
-      [
-        testUser.email,
-        testUser.username,
-      ]
-    );
-  };
+    [
+    testUser.email,
+    testUser.username]
+
+  );
+};
 
 
 const registerUser =
-  async () => {
-    const response =
-      await request(app)
-        .post("/auth/register")
-        .send(testUser);
+async () => {
+  const response =
+  await request(app).
+  post("/auth/register").
+  send(testUser);
 
-    expect(
-      response.status
-    ).toBe(201);
+  expect(
+    response.status
+  ).toBe(201);
 
-    token =
-      response.body.token;
+  token =
+  response.body.token;
 
-    userId =
-      response.body.user.id;
-  };
+  userId =
+  response.body.user.id;
+};
 
 
 const createProject =
-  async () => {
-    const response =
-      await request(app)
-        .post("/projects")
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          name:
-            "Transaction Test Project",
+async () => {
+  const response =
+  await request(app).
+  post("/projects").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    name:
+    "Transaction Test Project",
 
-          folder_id: null,
-        });
+    folder_id: null
+  });
 
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
 
-    projectId =
-      response.body.id;
-  };
+  projectId =
+  response.body.id;
+};
 
 
 const createDataset =
-  async () => {
-    const response =
-      await request(app)
-        .post(
-          "/data/save_dataset"
-        )
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          project_id:
-            projectId,
+async () => {
+  const response =
+  await request(app).
+  post(
+    "/data/save_dataset"
+  ).
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id:
+    projectId,
 
-          rows: [
-            {
-              Category: "A",
-              Revenue: 100,
-            },
+    rows: [
+    {
+      Category: "A",
+      Revenue: 100
+    },
 
-            {
-              Category: "B",
-              Revenue: 200,
-            },
-          ],
-        });
+    {
+      Category: "B",
+      Revenue: 200
+    }]
 
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
+  });
 
-    datasetId =
-      response.body.datasetId;
-  };
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
+
+  datasetId =
+  response.body.datasetId;
+};
 
 
 const createChart =
-  async () => {
-    const response =
-      await request(app)
-        .post("/charts")
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          project_id:
-            projectId,
+async () => {
+  const response =
+  await request(app).
+  post("/charts").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    project_id:
+    projectId,
 
-          dataset_id:
-            datasetId,
+    dataset_id:
+    datasetId,
 
-          chart_type:
-            "bar",
+    chart_type:
+    "bar",
 
-          x_axis:
-            "Category",
+    x_axis:
+    "Category",
 
-          y_axis:
-            JSON.stringify([
-              "Revenue",
-            ]),
+    y_axis:
+    JSON.stringify([
+    "Revenue"]
+    ),
 
-          settings: {
-            title:
-              "Transaction Chart",
-          },
+    settings: {
+      title:
+      "Transaction Chart"
+    },
 
-          chart_config: {
-            type: "bar",
-            x: "Category",
-            y: ["Revenue"],
-          },
+    chart_config: {
+      type: "bar",
+      x: "Category",
+      y: ["Revenue"]
+    },
 
-          image_data: null,
-        });
+    image_data: null
+  });
 
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
 
-    chartId =
-      response.body.id;
-  };
+  chartId =
+  response.body.id;
+};
 
 
 const createValidStory =
-  async (
-    name =
-      "Original Transaction Story"
-  ) => {
-    const response =
-      await request(app)
-        .post("/stories")
-        .set(
-          "Authorization",
-          `Bearer ${token}`
-        )
-        .send({
-          name,
+async (
+name =
+"Original Transaction Story") =>
+{
+  const response =
+  await request(app).
+  post("/stories").
+  set(
+    "Authorization",
+    `Bearer ${token}`
+  ).
+  send({
+    name,
 
-          slides: [
-            {
-              description:
-                "Original slide",
+    slides: [
+    {
+      description:
+      "Original slide",
 
-              content: [
-                {
-                  chartId,
+      content: [
+      {
+        chartId,
 
-                  x: 5,
-                  y: 10,
-                  width: 80,
-                  height: 60,
-                  zIndex: 1,
-                },
-              ],
-
-              annotations: [
-                {
-                  id:
-                    "original-annotation",
-
-                  type: "text",
-
-                  text:
-                    "Original annotation",
-                },
-              ],
-            },
-          ],
-        });
-
-    expect(
-      [200, 201]
-    ).toContain(
-      response.status
-    );
-
-    return response.body.id;
-  };
+        x: 5,
+        y: 10,
+        width: 80,
+        height: 60,
+        zIndex: 1
+      }],
 
 
-// =========================================
-// SETUP
-// =========================================
+      annotations: [
+      {
+        id:
+        "original-annotation",
+
+        type: "text",
+
+        text:
+        "Original annotation"
+      }]
+
+    }]
+
+  });
+
+  expect(
+    [200, 201]
+  ).toContain(
+    response.status
+  );
+
+  return response.body.id;
+};
+
+
+
+
+
 
 beforeAll(
   async () => {
@@ -265,12 +265,12 @@ beforeAll(
 
 afterEach(
   async () => {
-    /*
-     * Only remove stories.
-     *
-     * Keep project/dataset/chart because
-     * every transaction test uses them.
-     */
+
+
+
+
+
+
     await pool.query(
       `
       DELETE FROM stories
@@ -291,9 +291,9 @@ afterAll(
 );
 
 
-// =========================================
-// STORY CREATION ROLLBACK
-// =========================================
+
+
+
 
 describe(
   "Story creation transaction",
@@ -301,89 +301,89 @@ describe(
     test(
       "failed story creation rolls back the story and slides",
       async () => {
-        /*
-         * This chart ID should not exist.
-         *
-         * The story itself and its slide
-         * are inserted BEFORE slide_content.
-         *
-         * The invalid FK therefore causes
-         * a failure in the middle of the
-         * transaction.
-         */
+
+
+
+
+
+
+
+
+
+
         const impossibleChartId =
-          2147483646;
+        2147483646;
 
         const response =
-          await request(app)
-            .post("/stories")
-            .set(
-              "Authorization",
-              `Bearer ${token}`
-            )
-            .send({
-              name:
-                "Should Roll Back",
+        await request(app).
+        post("/stories").
+        set(
+          "Authorization",
+          `Bearer ${token}`
+        ).
+        send({
+          name:
+          "Should Roll Back",
 
-              slides: [
-                {
-                  description:
-                    "Temporary slide",
+          slides: [
+          {
+            description:
+            "Temporary slide",
 
-                  content: [
-                    {
-                      chartId:
-                        impossibleChartId,
+            content: [
+            {
+              chartId:
+              impossibleChartId,
 
-                      x: 0,
-                      y: 0,
-                      width: 100,
-                      height: 100,
-                      zIndex: 1,
-                    },
-                  ],
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 100,
+              zIndex: 1
+            }],
 
-                  annotations: [],
-                },
-              ],
-            });
 
-        /*
-         * Foreign-key failure should
-         * reach your global error handler.
-         */
+            annotations: []
+          }]
+
+        });
+
+
+
+
+
         expect(
           response.status
         ).toBeGreaterThanOrEqual(
           400
         );
 
-        // Story must not remain
+
         const storyResult =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM stories
             WHERE name = $1
               AND user_id = $2
             `,
-            [
-              "Should Roll Back",
-              userId,
-            ]
-          );
+          [
+          "Should Roll Back",
+          userId]
+
+        );
 
         expect(
           storyResult.rows
         ).toHaveLength(0);
 
-        /*
-         * No orphan slides should exist
-         * either.
-         */
+
+
+
+
         const slideResult =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT s.id
             FROM slides s
 
@@ -394,8 +394,8 @@ describe(
             WHERE s.user_id = $1
               AND st.id IS NULL
             `,
-            [userId]
-          );
+          [userId]
+        );
 
         expect(
           slideResult.rows
@@ -406,9 +406,6 @@ describe(
 );
 
 
-// =========================================
-// STORY UPDATE ROLLBACK
-// =========================================
 
 describe(
   "Story update transaction",
@@ -417,27 +414,23 @@ describe(
       "failed story update restores original story data",
       async () => {
         const storyId =
-          await createValidStory();
-
-        // =========================
-        // ORIGINAL DATABASE STATE
-        // =========================
+        await createValidStory();
 
         const originalStory =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               name,
               image_url
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         const originalSlides =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               id,
               position,
@@ -446,19 +439,19 @@ describe(
             WHERE story_id = $1
             ORDER BY position
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           originalSlides.rows
         ).toHaveLength(1);
 
         const originalSlideId =
-          originalSlides.rows[0].id;
+        originalSlides.rows[0].id;
 
         const originalContent =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               chart_id,
               position,
@@ -467,62 +460,62 @@ describe(
             WHERE slide_id = $1
             ORDER BY position
             `,
-            [originalSlideId]
-          );
+          [originalSlideId]
+        );
 
         expect(
           originalContent.rows
         ).toHaveLength(1);
 
-        // =========================
-        // FORCE UPDATE TO FAIL
-        // =========================
+
+
+
 
         const impossibleChartId =
-          2147483646;
+        2147483646;
 
         const response =
-          await request(app)
-            .put(
-              `/stories/${storyId}`
-            )
-            .set(
-              "Authorization",
-              `Bearer ${token}`
-            )
-            .send({
-              /*
-               * These changes happen before
-               * the bad chart is inserted.
-               */
-              name:
-                "Broken Updated Story",
+        await request(app).
+        put(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${token}`
+        ).
+        send({
 
-              image_url:
-                "broken-image.png",
 
-              slides: [
-                {
-                  description:
-                    "Broken replacement slide",
 
-                  content: [
-                    {
-                      chartId:
-                        impossibleChartId,
 
-                      x: 20,
-                      y: 20,
-                      width: 50,
-                      height: 50,
-                      zIndex: 1,
-                    },
-                  ],
+          name:
+          "Broken Updated Story",
 
-                  annotations: [],
-                },
-              ],
-            });
+          image_url:
+          "broken-image.png",
+
+          slides: [
+          {
+            description:
+            "Broken replacement slide",
+
+            content: [
+            {
+              chartId:
+              impossibleChartId,
+
+              x: 20,
+              y: 20,
+              width: 50,
+              height: 50,
+              zIndex: 1
+            }],
+
+
+            annotations: []
+          }]
+
+        });
 
         expect(
           response.status
@@ -530,21 +523,21 @@ describe(
           400
         );
 
-        // =========================
-        // STORY MUST BE RESTORED
-        // =========================
+
+
+
 
         const storyAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               name,
               image_url
             FROM stories
             WHERE id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           storyAfter.rows
@@ -557,20 +550,17 @@ describe(
         );
 
         expect(
-          storyAfter.rows[0]
-            .image_url
+          storyAfter.rows[0].
+          image_url
         ).toBe(
-          originalStory.rows[0]
-            .image_url
+          originalStory.rows[0].
+          image_url
         );
 
-        // =========================
-        // ORIGINAL SLIDE MUST RETURN
-        // =========================
 
         const slidesAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               id,
               position,
@@ -579,8 +569,8 @@ describe(
             WHERE story_id = $1
             ORDER BY position
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           slidesAfter.rows
@@ -593,19 +583,15 @@ describe(
         );
 
         expect(
-          slidesAfter.rows[0]
-            .description
+          slidesAfter.rows[0].
+          description
         ).toBe(
           "Original slide"
         );
 
-        // =========================
-        // ORIGINAL CONTENT MUST RETURN
-        // =========================
-
         const contentAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT
               chart_id,
               position,
@@ -614,27 +600,27 @@ describe(
             WHERE slide_id = $1
             ORDER BY position
             `,
-            [
-              slidesAfter
-                .rows[0].id,
-            ]
-          );
+          [
+          slidesAfter.
+          rows[0].id]
+
+        );
 
         expect(
           contentAfter.rows
         ).toHaveLength(1);
 
         expect(
-          contentAfter
-            .rows[0].chart_id
+          contentAfter.
+          rows[0].chart_id
         ).toBe(chartId);
 
         expect(
-          contentAfter.rows[0]
-            .layout
+          contentAfter.rows[0].
+          layout
         ).toEqual(
-          originalContent.rows[0]
-            .layout
+          originalContent.rows[0].
+          layout
         );
       }
     );
@@ -644,100 +630,99 @@ describe(
       "failed story update restores annotations",
       async () => {
         const storyId =
-          await createValidStory();
+        await createValidStory();
 
         const slideBefore =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             LIMIT 1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         const originalSlideId =
-          slideBefore.rows[0].id;
+        slideBefore.rows[0].id;
 
         const annotationsBefore =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT annotation
             FROM slide_annotations
             WHERE slide_id = $1
             `,
-            [originalSlideId]
-          );
+          [originalSlideId]
+        );
 
         expect(
           annotationsBefore.rows
         ).toHaveLength(1);
 
         expect(
-          annotationsBefore
-            .rows[0]
-            .annotation.text
+          annotationsBefore.
+          rows[0].
+          annotation.text
         ).toBe(
           "Original annotation"
         );
 
-        // Force transaction failure
-        await request(app)
-          .put(
-            `/stories/${storyId}`
-          )
-          .set(
-            "Authorization",
-            `Bearer ${token}`
-          )
-          .send({
-            name:
-              "Failed Annotation Update",
+        await request(app).
+        put(
+          `/stories/${storyId}`
+        ).
+        set(
+          "Authorization",
+          `Bearer ${token}`
+        ).
+        send({
+          name:
+          "Failed Annotation Update",
 
-            slides: [
-              {
-                description:
-                  "Replacement",
+          slides: [
+          {
+            description:
+            "Replacement",
 
-                content: [
-                  {
-                    chartId:
-                      2147483646,
+            content: [
+            {
+              chartId:
+              2147483646,
 
-                    x: 0,
-                    y: 0,
-                    width: 100,
-                    height: 100,
-                    zIndex: 1,
-                  },
-                ],
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 100,
+              zIndex: 1
+            }],
 
-                annotations: [
-                  {
-                    id:
-                      "new-annotation",
 
-                    type: "text",
+            annotations: [
+            {
+              id:
+              "new-annotation",
 
-                    text:
-                      "Should never persist",
-                  },
-                ],
-              },
-            ],
-          });
+              type: "text",
 
-        // Original slide should exist again
+              text:
+              "Should never persist"
+            }]
+
+          }]
+
+        });
+
+
         const slidesAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT id
             FROM slides
             WHERE story_id = $1
             `,
-            [storyId]
-          );
+          [storyId]
+        );
 
         expect(
           slidesAfter.rows
@@ -749,25 +734,24 @@ describe(
           originalSlideId
         );
 
-        // Original annotation should return
         const annotationsAfter =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT annotation
             FROM slide_annotations
             WHERE slide_id = $1
             `,
-            [originalSlideId]
-          );
+          [originalSlideId]
+        );
 
         expect(
           annotationsAfter.rows
         ).toHaveLength(1);
 
         expect(
-          annotationsAfter
-            .rows[0]
-            .annotation.text
+          annotationsAfter.
+          rows[0].
+          annotation.text
         ).toBe(
           "Original annotation"
         );
@@ -777,9 +761,6 @@ describe(
 );
 
 
-// =========================================
-// DATASET SAFETY
-// =========================================
 
 describe(
   "Dataset transaction protection",
@@ -787,52 +768,51 @@ describe(
     test(
       "failed unauthorized dataset save does not replace existing rows",
       async () => {
-        // Current rows
         const before =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT data
             FROM rows
             WHERE dataset_id = $1
             ORDER BY id
             `,
-            [datasetId]
-          );
+          [datasetId]
+        );
 
         expect(
           before.rows
         ).toHaveLength(2);
 
-        /*
-         * Use a project ID that doesn't
-         * belong to this operation.
-         *
-         * saveDataset begins a transaction
-         * and must reject it before changing
-         * the existing dataset.
-         */
-        const response =
-          await request(app)
-            .post(
-              "/data/save_dataset"
-            )
-            .set(
-              "Authorization",
-              `Bearer ${token}`
-            )
-            .send({
-              project_id:
-                2147483646,
 
-              rows: [
-                {
-                  Category:
-                    "Destroyed",
-                  Revenue:
-                    999999,
-                },
-              ],
-            });
+
+
+
+
+
+
+
+        const response =
+        await request(app).
+        post(
+          "/data/save_dataset"
+        ).
+        set(
+          "Authorization",
+          `Bearer ${token}`
+        ).
+        send({
+          project_id:
+          2147483646,
+
+          rows: [
+          {
+            Category:
+            "Destroyed",
+            Revenue:
+            999999
+          }]
+
+        });
 
         expect(
           [400, 403, 404]
@@ -840,17 +820,16 @@ describe(
           response.status
         );
 
-        // Existing dataset must be untouched
         const after =
-          await pool.query(
-            `
+        await pool.query(
+          `
             SELECT data
             FROM rows
             WHERE dataset_id = $1
             ORDER BY id
             `,
-            [datasetId]
-          );
+          [datasetId]
+        );
 
         expect(
           after.rows

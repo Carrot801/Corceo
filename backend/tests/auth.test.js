@@ -7,20 +7,20 @@ const testUser = {
   full_name: "Test User",
   username: "test_auth_user",
   email: "test_auth@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 const secondUser = {
   full_name: "Second User",
   username: "second_auth_user",
   email: "second_auth@example.com",
-  password: "Password123",
+  password: "Password123"
 };
 
 
-// =========================================
-// CLEANUP HELPERS
-// =========================================
+
+
+
 
 const cleanupTestUsers = async () => {
   await pool.query(
@@ -36,18 +36,18 @@ const cleanupTestUsers = async () => {
     )
     `,
     [
-      testUser.email,
-      secondUser.email,
-      testUser.username,
-      secondUser.username,
-    ]
+    testUser.email,
+    secondUser.email,
+    testUser.username,
+    secondUser.username]
+
   );
 };
 
 
-// =========================================
-// BEFORE / AFTER
-// =========================================
+
+
+
 
 beforeEach(async () => {
   await cleanupTestUsers();
@@ -60,9 +60,9 @@ afterAll(async () => {
 });
 
 
-// =========================================
-// REGISTER
-// =========================================
+
+
+
 
 describe(
   "POST /auth/register",
@@ -71,9 +71,9 @@ describe(
       "registers a valid user",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         expect(
           response.status
@@ -104,8 +104,8 @@ describe(
         ).toBe(testUser.full_name);
 
         expect(
-          response.body.user
-            .password_hash
+          response.body.user.
+          password_hash
         ).toBeUndefined();
       }
     );
@@ -115,12 +115,12 @@ describe(
       "rejects missing fields",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              email:
-                testUser.email,
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          email:
+          testUser.email
+        });
 
         expect(
           response.status
@@ -137,12 +137,12 @@ describe(
       "rejects username shorter than 3 characters",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
-              username: "ab",
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
+          username: "ab"
+        });
 
         expect(
           response.status
@@ -159,14 +159,14 @@ describe(
       "rejects username longer than 30 characters",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
 
-              username:
-                "a".repeat(31),
-            });
+          username:
+          "a".repeat(31)
+        });
 
         expect(
           response.status
@@ -183,13 +183,13 @@ describe(
       "rejects username with invalid characters",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
-              username:
-                "bad username!",
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
+          username:
+          "bad username!"
+        });
 
         expect(
           response.status
@@ -206,12 +206,12 @@ describe(
       "rejects password shorter than 8 characters",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
-              password: "Abc123",
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
+          password: "Abc123"
+        });
 
         expect(
           response.status
@@ -228,13 +228,13 @@ describe(
       "rejects password without uppercase letter",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
-              password:
-                "password123",
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
+          password:
+          "password123"
+        });
 
         expect(
           response.status
@@ -251,13 +251,13 @@ describe(
       "rejects password without a number",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
-              password:
-                "PasswordOnly",
-            });
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
+          password:
+          "PasswordOnly"
+        });
 
         expect(
           response.status
@@ -274,23 +274,23 @@ describe(
       "rejects duplicate email",
       async () => {
         const firstResponse =
-          await request(app)
-            .post("/auth/register")
-            .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         expect(
           firstResponse.status
         ).toBe(201);
 
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...secondUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...secondUser,
 
-              email:
-                testUser.email,
-            });
+          email:
+          testUser.email
+        });
 
         expect(
           response.status
@@ -306,19 +306,19 @@ describe(
     test(
       "rejects duplicate email regardless of case",
       async () => {
-        await request(app)
-          .post("/auth/register")
-          .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...secondUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...secondUser,
 
-              email:
-                testUser.email.toUpperCase(),
-            });
+          email:
+          testUser.email.toUpperCase()
+        });
 
         expect(
           response.status
@@ -330,19 +330,19 @@ describe(
     test(
       "rejects duplicate username",
       async () => {
-        await request(app)
-          .post("/auth/register")
-          .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...secondUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...secondUser,
 
-              username:
-                testUser.username,
-            });
+          username:
+          testUser.username
+        });
 
         expect(
           response.status
@@ -358,20 +358,20 @@ describe(
     test(
       "rejects duplicate username regardless of case",
       async () => {
-        await request(app)
-          .post("/auth/register")
-          .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...secondUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...secondUser,
 
-              username:
-                testUser.username
-                  .toUpperCase(),
-            });
+          username:
+          testUser.username.
+          toUpperCase()
+        });
 
         expect(
           response.status
@@ -384,17 +384,17 @@ describe(
       "normalizes email and username to lowercase",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/register")
-            .send({
-              ...testUser,
+        await request(app).
+        post("/auth/register").
+        send({
+          ...testUser,
 
-              username:
-                "TEST_AUTH_USER",
+          username:
+          "TEST_AUTH_USER",
 
-              email:
-                "TEST_AUTH@EXAMPLE.COM",
-            });
+          email:
+          "TEST_AUTH@EXAMPLE.COM"
+        });
 
         expect(
           response.status
@@ -417,17 +417,17 @@ describe(
 );
 
 
-// =========================================
-// LOGIN
-// =========================================
+
+
+
 
 describe(
   "POST /auth/login",
   () => {
     beforeEach(async () => {
-      await request(app)
-        .post("/auth/register")
-        .send(testUser);
+      await request(app).
+      post("/auth/register").
+      send(testUser);
     });
 
 
@@ -435,15 +435,15 @@ describe(
       "logs in with valid credentials",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              email:
-                testUser.email,
+        await request(app).
+        post("/auth/login").
+        send({
+          email:
+          testUser.email,
 
-              password:
-                testUser.password,
-            });
+          password:
+          testUser.password
+        });
 
         expect(
           response.status
@@ -470,8 +470,8 @@ describe(
         ).toBe(testUser.username);
 
         expect(
-          response.body.user
-            .password_hash
+          response.body.user.
+          password_hash
         ).toBeUndefined();
       }
     );
@@ -481,16 +481,16 @@ describe(
       "login email is case-insensitive",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              email:
-                testUser.email
-                  .toUpperCase(),
+        await request(app).
+        post("/auth/login").
+        send({
+          email:
+          testUser.email.
+          toUpperCase(),
 
-              password:
-                testUser.password,
-            });
+          password:
+          testUser.password
+        });
 
         expect(
           response.status
@@ -507,15 +507,15 @@ describe(
       "rejects wrong password",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              email:
-                testUser.email,
+        await request(app).
+        post("/auth/login").
+        send({
+          email:
+          testUser.email,
 
-              password:
-                "WrongPassword123",
-            });
+          password:
+          "WrongPassword123"
+        });
 
         expect(
           response.status
@@ -534,15 +534,15 @@ describe(
       "rejects unknown email",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              email:
-                "unknown@example.com",
+        await request(app).
+        post("/auth/login").
+        send({
+          email:
+          "unknown@example.com",
 
-              password:
-                testUser.password,
-            });
+          password:
+          testUser.password
+        });
 
         expect(
           response.status
@@ -561,12 +561,12 @@ describe(
       "rejects missing email",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              password:
-                testUser.password,
-            });
+        await request(app).
+        post("/auth/login").
+        send({
+          password:
+          testUser.password
+        });
 
         expect(
           response.status
@@ -579,12 +579,12 @@ describe(
       "rejects missing password",
       async () => {
         const response =
-          await request(app)
-            .post("/auth/login")
-            .send({
-              email:
-                testUser.email,
-            });
+        await request(app).
+        post("/auth/login").
+        send({
+          email:
+          testUser.email
+        });
 
         expect(
           response.status
@@ -595,9 +595,9 @@ describe(
 );
 
 
-// =========================================
-// PROTECTED ROUTES
-// =========================================
+
+
+
 
 describe(
   "Authentication middleware",
@@ -606,8 +606,8 @@ describe(
       "rejects /users/me without token",
       async () => {
         const response =
-          await request(app)
-            .get("/users/me");
+        await request(app).
+        get("/users/me");
 
         expect(
           response.status
@@ -624,12 +624,12 @@ describe(
       "rejects invalid token",
       async () => {
         const response =
-          await request(app)
-            .get("/users/me")
-            .set(
-              "Authorization",
-              "Bearer invalid-token"
-            );
+        await request(app).
+        get("/users/me").
+        set(
+          "Authorization",
+          "Bearer invalid-token"
+        );
 
         expect(
           response.status
@@ -642,24 +642,24 @@ describe(
       "allows /users/me with valid token",
       async () => {
         const registerResponse =
-          await request(app)
-            .post("/auth/register")
-            .send(testUser);
+        await request(app).
+        post("/auth/register").
+        send(testUser);
 
         expect(
           registerResponse.status
         ).toBe(201);
 
         const token =
-          registerResponse.body.token;
+        registerResponse.body.token;
 
         const response =
-          await request(app)
-            .get("/users/me")
-            .set(
-              "Authorization",
-              `Bearer ${token}`
-            );
+        await request(app).
+        get("/users/me").
+        set(
+          "Authorization",
+          `Bearer ${token}`
+        );
 
         expect(
           response.status

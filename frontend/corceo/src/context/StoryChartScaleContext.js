@@ -1,6 +1,6 @@
 import {
-  createContext,
-} from "react";
+  createContext } from
+"react";
 
 export const StoryChartScaleContext =
-  createContext(1);
+createContext(1);

@@ -1,15 +1,15 @@
-AnnotationLabel.jsx// src/components/annotations/AnnotationLabel.jsx
+AnnotationLabel.jsx;
 
 function AnnotationLabel({
   annotation,
   selected = false,
   interactive = false,
   onSelect,
-  onDragStart,
+  onDragStart
 }) {
   const handleMouseDown = (
-    event,
-  ) => {
+  event) =>
+  {
     if (!interactive) {
       return;
     }
@@ -18,13 +18,13 @@ function AnnotationLabel({
       event,
       "label",
       annotation.id,
-      annotation,
+      annotation
     );
   };
 
   const handleClick = (
-    event,
-  ) => {
+  event) =>
+  {
     if (!interactive) {
       return;
     }
@@ -32,97 +32,97 @@ function AnnotationLabel({
     event.stopPropagation();
 
     onSelect?.(
-      annotation.id,
+      annotation.id
     );
   };
 
   return (
     <div
       onMouseDown={
-        handleMouseDown
+      handleMouseDown
       }
       onClick={handleClick}
       className={`
         absolute
         rounded
         ${
-          interactive
-            ? "pointer-events-auto cursor-move"
-            : "pointer-events-none"
-        }
+      interactive ?
+      "pointer-events-auto cursor-move" :
+      "pointer-events-none"}
         ${
-          selected
-            ? "z-50 ring-2 ring-blue-500 shadow-lg"
-            : "z-40"
-        }
-      `}
+
+      selected ?
+      "z-50 ring-2 ring-blue-500 shadow-lg" :
+      "z-40"}
+      `
+      }
       style={{
         left:
-          `${
-            annotation.textX ??
-            0
-          }%`,
+        `${
+        annotation.textX ??
+        0}%`,
+
 
         top:
-          `${
-            annotation.textY ??
-            0
-          }%`,
+        `${
+        annotation.textY ??
+        0}%`,
+
 
         transform:
-          "translate(-50%, -50%)",
+        "translate(-50%, -50%)",
 
         maxWidth:
-          `${
-            annotation.labelWidth ||
-            12
-          }rem`,
+        `${
+        annotation.labelWidth ||
+        12}rem`,
+
 
         padding:
-          "6px 9px",
+        "6px 9px",
 
         fontSize:
-          `${
-            annotation.textSize ||
-            0.85
-          }rem`,
+        `${
+        annotation.textSize ||
+        0.85}rem`,
+
 
         color:
-          annotation.textColor ||
-          "#1e293b",
+        annotation.textColor ||
+        "#1e293b",
 
         fontWeight:
-          annotation.fontWeight ||
-          "normal",
+        annotation.fontWeight ||
+        "normal",
 
         textAlign:
-          annotation.textAlign ||
-          "left",
+        annotation.textAlign ||
+        "left",
 
         backgroundColor:
-  annotation.textBgEnabled === false
-    ? "transparent"
-    : annotation.textBgColor ||
-      "#ffffff",
+        annotation.textBgEnabled === false ?
+        "transparent" :
+        annotation.textBgColor ||
+        "#ffffff",
 
-border:
-  annotation.textBorderEnabled
-    ? `1px solid ${
+        border:
+        annotation.textBorderEnabled ?
+        `1px solid ${
         annotation.textBorderColor ||
-        "#1e293b"
-      }`
-    : "none",
+        "#1e293b"}` :
 
-boxSizing:
-  "border-box",
-      }}
-    >
+        "none",
+
+        boxSizing:
+        "border-box"
+      }}>
+      
       <div className="break-words leading-snug">
         {annotation.text ||
-          "Comment text..."}
+        "Comment text..."}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default AnnotationLabel;

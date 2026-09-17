@@ -1,8 +1,8 @@
 import {
   useCallback,
   useEffect,
-  useRef,
-} from "react";
+  useRef } from
+"react";
 
 export default function useStoryChartInteractions({
   canvasRef,
@@ -15,557 +15,557 @@ export default function useStoryChartInteractions({
   setSelectedAnnoId,
 
   storyStateRef,
-  commitStoryHistory,
+  commitStoryHistory
 }) {
-  // =========================
-  // LATEST FUNCTION REFS
-  // =========================
+
+
+
 
   const updateChartItemRef =
-    useRef(updateChartItem);
+  useRef(updateChartItem);
 
   const bringChartToFrontRef =
-    useRef(bringChartToFront);
+  useRef(bringChartToFront);
 
   useEffect(() => {
     updateChartItemRef.current =
-      updateChartItem;
+    updateChartItem;
   }, [updateChartItem]);
 
   useEffect(() => {
     bringChartToFrontRef.current =
-      bringChartToFront;
+    bringChartToFront;
   }, [bringChartToFront]);
 
-  // =========================
-  // ANIMATION FRAME
-  // =========================
+
+
+
 
   const animationFrameRef =
-    useRef(null);
+  useRef(null);
 
   const latestMousePositionRef =
-    useRef(null);
+  useRef(null);
 
-  // =========================
-  // APPLY CHART INTERACTION
-  // =========================
+
+
+
 
   const applyChartInteractionMove =
-    useCallback(
-      (clientX, clientY) => {
-        const interaction =
-          chartInteractionRef.current;
+  useCallback(
+    (clientX, clientY) => {
+      const interaction =
+      chartInteractionRef.current;
 
-        const canvas =
-          canvasRef.current;
+      const canvas =
+      canvasRef.current;
 
-        if (
-          !interaction ||
-          !canvas
-        ) {
-          return;
-        }
+      if (
+      !interaction ||
+      !canvas)
+      {
+        return;
+      }
 
-        const rect =
-          canvas.getBoundingClientRect();
+      const rect =
+      canvas.getBoundingClientRect();
 
-        if (
-          !rect.width ||
-          !rect.height
-        ) {
-          return;
-        }
+      if (
+      !rect.width ||
+      !rect.height)
+      {
+        return;
+      }
 
-        // =========================
-        // MOUSE DELTA %
-        // =========================
 
-        const deltaX =
-          (
-            (
-              clientX -
-              interaction.startClientX
-            ) /
-            rect.width
-          ) *
-          100;
 
-        const deltaY =
-          (
-            (
-              clientY -
-              interaction.startClientY
-            ) /
-            rect.height
-          ) *
-          100;
 
-        // =========================
-        // MOVE
-        // =========================
 
-        if (
-          interaction.mode ===
-          "move"
-        ) {
-          updateChartItemRef.current(
-            interaction.itemId,
-            {
-              x: Math.max(
-                0,
-                Math.min(
-                  100 -
-                    interaction.startWidth,
-                  interaction.startX +
-                    deltaX,
-                ),
-              ),
+      const deltaX =
 
-              y: Math.max(
-                0,
-                Math.min(
-                  100 -
-                    interaction.startHeight,
-                  interaction.startY +
-                    deltaY,
-                ),
-              ),
-            },
-            {
-              record: false,
-            },
-          );
+      (
+      clientX -
+      interaction.startClientX) /
 
-          return;
-        }
+      rect.width *
 
-        // =========================
-        // RESIZE
-        // =========================
+      100;
 
-        const minWidth = 18;
-        const minHeight = 18;
+      const deltaY =
 
-        let x =
-          interaction.startX;
+      (
+      clientY -
+      interaction.startClientY) /
 
-        let y =
-          interaction.startY;
+      rect.height *
 
-        let width =
-          interaction.startWidth;
+      100;
 
-        let height =
-          interaction.startHeight;
 
-        // =========================
-        // RIGHT
-        // =========================
 
-        if (
-          interaction.mode.includes(
-            "right",
-          )
-        ) {
-          width = Math.max(
-            minWidth,
-            Math.min(
-              100 -
-                interaction.startX,
-              interaction.startWidth +
-                deltaX,
-            ),
-          );
-        }
 
-        // =========================
-        // BOTTOM
-        // =========================
 
-        if (
-          interaction.mode.includes(
-            "bottom",
-          )
-        ) {
-          height = Math.max(
-            minHeight,
-            Math.min(
-              100 -
-                interaction.startY,
-              interaction.startHeight +
-                deltaY,
-            ),
-          );
-        }
-
-        // =========================
-        // LEFT
-        // =========================
-
-        if (
-          interaction.mode.includes(
-            "left",
-          )
-        ) {
-          const nextX = Math.max(
-            0,
-            Math.min(
-              interaction.startX +
-                interaction.startWidth -
-                minWidth,
-
-              interaction.startX +
-                deltaX,
-            ),
-          );
-
-          x = nextX;
-
-          width =
-            interaction.startWidth +
-            interaction.startX -
-            nextX;
-        }
-
-        // =========================
-        // TOP
-        // =========================
-
-        if (
-          interaction.mode.includes(
-            "top",
-          )
-        ) {
-          const nextY = Math.max(
-            0,
-            Math.min(
-              interaction.startY +
-                interaction.startHeight -
-                minHeight,
-
-              interaction.startY +
-                deltaY,
-            ),
-          );
-
-          y = nextY;
-
-          height =
-            interaction.startHeight +
-            interaction.startY -
-            nextY;
-        }
-
-        // =========================
-        // APPLY RESIZE
-        // =========================
-
+      if (
+      interaction.mode ===
+      "move")
+      {
         updateChartItemRef.current(
           interaction.itemId,
           {
-            x,
-            y,
-            width,
-            height,
+            x: Math.max(
+              0,
+              Math.min(
+                100 -
+                interaction.startWidth,
+                interaction.startX +
+                deltaX
+              )
+            ),
+
+            y: Math.max(
+              0,
+              Math.min(
+                100 -
+                interaction.startHeight,
+                interaction.startY +
+                deltaY
+              )
+            )
           },
           {
-            record: false,
-          },
+            record: false
+          }
         );
-      },
-      [
-        canvasRef,
-        chartInteractionRef,
-      ],
-    );
 
-  // =========================
-  // CHART INTERACTION MOVE
-  // =========================
+        return;
+      }
+
+
+
+
+
+      const minWidth = 18;
+      const minHeight = 18;
+
+      let x =
+      interaction.startX;
+
+      let y =
+      interaction.startY;
+
+      let width =
+      interaction.startWidth;
+
+      let height =
+      interaction.startHeight;
+
+
+
+
+
+      if (
+      interaction.mode.includes(
+        "right"
+      ))
+      {
+        width = Math.max(
+          minWidth,
+          Math.min(
+            100 -
+            interaction.startX,
+            interaction.startWidth +
+            deltaX
+          )
+        );
+      }
+
+
+
+
+
+      if (
+      interaction.mode.includes(
+        "bottom"
+      ))
+      {
+        height = Math.max(
+          minHeight,
+          Math.min(
+            100 -
+            interaction.startY,
+            interaction.startHeight +
+            deltaY
+          )
+        );
+      }
+
+
+
+
+
+      if (
+      interaction.mode.includes(
+        "left"
+      ))
+      {
+        const nextX = Math.max(
+          0,
+          Math.min(
+            interaction.startX +
+            interaction.startWidth -
+            minWidth,
+
+            interaction.startX +
+            deltaX
+          )
+        );
+
+        x = nextX;
+
+        width =
+        interaction.startWidth +
+        interaction.startX -
+        nextX;
+      }
+
+
+
+
+
+      if (
+      interaction.mode.includes(
+        "top"
+      ))
+      {
+        const nextY = Math.max(
+          0,
+          Math.min(
+            interaction.startY +
+            interaction.startHeight -
+            minHeight,
+
+            interaction.startY +
+            deltaY
+          )
+        );
+
+        y = nextY;
+
+        height =
+        interaction.startHeight +
+        interaction.startY -
+        nextY;
+      }
+
+
+
+
+
+      updateChartItemRef.current(
+        interaction.itemId,
+        {
+          x,
+          y,
+          width,
+          height
+        },
+        {
+          record: false
+        }
+      );
+    },
+    [
+    canvasRef,
+    chartInteractionRef]
+
+  );
+
+
+
+
 
   const handleChartInteractionMove =
-    useCallback(
-      (event) => {
-        /*
-         * Store only coordinates rather
-         * than the complete browser event.
-         */
-        latestMousePositionRef.current = {
-          clientX: event.clientX,
-          clientY: event.clientY,
-        };
+  useCallback(
+    (event) => {
 
-        /*
-         * If a frame is already waiting,
-         * don't schedule another one.
-         *
-         * The latest mouse position will
-         * be used when that frame runs.
-         */
-        if (
-          animationFrameRef.current !==
-          null
-        ) {
+
+
+
+      latestMousePositionRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY
+      };
+
+
+
+
+
+
+
+
+      if (
+      animationFrameRef.current !==
+      null)
+      {
+        return;
+      }
+
+      animationFrameRef.current =
+      requestAnimationFrame(() => {
+        animationFrameRef.current =
+        null;
+
+        const position =
+        latestMousePositionRef.current;
+
+        if (!position) {
           return;
         }
 
-        animationFrameRef.current =
-          requestAnimationFrame(() => {
-            animationFrameRef.current =
-              null;
+        applyChartInteractionMove(
+          position.clientX,
+          position.clientY
+        );
+      });
+    },
+    [
+    applyChartInteractionMove]
 
-            const position =
-              latestMousePositionRef.current;
+  );
 
-            if (!position) {
-              return;
-            }
 
-            applyChartInteractionMove(
-              position.clientX,
-              position.clientY,
-            );
-          });
-      },
-      [
-        applyChartInteractionMove,
-      ],
-    );
 
-  // =========================
-  // STOP INTERACTION
-  // =========================
+
 
   const stopChartInteraction =
-    useCallback(
-      (event) => {
-        const interaction =
-          chartInteractionRef.current;
+  useCallback(
+    (event) => {
+      const interaction =
+      chartInteractionRef.current;
 
-        document.removeEventListener(
-          "mousemove",
-          handleChartInteractionMove,
+      document.removeEventListener(
+        "mousemove",
+        handleChartInteractionMove
+      );
+
+
+
+      if (
+      animationFrameRef.current !==
+      null)
+      {
+        cancelAnimationFrame(
+          animationFrameRef.current
         );
 
-        // Cancel a frame that has not
-        // executed yet.
-        if (
-          animationFrameRef.current !==
-          null
-        ) {
-          cancelAnimationFrame(
-            animationFrameRef.current,
-          );
+        animationFrameRef.current =
+        null;
+      }
 
-          animationFrameRef.current =
-            null;
-        }
 
-        /*
-         * Apply the final mouse position
-         * immediately so the chart ends
-         * exactly where the mouse was
-         * released.
-         */
-        if (
-          interaction &&
-          event &&
-          typeof event.clientX ===
-            "number" &&
-          typeof event.clientY ===
-            "number"
-        ) {
-          applyChartInteractionMove(
-            event.clientX,
-            event.clientY,
-          );
-        }
 
-        // =========================
-        // HISTORY
-        // =========================
 
-        if (
-          interaction
-            ?.startingStoryState
-        ) {
-          commitStoryHistory(
-            interaction
-              .startingStoryState,
 
-            storyStateRef.current,
-          );
-        }
 
-        // =========================
-        // RESET
-        // =========================
 
-        chartInteractionRef.current =
-          null;
+      if (
+      interaction &&
+      event &&
+      typeof event.clientX ===
+      "number" &&
+      typeof event.clientY ===
+      "number")
+      {
+        applyChartInteractionMove(
+          event.clientX,
+          event.clientY
+        );
+      }
 
-        latestMousePositionRef.current =
-          null;
-      },
-      [
-        chartInteractionRef,
-        commitStoryHistory,
-        handleChartInteractionMove,
-        applyChartInteractionMove,
-        storyStateRef,
-      ],
-    );
 
-  // =========================
-  // START INTERACTION
-  // =========================
+
+
+
+      if (
+      interaction?.
+      startingStoryState)
+      {
+        commitStoryHistory(
+          interaction.
+          startingStoryState,
+
+          storyStateRef.current
+        );
+      }
+
+
+
+
+
+      chartInteractionRef.current =
+      null;
+
+      latestMousePositionRef.current =
+      null;
+    },
+    [
+    chartInteractionRef,
+    commitStoryHistory,
+    handleChartInteractionMove,
+    applyChartInteractionMove,
+    storyStateRef]
+
+  );
+
+
+
+
 
   const startChartInteraction =
-    useCallback(
-      (
-        event,
-        mode,
-        item,
-      ) => {
-        event.preventDefault();
-        event.stopPropagation();
+  useCallback(
+    (
+    event,
+    mode,
+    item) =>
+    {
+      event.preventDefault();
+      event.stopPropagation();
 
-        if (
-          !canvasRef.current
-        ) {
-          return;
+      if (
+      !canvasRef.current)
+      {
+        return;
+      }
+
+
+
+
+
+      const startingStoryState =
+      structuredClone(
+        storyStateRef.current
+      );
+
+
+
+
+
+      setSelectedChartId(
+        item.id
+      );
+
+      setSelectedAnnoId(
+        null
+      );
+
+
+
+
+
+      bringChartToFrontRef.current(
+        item.id,
+        {
+          record: false
         }
+      );
 
-        // =========================
-        // HISTORY SNAPSHOT
-        // =========================
 
-        const startingStoryState =
-          structuredClone(
-            storyStateRef.current,
-          );
 
-        // =========================
-        // SELECTION
-        // =========================
 
-        setSelectedChartId(
-          item.id,
-        );
 
-        setSelectedAnnoId(
-          null,
-        );
+      chartInteractionRef.current = {
+        mode,
 
-        // =========================
-        // Z-INDEX
-        // =========================
+        itemId:
+        item.id,
 
-        bringChartToFrontRef.current(
-          item.id,
-          {
-            record: false,
-          },
-        );
+        startClientX:
+        event.clientX,
 
-        // =========================
-        // INTERACTION CONTEXT
-        // =========================
+        startClientY:
+        event.clientY,
 
-        chartInteractionRef.current = {
-          mode,
+        startX:
+        item.x ?? 0,
 
-          itemId:
-            item.id,
+        startY:
+        item.y ?? 0,
 
-          startClientX:
-            event.clientX,
+        startWidth:
+        item.width ?? 100,
 
-          startClientY:
-            event.clientY,
+        startHeight:
+        item.height ?? 100,
 
-          startX:
-            item.x ?? 0,
+        startingStoryState
+      };
 
-          startY:
-            item.y ?? 0,
+      latestMousePositionRef.current = {
+        clientX:
+        event.clientX,
+        clientY:
+        event.clientY
+      };
 
-          startWidth:
-            item.width ?? 100,
 
-          startHeight:
-            item.height ?? 100,
 
-          startingStoryState,
-        };
 
-        latestMousePositionRef.current = {
-          clientX:
-            event.clientX,
-          clientY:
-            event.clientY,
-        };
 
-        // =========================
-        // DOCUMENT EVENTS
-        // =========================
+      document.addEventListener(
+        "mousemove",
+        handleChartInteractionMove
+      );
 
-        document.addEventListener(
-          "mousemove",
-          handleChartInteractionMove,
-        );
-
-        document.addEventListener(
-          "mouseup",
-          stopChartInteraction,
-          {
-            once: true,
-          },
-        );
-      },
-      [
-        canvasRef,
-        chartInteractionRef,
-        handleChartInteractionMove,
-        setSelectedAnnoId,
-        setSelectedChartId,
+      document.addEventListener(
+        "mouseup",
         stopChartInteraction,
-        storyStateRef,
-      ],
-    );
+        {
+          once: true
+        }
+      );
+    },
+    [
+    canvasRef,
+    chartInteractionRef,
+    handleChartInteractionMove,
+    setSelectedAnnoId,
+    setSelectedChartId,
+    stopChartInteraction,
+    storyStateRef]
 
-  // =========================
-  // CLEANUP
-  // =========================
+  );
+
+
+
+
 
   useEffect(() => {
     return () => {
       document.removeEventListener(
         "mousemove",
-        handleChartInteractionMove,
+        handleChartInteractionMove
       );
 
       document.removeEventListener(
         "mouseup",
-        stopChartInteraction,
+        stopChartInteraction
       );
 
       if (
-        animationFrameRef.current !==
-        null
-      ) {
+      animationFrameRef.current !==
+      null)
+      {
         cancelAnimationFrame(
-          animationFrameRef.current,
+          animationFrameRef.current
         );
       }
     };
   }, [
-    handleChartInteractionMove,
-    stopChartInteraction,
-  ]);
+  handleChartInteractionMove,
+  stopChartInteraction]
+  );
 
   return {
-    startChartInteraction,
+    startChartInteraction
   };
 }

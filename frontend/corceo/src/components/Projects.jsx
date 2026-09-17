@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
-  apiRequest,
-} from "../api/client";
+  apiRequest } from
+"../api/client";
 
 function Projects() {
 
@@ -22,11 +22,11 @@ function Projects() {
 
   return (
     <div>
-      {projects.map(p => (
-        <div key={p.id}>{p.name}</div>
-      ))}
-    </div>
-  );
+      {projects.map((p) =>
+      <div key={p.id}>{p.name}</div>
+      )}
+    </div>);
+
 }
 
 export default Projects;

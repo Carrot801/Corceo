@@ -2,8 +2,8 @@ import {
   ChevronDown,
   Palette,
   Plus,
-  Trash2,
-} from "lucide-react";
+  Trash2 } from
+"lucide-react";
 
 import PalettePicker from "../PalettePicker";
 
@@ -11,39 +11,39 @@ function ColorsSection({
   settings,
   updateSetting,
   openSection,
-  toggleSection,
+  toggleSection
 }) {
   const isOpen =
-    openSection === "colors";
+  openSection === "colors";
 
   const customPalette =
-    settings.customPalette ?? [];
+  settings.customPalette ?? [];
 
   const updateCustomColor = (
-    index,
-    value,
-  ) => {
+  index,
+  value) =>
+  {
     const next = [
-      ...customPalette,
-    ];
+    ...customPalette];
+
 
     next[index] = value;
 
     updateSetting(
       "customPalette",
-      next,
+      next
     );
   };
 
   const removeCustomColor = (
-    indexToRemove,
-  ) => {
+  indexToRemove) =>
+  {
     updateSetting(
       "customPalette",
       customPalette.filter(
         (_, index) =>
-          index !== indexToRemove,
-      ),
+        index !== indexToRemove
+      )
     );
   };
 
@@ -51,9 +51,9 @@ function ColorsSection({
     updateSetting(
       "customPalette",
       [
-        ...customPalette,
-        "#6366f1",
-      ],
+      ...customPalette,
+      "#6366f1"]
+
     );
   };
 
@@ -62,7 +62,7 @@ function ColorsSection({
       <button
         type="button"
         onClick={() =>
-          toggleSection("colors")
+        toggleSection("colors")
         }
         aria-expanded={isOpen}
         className={`
@@ -74,12 +74,12 @@ function ColorsSection({
           transition-colors
           hover:bg-[rgb(var(--color-surface-hover))]
           ${
-            isOpen
-              ? "bg-[rgb(var(--color-surface-hover))]"
-              : ""
-          }
-        `}
-      >
+        isOpen ?
+        "bg-[rgb(var(--color-surface-hover))]" :
+        ""}
+        `
+        }>
+        
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={`
@@ -88,12 +88,12 @@ function ColorsSection({
               rounded-lg
               transition-colors
               ${
-                isOpen
-                  ? "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]"
-                  : "app-surface app-text-muted"
-              }
-            `}
-          >
+            isOpen ?
+            "bg-[rgb(var(--color-primary)/0.14)] text-[rgb(var(--color-primary))]" :
+            "app-surface app-text-muted"}
+            `
+            }>
+            
             <Palette size={16} />
           </div>
 
@@ -115,24 +115,30 @@ function ColorsSection({
             transition-transform
             duration-200
             ${
-              isOpen
-                ? "rotate-180"
-                : ""
-            }
-          `}
-        />
+          isOpen ?
+          "rotate-180" :
+          ""}
+          `
+          } />
+        
       </button>
 
-      {isOpen && (
-        <div
-          className="
+      {isOpen &&
+      <div
+        className="
             app-surface
             space-y-5
             border-t
             border-[rgb(var(--color-border))]
             px-4 pb-5 pt-4
-          "
-        >
+          ">
+
+
+
+
+
+
+        
           <div className="space-y-2">
             <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
               Color source
@@ -140,58 +146,58 @@ function ColorsSection({
 
             <div className="app-surface-secondary app-border grid grid-cols-2 gap-1 rounded-xl border p-1">
               <button
-                type="button"
-                onClick={() =>
-                  updateSetting(
-                    "useCustomPalette",
-                    false,
-                  )
-                }
-                className={`
+              type="button"
+              onClick={() =>
+              updateSetting(
+                "useCustomPalette",
+                false
+              )
+              }
+              className={`
                   rounded-lg px-2 py-1.5
                   text-xs font-semibold
                   transition-all
                   ${
-                    !settings.useCustomPalette
-                      ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
-                      : "app-text-muted hover:text-[rgb(var(--color-text))]"
-                  }
-                `}
-              >
+              !settings.useCustomPalette ?
+              "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm" :
+              "app-text-muted hover:text-[rgb(var(--color-text))]"}
+                `
+              }>
+              
                 Built-in
               </button>
 
               <button
-                type="button"
-                onClick={() =>
-                  updateSetting(
-                    "useCustomPalette",
-                    true,
-                  )
-                }
-                className={`
+              type="button"
+              onClick={() =>
+              updateSetting(
+                "useCustomPalette",
+                true
+              )
+              }
+              className={`
                   rounded-lg px-2 py-1.5
                   text-xs font-semibold
                   transition-all
                   ${
-                    settings.useCustomPalette
-                      ? "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm"
-                      : "app-text-muted hover:text-[rgb(var(--color-text))]"
-                  }
-                `}
-              >
+              settings.useCustomPalette ?
+              "app-surface border border-[rgb(var(--color-primary))] text-[rgb(var(--color-primary))] shadow-sm" :
+              "app-text-muted hover:text-[rgb(var(--color-text))]"}
+                `
+              }>
+              
                 Custom
               </button>
             </div>
           </div>
 
-          {!settings.useCustomPalette && (
-            <>
+          {!settings.useCustomPalette &&
+        <>
               <div className="app-surface-secondary app-border rounded-xl border p-3">
                 <PalettePicker
-                  settings={settings}
-                  updateSetting={updateSetting}
-                />
+              settings={settings}
+              updateSetting={updateSetting} />
+            
               </div>
 
               <div className="space-y-2">
@@ -200,18 +206,18 @@ function ColorsSection({
                 </label>
 
                 <select
-                  value={
-                    settings.paletteMode ??
-                    "automatic"
-                  }
-                  onChange={(event) =>
-                    updateSetting(
-                      "paletteMode",
-                      event.target.value,
-                    )
-                  }
-                  className="app-input w-full rounded-lg px-2 py-2 text-sm"
-                >
+              value={
+              settings.paletteMode ??
+              "automatic"
+              }
+              onChange={(event) =>
+              updateSetting(
+                "paletteMode",
+                event.target.value
+              )
+              }
+              className="app-input w-full rounded-lg px-2 py-2 text-sm">
+              
                   <option value="automatic">
                     Automatic — recommended
                   </option>
@@ -242,10 +248,10 @@ function ColorsSection({
                 </p>
               </div>
             </>
-          )}
+        }
 
-          {settings.useCustomPalette && (
-            <div className="space-y-4">
+          {settings.useCustomPalette &&
+        <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="app-text text-xs font-bold">
@@ -258,103 +264,124 @@ function ColorsSection({
                 </div>
 
                 <button
-                  type="button"
-                  onClick={addCustomColor}
-                  className="
+              type="button"
+              onClick={addCustomColor}
+              className="
                     btn-secondary
                     flex shrink-0 items-center
                     gap-1.5 rounded-lg
                     px-2.5 py-1.5
                     text-[11px] font-semibold
-                  "
-                >
+                  ">
+
+
+
+
+
+
+              
                   <Plus size={14} />
                   Add
                 </button>
               </div>
 
               {customPalette.length ===
-              0 ? (
-                <div className="app-surface-secondary app-border rounded-xl border-2 border-dashed p-4 text-center">
+          0 ?
+          <div className="app-surface-secondary app-border rounded-xl border-2 border-dashed p-4 text-center">
                   <Palette
-                    size={20}
-                    className="app-text-muted mx-auto mb-2"
-                  />
+              size={20}
+              className="app-text-muted mx-auto mb-2" />
+            
 
                   <p className="app-text-muted text-xs">
                     Add colors to create your own palette.
                   </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {customPalette.map(
-                    (
-                      color,
-                      index,
-                    ) => {
-                      const validColor =
-                        /^#[0-9a-fA-F]{6}$/.test(
-                          color,
-                        )
-                          ? color
-                          : "#6366f1";
+                </div> :
 
-                      return (
-                        <div
-                          key={`custom-color-${index}`}
-                          className="
+          <div className="space-y-2">
+                  {customPalette.map(
+              (
+              color,
+              index) =>
+              {
+                const validColor =
+                /^#[0-9a-fA-F]{6}$/.test(
+                  color
+                ) ?
+                color :
+                "#6366f1";
+
+                return (
+                  <div
+                    key={`custom-color-${index}`}
+                    className="
                             app-surface-secondary
                             app-border
                             flex items-center gap-2
                             rounded-xl border
                             p-2
-                          "
-                        >
+                          ">
+
+
+
+
+
+
+                    
                           <input
-                            type="color"
-                            value={validColor}
-                            onChange={(
-                              event,
-                            ) =>
-                              updateCustomColor(
-                                index,
-                                event.target
-                                  .value,
-                              )
-                            }
-                            className="
+                      type="color"
+                      value={validColor}
+                      onChange={(
+                      event) =>
+
+                      updateCustomColor(
+                        index,
+                        event.target.
+                        value
+                      )
+                      }
+                      className="
                               h-8 w-10 shrink-0
                               cursor-pointer
                               rounded-md border-0
                               bg-transparent p-0
-                            "
-                          />
+                            " />
+
+
+
+
+
+                    
 
                           <span
-                            className="
+                      className="
                               h-6 w-6 shrink-0
                               rounded-md border
                               border-[rgb(var(--color-border))]
                             "
-                            style={{
-                              backgroundColor:
-                                validColor,
-                            }}
-                          />
+
+
+
+
+                      style={{
+                        backgroundColor:
+                        validColor
+                      }} />
+                    
 
                           <input
-                            type="text"
-                            value={color}
-                            onChange={(
-                              event,
-                            ) =>
-                              updateCustomColor(
-                                index,
-                                event.target
-                                  .value,
-                              )
-                            }
-                            className="
+                      type="text"
+                      value={color}
+                      onChange={(
+                      event) =>
+
+                      updateCustomColor(
+                        index,
+                        event.target.
+                        value
+                      )
+                      }
+                      className="
                               app-input
                               min-w-0 flex-1
                               rounded-lg
@@ -362,76 +389,89 @@ function ColorsSection({
                               font-mono text-xs
                               uppercase
                             "
-                            placeholder="#6366F1"
-                          />
+
+
+
+
+
+
+
+                      placeholder="#6366F1" />
+                    
 
                           <button
-                            type="button"
-                            onClick={() =>
-                              removeCustomColor(
-                                index,
-                              )
-                            }
-                            className="
+                      type="button"
+                      onClick={() =>
+                      removeCustomColor(
+                        index
+                      )
+                      }
+                      className="
                               app-text-muted
                               rounded-lg p-1.5
                               transition-colors
                               hover:bg-[rgb(var(--color-danger)/0.12)]
                               hover:text-[rgb(var(--color-danger))]
                             "
-                            aria-label={`Remove color ${
-                              index + 1
-                            }`}
-                          >
+
+
+
+
+
+
+                      aria-label={`Remove color ${
+                      index + 1}`
+                      }>
+                      
                             <Trash2
-                              size={14}
-                            />
+                        size={14} />
+                      
                           </button>
-                        </div>
-                      );
-                    },
-                  )}
+                        </div>);
+
+              }
+            )}
                 </div>
-              )}
+          }
 
               <label className="app-surface-secondary app-border app-text-secondary flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-xs font-medium">
                 <input
-                  type="checkbox"
-                  checked={
-                    settings.extendCustomPalette ??
-                    true
-                  }
-                  onChange={(event) =>
-                    updateSetting(
-                      "extendCustomPalette",
-                      event.target.checked,
-                    )
-                  }
-                  className="h-4 w-4 cursor-pointer accent-[rgb(var(--color-primary))]"
-                />
+              type="checkbox"
+              checked={
+              settings.extendCustomPalette ??
+              true
+              }
+              onChange={(event) =>
+              updateSetting(
+                "extendCustomPalette",
+                event.target.checked
+              )
+              }
+              className="h-4 w-4 cursor-pointer accent-[rgb(var(--color-primary))]" />
+            
 
                 Generate matching extra colors
               </label>
 
-              {settings.extendCustomPalette && (
-                <div className="space-y-2">
+              {settings.extendCustomPalette &&
+          <div className="space-y-2">
                   <label className="app-text-muted text-[11px] font-bold uppercase tracking-wider">
                     Extension style
                   </label>
 
                   <select
-                    value={
-                      settings.customExtensionMode ??
-                      "distinct"
-                    }
-                    onChange={(event) =>
-                      updateSetting(
-                        "customExtensionMode",
-                        event.target.value,
-                      )
-                    }
-                    className="app-input w-full rounded-lg px-2 py-2 text-sm"
-                  >
+              value={
+              settings.customExtensionMode ??
+              "distinct"
+              }
+              onChange={(event) =>
+              updateSetting(
+                "customExtensionMode",
+                event.target.value
+              )
+              }
+              className="app-input w-full rounded-lg px-2 py-2 text-sm">
+              
                     <option value="distinct">
                       Distinct colors
                     </option>
@@ -457,13 +497,13 @@ function ColorsSection({
                     </option>
                   </select>
                 </div>
-              )}
+          }
             </div>
-          )}
+        }
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 export default ColorsSection;

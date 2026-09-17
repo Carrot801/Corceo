@@ -1,26 +1,26 @@
 const replaceThousandsSeparatorWithSpace = (
-  formatted,
-  useThousandsSeparator = true
-) => {
+formatted,
+useThousandsSeparator = true) =>
+{
   if (!useThousandsSeparator) {
     return formatted;
   }
 
-  return formatted
-    .replace(/[\u00A0\u202F]/g, " ")
-    .replace(/(?<=\d),(?=\d{3}(?:\D|$))/g, " ");
+  return formatted.
+  replace(/[\u00A0\u202F]/g, " ").
+  replace(/(?<=\d),(?=\d{3}(?:\D|$))/g, " ");
 };
 
 export const formatValue = (
-  value,
-  settings = {},
-  total = null
-) => {
+value,
+settings = {},
+total = null) =>
+{
   if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
+  value === null ||
+  value === undefined ||
+  value === "")
+  {
     return "—";
   }
 
@@ -39,24 +39,24 @@ export const formatValue = (
   );
 
   const locale =
-    settings.locale || "en-US";
+  settings.locale || "en-US";
 
   const numberFormat =
-    settings.numberFormat || "default";
+  settings.numberFormat || "default";
 
   const useThousandsSeparator =
-    settings.useThousandsSeparator ?? true;
+  settings.useThousandsSeparator ?? true;
 
   const formatOptions = {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-    useGrouping: useThousandsSeparator,
+    useGrouping: useThousandsSeparator
   };
 
   if (
-    settings.compactNumbers &&
-    numberFormat !== "percentage"
-  ) {
+  settings.compactNumbers &&
+  numberFormat !== "percentage")
+  {
     formatOptions.notation = "compact";
     formatOptions.compactDisplay = "short";
   }
@@ -65,7 +65,7 @@ export const formatValue = (
 
   if (numberFormat === "percentage") {
     const percentageMode =
-      settings.percentageInputMode || "whole";
+    settings.percentageInputMode || "whole";
 
     if (percentageMode === "decimal") {
       valueToFormat = val;
@@ -73,9 +73,9 @@ export const formatValue = (
       const numericTotal = Number(total);
 
       if (
-        !Number.isFinite(numericTotal) ||
-        numericTotal === 0
-      ) {
+      !Number.isFinite(numericTotal) ||
+      numericTotal === 0)
+      {
         return "0%";
       }
 
@@ -85,10 +85,10 @@ export const formatValue = (
     }
 
     const formattedPercentage =
-      new Intl.NumberFormat(locale, {
-        ...formatOptions,
-        style: "percent",
-      }).format(valueToFormat);
+    new Intl.NumberFormat(locale, {
+      ...formatOptions,
+      style: "percent"
+    }).format(valueToFormat);
 
     return replaceThousandsSeparatorWithSpace(
       formattedPercentage,
@@ -99,9 +99,9 @@ export const formatValue = (
   if (numberFormat === "currency") {
     formatOptions.style = "currency";
     formatOptions.currency =
-      settings.currency || "USD";
+    settings.currency || "USD";
     formatOptions.currencyDisplay =
-      settings.currencyDisplay || "symbol";
+    settings.currencyDisplay || "symbol";
   } else {
     formatOptions.style = "decimal";
   }
@@ -112,16 +112,16 @@ export const formatValue = (
   ).format(valueToFormat);
 
   formatted =
-    replaceThousandsSeparatorWithSpace(
-      formatted,
-      useThousandsSeparator
-    );
+  replaceThousandsSeparatorWithSpace(
+    formatted,
+    useThousandsSeparator
+  );
 
   if (
-    val < 0 &&
-    settings.negativeNumberStyle ===
-      "parentheses"
-  ) {
+  val < 0 &&
+  settings.negativeNumberStyle ===
+  "parentheses")
+  {
     formatted = formatted.replace(
       /^-/,
       ""

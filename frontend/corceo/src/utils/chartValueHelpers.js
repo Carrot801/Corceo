@@ -1,7 +1,7 @@
 export const getYKey = (chartConfig) => {
-  return Array.isArray(chartConfig?.y)
-    ? chartConfig.y[0]
-    : chartConfig?.y || "y";
+  return Array.isArray(chartConfig?.y) ?
+  chartConfig.y[0] :
+  chartConfig?.y || "y";
 };
 
 export const getTotal = (chartData = [], yKey = "y") => {
@@ -12,5 +12,5 @@ export const getTotal = (chartData = [], yKey = "y") => {
 };
 
 export const getPercent = (value, total) => {
-  return total ? (Number(value) / total) * 100 : 0;
+  return total ? Number(value) / total * 100 : 0;
 };

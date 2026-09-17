@@ -2,31 +2,28 @@ const {
   getFolders,
   createFolder,
   deleteFolderById,
-  renameFolderById,
+  renameFolderById
 } = require("../models/foldersModel");
 
 const {
   requireString,
-  parsePositiveInt,
+  parsePositiveInt
 } = require("../utils/validation");
 const pool = require("../db");
 
 
-// =========================
-// GET FOLDERS
-// =========================
 
 const fetchFolders = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const result =
-      await getFolders(userId);
+    await getFolders(userId);
 
     return res.json(result);
   } catch (error) {
@@ -35,127 +32,118 @@ const fetchFolders = async (
 };
 
 
-// =========================
-// CREATE FOLDER
-// =========================
-
 const addFolder = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const name =
-      requireString(
-        req.body.name,
-        "name",
-        {
-          min: 1,
-          max: 120,
-        }
-      );
+    requireString(
+      req.body.name,
+      "name",
+      {
+        min: 1,
+        max: 120
+      }
+    );
 
     let parentId = null;
 
     if (
-      req.body.parent_id !== null &&
-      req.body.parent_id !== undefined
-    ) {
+    req.body.parent_id !== null &&
+    req.body.parent_id !== undefined)
+    {
       parentId =
-        parsePositiveInt(
-          req.body.parent_id,
-          "parent_id"
-        );
+      parsePositiveInt(
+        req.body.parent_id,
+        "parent_id"
+      );
 
-      // =========================
-      // VERIFY PARENT OWNERSHIP
-      // =========================
 
       const parentResult =
-        await pool.query(
-          `
+      await pool.query(
+        `
           SELECT id
           FROM folders
           WHERE id = $1
             AND user_id = $2
           `,
-          [
-            parentId,
-            userId,
-          ]
-        );
+        [
+        parentId,
+        userId]
+
+      );
 
       if (
-        parentResult.rows.length ===
-        0
-      ) {
-        return res
-          .status(404)
-          .json({
-            error:
-              "Parent folder not found",
-          });
+      parentResult.rows.length ===
+      0)
+      {
+        return res.
+        status(404).
+        json({
+          error:
+          "Parent folder not found"
+        });
       }
     }
 
     const result =
-      await createFolder(
-        name,
-        parentId,
-        userId
-      );
+    await createFolder(
+      name,
+      parentId,
+      userId
+    );
 
-    return res
-      .status(201)
-      .json(
-        result.rows[0]
-      );
+    return res.
+    status(201).
+    json(
+      result.rows[0]
+    );
 
   } catch (error) {
     next(error);
   }
 };
 
-// =========================
-// DELETE FOLDER
-// =========================
+
 
 const deleteFolder = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const folderId =
-      parsePositiveInt(
-        req.params.folderId,
-        "folder_id"
-      );
+    parsePositiveInt(
+      req.params.folderId,
+      "folder_id"
+    );
 
     const deletedFolder =
-      await deleteFolderById(
-        folderId,
-        userId
-      );
+    await deleteFolderById(
+      folderId,
+      userId
+    );
 
     if (!deletedFolder) {
-      return res
-        .status(404)
-        .json({
-          error: "Folder not found",
-        });
+      return res.
+      status(404).
+      json({
+        error: "Folder not found"
+      });
     }
 
     return res.json({
       message:
-        "Folder deleted successfully",
-      folder: deletedFolder,
+      "Folder deleted successfully",
+      folder: deletedFolder
     });
 
   } catch (error) {
@@ -163,48 +151,45 @@ const deleteFolder = async (
   }
 };
 
-// =========================
-// RENAME FOLDER
-// =========================
 
 const renameFolder = async (
-  req,
-  res,
-  next
-) => {
+req,
+res,
+next) =>
+{
   try {
     const userId =
-      req.user.userId;
+    req.user.userId;
 
     const folderId =
-      parsePositiveInt(
-        req.params.folderId,
-        "folder_id"
-      );
+    parsePositiveInt(
+      req.params.folderId,
+      "folder_id"
+    );
 
     const name =
-      requireString(
-        req.body.name,
-        "name",
-        {
-          min: 1,
-          max: 120,
-        }
-      );
+    requireString(
+      req.body.name,
+      "name",
+      {
+        min: 1,
+        max: 120
+      }
+    );
 
     const renamedFolder =
-      await renameFolderById(
-        folderId,
-        name,
-        userId
-      );
+    await renameFolderById(
+      folderId,
+      name,
+      userId
+    );
 
     if (!renamedFolder) {
-      return res
-        .status(404)
-        .json({
-          error: "Folder not found",
-        });
+      return res.
+      status(404).
+      json({
+        error: "Folder not found"
+      });
     }
 
     return res.json(
@@ -220,5 +205,5 @@ module.exports = {
   fetchFolders,
   addFolder,
   deleteFolder,
-  renameFolder,
+  renameFolder
 };

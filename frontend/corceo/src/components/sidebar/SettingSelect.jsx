@@ -2,7 +2,7 @@ function SettingSelect({
   label,
   value,
   options,
-  onChange,
+  onChange
 }) {
   return (
     <div className="space-y-1.5">
@@ -13,31 +13,31 @@ function SettingSelect({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="app-input w-full text-sm"
-      >
+        className="app-input w-full text-sm">
+        
         {options.map((option) => {
           const optionValue =
-            typeof option === "string"
-              ? option
-              : option.value;
+          typeof option === "string" ?
+          option :
+          option.value;
 
           const optionLabel =
-            typeof option === "string"
-              ? option
-              : option.label;
+          typeof option === "string" ?
+          option :
+          option.label;
 
           return (
             <option
               key={optionValue}
-              value={optionValue}
-            >
+              value={optionValue}>
+              
               {optionLabel}
-            </option>
-          );
+            </option>);
+
         })}
       </select>
-    </div>
-  );
+    </div>);
+
 }
 
 export default SettingSelect;
