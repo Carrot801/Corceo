@@ -550,7 +550,6 @@ function StorySlideContent({
             .length === 0 && (
             <button
               type="button"
-              data-pdf-hide="true"
               onClick={() =>
                 setShowPicker?.(
                   true

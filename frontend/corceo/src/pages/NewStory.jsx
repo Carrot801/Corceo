@@ -216,6 +216,9 @@ const {
 
   activeSlideIndex,
   setActiveSlideIndex,
+
+  setSelectedAnnoId,
+  setSelectedChartId,
 });
 
 const {

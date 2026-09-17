@@ -46,7 +46,6 @@ function StoryMainCanvas({
       <div
         className="
           story-slide
-          story-pdf-slide
           app-card
           w-full
           max-w-4xl
@@ -62,129 +61,139 @@ function StoryMainCanvas({
           relative
         "
       >
-        {/* ========================= */}
-        {/* SLIDE TITLE */}
-        {/* ========================= */}
+       <div
+  className="
+    story-pdf-slide
+    min-h-0
+    flex-1
+    flex
+    flex-col
+    gap-4
+  "
+>
+  {/* ========================= */}
+  {/* SLIDE TITLE */}
+  {/* ========================= */}
 
-        <input
-          type="text"
-          placeholder={
-            `Slide ${
-              activeSlideIndex +
-              1
-            }`
-          }
-          value={
-            currentSlide.description ||
-            ""
-          }
-          onChange={(event) => {
-            const newTitle =
-              event.target.value;
+  <input
+    type="text"
+    placeholder={
+      `Slide ${
+        activeSlideIndex + 1
+      }`
+    }
+    value={
+      currentSlide.description ||
+      ""
+    }
+    onChange={(event) => {
+      const newTitle =
+        event.target.value;
 
-            setSlides(
-              (
-                previousSlides
-              ) =>
-                previousSlides.map(
-                  (
-                    slide,
-                    index
-                  ) =>
-                    index ===
-                    activeSlideIndex
-                      ? {
-                          ...slide,
-                          description:
-                            newTitle,
-                        }
-                      : slide
-                )
-            );
-          }}
-          className="
-            app-text
-            w-full
-            bg-transparent
-            text-2xl
-            font-bold
-            outline-none
-            border-b
-            border-transparent
-            hover:border-[rgb(var(--color-border))]
-            focus:border-[rgb(var(--color-highlight))]
-            pb-2
-            transition-colors
-            placeholder:text-slate-400
-          "
-        />
-
-
-        {/* ========================= */}
-        {/* ACTUAL SLIDE CONTENT */}
-        {/* ========================= */}
-
-        <div className="min-h-0 flex-1">
-          <StorySlideContent
-            slide={
-              currentSlide
-            }
-            slideIndex={
+      setSlides(
+        (
+          previousSlides
+        ) =>
+          previousSlides.map(
+            (
+              slide,
+              index
+            ) =>
+              index ===
               activeSlideIndex
-            }
+                ? {
+                    ...slide,
+                    description:
+                      newTitle,
+                  }
+                : slide
+          )
+      );
+    }}
+    className="
+      app-text
+      w-full
+      bg-transparent
+      text-2xl
+      font-bold
+      outline-none
+      border-b
+      border-transparent
+      hover:border-[rgb(var(--color-border))]
+      focus:border-[rgb(var(--color-highlight))]
+      pb-2
+      transition-colors
+      placeholder:text-slate-400
+    "
+  />
 
-            interactive
 
-            canvasRef={
-              canvasRef
-            }
+  {/* ========================= */}
+  {/* ACTUAL SLIDE CONTENT */}
+  {/* ========================= */}
 
-            canvasDimensions={
-              canvasDimensions
-            }
+  <div className="min-h-0 flex-1">
+    <StorySlideContent
+      slide={
+        currentSlide
+      }
 
-            selectedChartId={
-              selectedChartId
-            }
+      slideIndex={
+        activeSlideIndex
+      }
 
-            selectedAnnoId={
-              selectedAnnoId
-            }
+      interactive
 
-            setSelectedChartId={
-              setSelectedChartId
-            }
+      canvasRef={
+        canvasRef
+      }
 
-            setSelectedAnnoId={
-              setSelectedAnnoId
-            }
+      canvasDimensions={
+        canvasDimensions
+      }
 
-            startChartInteraction={
-              startChartInteraction
-            }
+      selectedChartId={
+        selectedChartId
+      }
 
-            duplicateChartItem={
-              duplicateChartItem
-            }
+      selectedAnnoId={
+        selectedAnnoId
+      }
 
-            deleteChartItem={
-              deleteChartItem
-            }
+      setSelectedChartId={
+        setSelectedChartId
+      }
 
-            sendChartToBack={
-              sendChartToBack
-            }
+      setSelectedAnnoId={
+        setSelectedAnnoId
+      }
 
-            setShowPicker={
-              setShowPicker
-            }
+      startChartInteraction={
+        startChartInteraction
+      }
 
-            handleDragStart={
-              handleDragStart
-            }
-          />
-        </div>
+      duplicateChartItem={
+        duplicateChartItem
+      }
 
+      deleteChartItem={
+        deleteChartItem
+      }
+
+      sendChartToBack={
+        sendChartToBack
+      }
+
+      setShowPicker={
+        setShowPicker
+      }
+
+      handleDragStart={
+        handleDragStart
+      }
+    />
+  </div>
+</div>
 
         {/* ========================= */}
         {/* LOWER CONTROLS */}

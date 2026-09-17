@@ -10,7 +10,8 @@ import jsPDF from "jspdf";
 function useStoryExport({
   slides,
   storyName,
-
+  setSelectedAnnoId,
+  setSelectedChartId,
   activeSlideIndex,
   setActiveSlideIndex,
 }) {
@@ -301,13 +302,19 @@ const exportStoryPDF =
                 onclone: (
                   clonedDocument
                 ) => {
-                  /*
-                   * Hide editor-only controls
-                   * in the captured clone.
-                   *
-                   * This does NOT modify
-                   * the real editor.
-                   */
+                  const clonedSlide =
+                    clonedDocument.querySelector(
+                      ".story-pdf-slide"
+                    );
+
+                  if (clonedSlide) {
+                    clonedSlide
+                      .querySelectorAll("svg")
+                      .forEach((svg) => {
+                        svg.style.overflow =
+                          "visible";
+                      });
+                  }
                   clonedDocument
                     .querySelectorAll(
                       '[data-pdf-hide="true"]'
@@ -420,6 +427,8 @@ const exportStoryPDF =
       setActiveSlideIndex,
       waitForImages,
       waitForPaint,
+      setSelectedAnnoId,
+      setSelectedChartId,
     ]
   );
 
