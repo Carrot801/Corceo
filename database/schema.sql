@@ -1,12 +1,3 @@
--- =========================================
--- CORCEO DATABASE SCHEMA
--- PostgreSQL
--- =========================================
-
-
--- =========================================
--- USERS
--- =========================================
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -29,7 +20,6 @@ CREATE TABLE users (
 );
 
 
--- Case-insensitive uniqueness
 
 CREATE UNIQUE INDEX users_email_unique
 ON users (LOWER(email));
@@ -38,10 +28,6 @@ CREATE UNIQUE INDEX users_username_unique
 ON users (LOWER(username))
 WHERE username IS NOT NULL;
 
-
--- =========================================
--- FOLDERS
--- =========================================
 
 CREATE TABLE folders (
     id SERIAL PRIMARY KEY,
@@ -73,10 +59,6 @@ ON folders(user_id);
 CREATE INDEX idx_folders_parent_id
 ON folders(parent_id);
 
-
--- =========================================
--- PROJECTS
--- =========================================
 
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
@@ -116,10 +98,6 @@ CREATE INDEX idx_projects_folder_id
 ON projects(folder_id);
 
 
--- =========================================
--- DATASETS
--- =========================================
-
 CREATE TABLE datasets (
     id SERIAL PRIMARY KEY,
 
@@ -143,22 +121,15 @@ CREATE TABLE datasets (
         REFERENCES users(id)
         ON DELETE CASCADE,
 
-    -- Corceo currently uses one dataset per project
     CONSTRAINT datasets_project_id_unique
         UNIQUE (project_id)
 );
 
 
--- No separate project_id index is required.
--- UNIQUE(project_id) already creates one.
-
 CREATE INDEX idx_datasets_user_id
 ON datasets(user_id);
 
 
--- =========================================
--- DATA ROWS
--- =========================================
 
 CREATE TABLE rows (
     id SERIAL PRIMARY KEY,
@@ -194,11 +165,6 @@ ON rows(user_id);
 CREATE INDEX idx_rows_data
 ON rows
 USING GIN(data);
-
-
--- =========================================
--- CHARTS
--- =========================================
 
 CREATE TABLE charts (
     id SERIAL PRIMARY KEY,
@@ -248,7 +214,6 @@ CREATE TABLE charts (
         REFERENCES users(id)
         ON DELETE CASCADE,
 
-    -- One saved chart configuration per project
     CONSTRAINT unique_project_id
         UNIQUE (project_id)
 );
@@ -260,10 +225,6 @@ ON charts(dataset_id);
 CREATE INDEX idx_charts_user_id
 ON charts(user_id);
 
-
--- =========================================
--- STORIES
--- =========================================
 
 CREATE TABLE stories (
     id SERIAL PRIMARY KEY,
@@ -308,10 +269,6 @@ CREATE INDEX idx_stories_is_published
 ON stories(is_published);
 
 
--- =========================================
--- SLIDES
--- =========================================
-
 CREATE TABLE slides (
     id SERIAL PRIMARY KEY,
 
@@ -332,9 +289,6 @@ CREATE TABLE slides (
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE,
-
-    -- A story cannot contain two slides
-    -- at the same position.
     CONSTRAINT slides_story_position_unique
         UNIQUE (story_id, position)
 );
@@ -343,30 +297,13 @@ CREATE TABLE slides (
 CREATE INDEX idx_slides_user_id
 ON slides(user_id);
 
--- No separate story_id or (story_id, position)
--- index is needed.
--- UNIQUE(story_id, position) already creates
--- a B-tree index that supports both:
---
--- WHERE story_id = ?
---
--- and:
---
--- WHERE story_id = ?
--- ORDER BY position
 
-
--- =========================================
--- SLIDE CONTENT
--- =========================================
 
 CREATE TABLE slide_content (
     id SERIAL PRIMARY KEY,
 
     slide_id INTEGER NOT NULL,
 
-    -- Nullable because deleting a chart preserves
-    -- the story item and sets chart_id to NULL.
     chart_id INTEGER,
 
     position INTEGER,
@@ -412,17 +349,11 @@ CREATE INDEX idx_slide_content_user_id
 ON slide_content(user_id);
 
 
--- Position only needs to be unique when
--- a position value actually exists.
-
 CREATE UNIQUE INDEX idx_slide_content_unique_position
 ON slide_content(slide_id, position)
 WHERE position IS NOT NULL;
 
 
--- =========================================
--- SLIDE ANNOTATIONS
--- =========================================
 
 CREATE TABLE slide_annotations (
     id SERIAL PRIMARY KEY,
