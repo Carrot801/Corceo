@@ -1123,6 +1123,7 @@ function NewVisualization() {
                 
     <ChartPreview
                   chartData={chartData}
+                  rawData={data}
                   chartConfig={chartConfig}
                   setChartConfig={setChartConfig}
                   columns={columns}

@@ -95,7 +95,7 @@ function Legend({
       {legendItems.map((field, index) =>
       <div
         key={index}
-        className="flex items-center gap-2">
+        className="flex min-w-0 items-center gap-2">
         
           {}
           <div
@@ -112,6 +112,8 @@ function Legend({
           <span
           className={`
               ${currentSize.text}
+              min-w-0
+              break-words
               text-slate-700
             `}>
           

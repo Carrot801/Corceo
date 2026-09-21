@@ -283,7 +283,7 @@ function ChartPreview({
         "left" &&
         <div
           className={`
-                w-32
+                w-48
                 shrink-0
                 p-4
 
