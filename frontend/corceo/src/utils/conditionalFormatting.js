@@ -1,34 +1,27 @@
 function parseConditionalNumber(value) {
-  if (
-  value === null ||
-  value === undefined ||
-  value === "")
-  {
+  if (value === null || value === undefined) {
     return null;
   }
 
-  if (
-  typeof value === "number")
-  {
-    return Number.isFinite(value) ?
-    value :
-    null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
   }
 
-  const normalized = String(value).
-  trim().
-  replace(/\s/g, "").
-  replace(/,/g, "").
-  replace(/[$€£]/g, "").
-  replace(/%$/, "");
+  const normalized = String(value)
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/[$€£]/g, "")
+    .replace(/%$/, "")
+    .replace(/,/g, ".");
+
+  // Accept one decimal separator; reject mixed or repeated separators.
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+    return null;
+  }
 
   const parsed = Number(normalized);
-
-  return Number.isFinite(parsed) ?
-  parsed :
-  null;
+  return Number.isFinite(parsed) ? parsed : null;
 }
-
 export function matchesConditionalRule(
 rawValue,
 rule)

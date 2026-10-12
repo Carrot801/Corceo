@@ -145,11 +145,6 @@ function Sidebar({
   },
   { id: "radar", label: "Radar", Icon: Radar },
   {
-    id: "composed",
-    label: "Composed",
-    Icon: ChartNoAxesColumnIncreasing
-  },
-  {
     id: "treemap",
     label: "Treemap",
     Icon: LayoutGrid

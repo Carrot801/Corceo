@@ -74,7 +74,6 @@ Corceo supports the following visualization types:
 - Heatmap
 - Treemap
 - Waterfall chart
-- Composed chart
 
 ## Technologies
 

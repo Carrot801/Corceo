@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { generatePalette } from "../custom/colorPallets";
 
 function parseNumericValue(value) {
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined) {
     return 0;
   }
 
@@ -10,15 +10,19 @@ function parseNumericValue(value) {
     return Number.isFinite(value) ? value : 0;
   }
 
-  const normalized = String(value).
-  trim().
-  replace(/,/g, "").
-  replace(/[$€£]/g, "").
-  replace(/%$/, "");
+  const normalized = String(value)
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/[$€£]/g, "")
+    .replace(/%$/, "")
+    .replace(/,/g, ".");
 
-  const number = Number(normalized);
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+    return 0;
+  }
 
-  return Number.isFinite(number) ? number : 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function applyFilters(rawData, filters = []) {

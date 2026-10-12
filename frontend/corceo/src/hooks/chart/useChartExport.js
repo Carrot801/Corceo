@@ -120,7 +120,7 @@ function useChartExport({
             "none",
 
             overflow:
-            "hidden",
+            "visible",
 
             transform:
             "none",

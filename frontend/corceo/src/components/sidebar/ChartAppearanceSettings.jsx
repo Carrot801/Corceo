@@ -42,7 +42,6 @@ function ChartAppearanceSettings({
   "line",
   "area",
   "scatter",
-  "composed",
   "waterfall"].
   includes(type);
 
@@ -368,7 +367,7 @@ function ChartAppearanceSettings({
         
   </div>
       }
-      {["line", "area", "composed"].includes(type) &&
+      {["line", "area"].includes(type) &&
       <div className="space-y-4">
           <p className="app-text text-xs font-bold">
             Series

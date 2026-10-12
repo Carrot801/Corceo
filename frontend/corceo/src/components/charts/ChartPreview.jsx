@@ -8,7 +8,6 @@ import DonutChartView from "./DonutChartView";
 import ScatterChartView from "./ScatterChartView";
 import HeatmapChartView from "./HeatmapChartView";
 import RadarChartView from "./RadarChartView";
-import ComposedChartView from "./ComposedChartView";
 import TreemapChartView from "./TreemapChartView";
 import AreaChartView from "./AreaChartView";
 
@@ -38,7 +37,6 @@ function ChartPreview({
     area: AreaChartView,
     scatter: ScatterChartView,
     radar: RadarChartView,
-    composed: ComposedChartView,
     heatmap: HeatmapChartView,
     treemap: TreemapChartView,
     waterfall: WaterfallChartView
@@ -397,7 +395,7 @@ function ChartPreview({
         "right" &&
         <div
           className={`
-                w-32
+                w-48
                 shrink-0
                 p-4
 
