@@ -2,10 +2,11 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useCallback } from
-"react";
+  useCallback
+} from "react";
 
 import { useParams, useNavigate } from "react-router-dom";
+
 import Header from "../components/Header";
 import useHistoryState from "../hooks/useHistoryState";
 
@@ -15,51 +16,68 @@ import StoryMainCanvas from "../components/story/StoryMainCanvas";
 import StoryAnnotationsSidebar from "../components/story/StoryAnnotationsSidebar";
 import StoryExportSlides from "../components/story/StoryExportSlides";
 import StoryProjectPickerModal from "../components/story/StoryProjectPickerModal";
+
 import useStoryPersistence from "../hooks/story/useStoryPersistence";
-import useStoryExport from
-"../hooks/story/useStoryExport";
-import useStorySlides from
-"../hooks/story/useStorySlides";
+import useStoryExport from "../hooks/story/useStoryExport";
+import useStorySlides from "../hooks/story/useStorySlides";
+import useStoryCharts from "../hooks/story/useStoryCharts";
+import useStoryAnnotations from "../hooks/story/useStoryAnnotations";
+import useStoryAnnotationInteractions from "../hooks/story/useStoryAnnotationInteractions";
+import useStoryChartInteractions from "../hooks/story/useStoryChartInteractions";
+
 import { apiRequest } from "../api/client";
+
 import {
   SLIDE_HEIGHT,
-  SLIDE_WIDTH } from
-"../utils/story/storyConstants";
-import useStoryCharts from
-"../hooks/story/useStoryCharts";
-import useStoryAnnotations from
-"../hooks/story/useStoryAnnotations";
-import useStoryAnnotationInteractions from
-"../hooks/story/useStoryAnnotationInteractions";
-import useStoryChartInteractions from
-"../hooks/story/useStoryChartInteractions";
-
+  SLIDE_WIDTH
+} from "../utils/story/storyConstants";
 
 function NewStory() {
   const { storyId } = useParams();
   const navigate = useNavigate();
-  const isSlideActionRef = useRef(false);
 
-  const createInitialStoryState =
-  useCallback(
+  const isSlideActionRef = useRef(false);
+  const operationRunningRef = useRef(false);
+
+  const [isBusy, setIsBusy] = useState(false);
+
+  const runStoryOperation = async (operation) => {
+    if (operationRunningRef.current) {
+      return;
+    }
+
+    operationRunningRef.current = true;
+    setIsBusy(true);
+
+    try {
+      await operation();
+    } catch (error) {
+      console.error("Story operation failed:", error);
+
+      window.alert(
+        error?.message || "The operation could not be completed."
+      );
+    } finally {
+      operationRunningRef.current = false;
+      setIsBusy(false);
+    }
+  };
+
+  const createInitialStoryState = useCallback(
     () => ({
-      storyName:
-      "Untitled Story",
+      storyName: "Untitled Story",
 
       slides: [
-      {
-        id:
-        `temp-${crypto.randomUUID()}`,
-
-        content: [],
-        description: "",
-        annotations: []
-      }]
-
+        {
+          id: `temp-${crypto.randomUUID()}`,
+          content: [],
+          description: "",
+          annotations: []
+        }
+      ]
     }),
     []
   );
-
 
   const [availableProjects, setAvailableProjects] = useState([]);
   const [search, setSearch] = useState("");
@@ -73,79 +91,84 @@ function NewStory() {
     commit: commitStoryHistory,
     canUndo: canUndoStory,
     canRedo: canRedoStory
-  } = useHistoryState(
-    createInitialStoryState,
-    {
-      maxHistory: 50
-    }
-  );
-  const setStoryName = (
-  nextValueOrUpdater,
-  options) =>
-  {
+  } = useHistoryState(createInitialStoryState, {
+    maxHistory: 50
+  });
+
+  const { storyName, slides } = storyHistoryState;
+
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedAnnoId, setSelectedAnnoId] = useState(null);
+  const [selectedChartId, setSelectedChartId] = useState(null);
+
+  const [canvasDimensions, setCanvasDimensions] = useState({
+    width: 0,
+    height: 0
+  });
+
+  const canvasRef = useRef(null);
+
+  const dragContextRef = useRef({
+    type: null,
+    annoId: null
+  });
+
+  const chartInteractionRef = useRef(null);
+  const storyStateRef = useRef(storyHistoryState);
+  const storyNameBeforeEditRef = useRef(storyName);
+
+  const currentSlide = slides[activeSlideIndex] || {
+    content: [],
+    annotations: [],
+    description: ""
+  };
+
+  const setStoryName = (nextValueOrUpdater, options) => {
     setStoryHistoryState(
       (current) => ({
         ...current,
 
         storyName:
-        typeof nextValueOrUpdater ===
-        "function" ?
-        nextValueOrUpdater(
-          current.storyName
-        ) :
-        nextValueOrUpdater
+          typeof nextValueOrUpdater === "function"
+            ? nextValueOrUpdater(current.storyName)
+            : nextValueOrUpdater
       }),
       options
     );
   };
 
-  const setSlides = (
-  nextValueOrUpdater,
-  options) =>
-  {
+  const setSlides = (nextValueOrUpdater, options) => {
     setStoryHistoryState(
       (current) => ({
         ...current,
 
         slides:
-        typeof nextValueOrUpdater ===
-        "function" ?
-        nextValueOrUpdater(
-          current.slides
-        ) :
-        nextValueOrUpdater
+          typeof nextValueOrUpdater === "function"
+            ? nextValueOrUpdater(current.slides)
+            : nextValueOrUpdater
       }),
       options
     );
   };
 
-
-  const setSlidesDuringDrag = (
-  nextValueOrUpdater) =>
-  {
+  const setSlidesDuringDrag = (nextValueOrUpdater) => {
     setStoryHistoryState(
       (currentStory) => {
         const updatedSlides =
-        typeof nextValueOrUpdater ===
-        "function" ?
-        nextValueOrUpdater(
-          currentStory.slides
-        ) :
-        nextValueOrUpdater;
+          typeof nextValueOrUpdater === "function"
+            ? nextValueOrUpdater(currentStory.slides)
+            : nextValueOrUpdater;
 
         const updatedStory = {
           ...currentStory,
           slides: updatedSlides
         };
 
-
-        storyStateRef.current =
-        updatedStory;
-
+        storyStateRef.current = updatedStory;
 
         if (dragContextRef.current) {
-          dragContextRef.current.latestStoryState =
-          updatedStory;
+          dragContextRef.current.latestStoryState = updatedStory;
         }
 
         return updatedStory;
@@ -156,55 +179,40 @@ function NewStory() {
     );
   };
 
-  const {
-    storyName,
-    slides
-  } = storyHistoryState;
-
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [showPicker, setShowPicker] = useState(false);
-  const [selectedAnnoId, setSelectedAnnoId] = useState(null);
-  const [selectedChartId, setSelectedChartId] = useState(null);
-
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
-
-  const canvasRef = useRef(null);
-  const dragContextRef =
-  useRef({
-    type: null,
-    annoId: null
-  });
-
-  const chartInteractionRef = useRef(null);
-
-  const currentSlide = slides[activeSlideIndex] || { content: [], annotations: [], description: "" };
-
-  const storyStateRef =
-  useRef(storyHistoryState);
-
-  const storyNameBeforeEditRef =
-  useRef(storyName);
-
   useEffect(() => {
-    storyStateRef.current =
-    storyHistoryState;
+    storyStateRef.current = storyHistoryState;
   }, [storyHistoryState]);
 
-
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const element = canvasRef.current;
+
+    if (!element) {
+      return;
+    }
+
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        setCanvasDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+
+        setCanvasDimensions((previous) => {
+          if (
+            previous.width === width &&
+            previous.height === height
+          ) {
+            return previous;
+          }
+
+          return { width, height };
         });
       }
     });
-    observer.observe(canvasRef.current);
-    return () => observer.disconnect();
-  }, [activeSlideIndex, setActiveSlideIndex, currentSlide.content]);
 
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeSlideIndex, currentSlide.content]);
 
   const {
     isExporting,
@@ -213,12 +221,8 @@ function NewStory() {
   } = useStoryExport({
     slides,
     storyName,
-
-    slideWidth:
-    SLIDE_WIDTH,
-
-    slideHeight:
-    SLIDE_HEIGHT
+    slideWidth: SLIDE_WIDTH,
+    slideHeight: SLIDE_HEIGHT
   });
 
   const {
@@ -226,24 +230,18 @@ function NewStory() {
     publishStory,
     reloadSavedStory,
     normalizeStorySlides
-
-
   } = useStoryPersistence({
     storyId,
     storyName,
     slides,
-
     setStoryHistoryState,
     resetStoryHistory,
-
     createInitialStoryState,
-
     makeStoryPreview,
-
     isSlideActionRef,
-
     navigate
   });
+
   const {
     addSlide,
     reorderSlides,
@@ -251,14 +249,11 @@ function NewStory() {
     deleteSlide
   } = useStorySlides({
     storyId,
-
     slides,
     setSlides,
-
     setActiveSlideIndex,
     setSelectedAnnoId,
     setSelectedChartId,
-
     saveStory,
     reloadSavedStory,
     normalizeStorySlides,
@@ -275,9 +270,7 @@ function NewStory() {
     sendChartToBack
   } = useStoryCharts({
     activeSlideIndex,
-
     setSlides,
-
     setSelectedChartId,
     setSelectedAnnoId,
     setShowPicker
@@ -289,61 +282,56 @@ function NewStory() {
     removeAnnotation
   } = useStoryAnnotations({
     activeSlideIndex,
-
     currentSlide,
-
     setSlides,
-
     selectedAnnoId,
     setSelectedAnnoId
   });
 
-  const {
-    handleDragStart
-  } = useStoryAnnotationInteractions({
+  const { handleDragStart } = useStoryAnnotationInteractions({
     canvasRef,
     dragContextRef,
-
     activeSlideIndex,
-
     setSlidesDuringDrag,
-
     setSelectedAnnoId,
     setSelectedChartId,
-
     storyStateRef,
     commitStoryHistory
   });
 
-  const {
-    startChartInteraction
-  } = useStoryChartInteractions({
+  const { startChartInteraction } = useStoryChartInteractions({
     canvasRef,
     chartInteractionRef,
-
     updateChartItem,
     bringChartToFront,
-
     setSelectedChartId,
     setSelectedAnnoId,
-
     storyStateRef,
     commitStoryHistory
   });
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchCharts = async () => {
       try {
-        const data = await apiRequest(
-          "/projects/all"
-        );
+        const data = await apiRequest("/projects/all");
 
-        setAvailableProjects(data);
-      } catch (err) {
-        console.error("Failed to load projects", err);
+        if (!cancelled) {
+          setAvailableProjects(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load projects", error);
+        }
       }
     };
+
     fetchCharts();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleProjectClick = async (projectId) => {
@@ -351,7 +339,6 @@ function NewStory() {
       const chart = await apiRequest(
         `/projects/chart/${projectId}`
       );
-
 
       if (!chart || !chart.id) {
         console.error("No chart id found:", chart);
@@ -361,65 +348,59 @@ function NewStory() {
       addChartToSlide(
         chart.id,
         chart.name ||
-        chart.settings?.title ||
-        "Untitled chart",
+          chart.settings?.title ||
+          "Untitled chart",
         chart.image_data ||
-        chart.image_url ||
-        null
+          chart.image_url ||
+          null
       );
 
       setShowPicker(false);
-    } catch (err) {
-      console.error("Failed to load charts", err);
+    } catch (error) {
+      console.error("Failed to load charts", error);
     }
   };
 
-
   useEffect(() => {
-    const handleHistoryShortcut = (
-    event) =>
-    {
+    const handleHistoryShortcut = (event) => {
       const target = event.target;
 
       const isTyping =
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target?.isContentEditable;
-
-
-
-
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable;
 
       if (isTyping) {
         return;
       }
 
-      const modifier =
-      event.ctrlKey ||
-      event.metaKey;
+      const modifier = event.ctrlKey || event.metaKey;
 
       if (!modifier) {
         return;
       }
 
-      const key =
-      event.key.toLowerCase();
+      const key = event.key.toLowerCase();
 
       if (
-      key === "z" &&
-      !event.shiftKey)
-      {
+        operationRunningRef.current &&
+        (key === "z" || key === "y")
+      ) {
+        event.preventDefault();
+        return;
+      }
+
+      if (key === "z" && !event.shiftKey) {
         event.preventDefault();
         undoStory();
         return;
       }
 
       if (
-      key === "z" &&
-      event.shiftKey ||
-      key === "y")
-      {
+        (key === "z" && event.shiftKey) ||
+        key === "y"
+      ) {
         event.preventDefault();
         redoStory();
       }
@@ -438,7 +419,6 @@ function NewStory() {
     };
   }, [undoStory, redoStory]);
 
-
   return (
     <>
       <Header />
@@ -455,10 +435,17 @@ function NewStory() {
           canUndoStory={canUndoStory}
           redoStory={redoStory}
           canRedoStory={canRedoStory}
-          exportStoryPDF={exportStoryPDF}
-          publishStory={publishStory}
-          saveStory={saveStory} />
-        
+          isBusy={isBusy}
+          exportStoryPDF={() =>
+            runStoryOperation(exportStoryPDF)
+          }
+          publishStory={() =>
+            runStoryOperation(publishStory)
+          }
+          saveStory={() =>
+            runStoryOperation(saveStory)
+          }
+        />
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <StorySlidesSidebar
@@ -470,8 +457,8 @@ function NewStory() {
             duplicateSlide={duplicateSlide}
             deleteSlide={deleteSlide}
             addSlide={addSlide}
-            reorderSlides={reorderSlides} />
-          
+            reorderSlides={reorderSlides}
+          />
 
           <StoryMainCanvas
             activeSlideIndex={activeSlideIndex}
@@ -490,8 +477,8 @@ function NewStory() {
             setShowPicker={setShowPicker}
             canvasDimensions={canvasDimensions}
             handleDragStart={handleDragStart}
-            setActiveSlideIndex={setActiveSlideIndex} />
-          
+            setActiveSlideIndex={setActiveSlideIndex}
+          />
 
           <StoryAnnotationsSidebar
             currentSlide={currentSlide}
@@ -499,8 +486,8 @@ function NewStory() {
             selectedAnnoId={selectedAnnoId}
             setSelectedAnnoId={setSelectedAnnoId}
             removeAnnotation={removeAnnotation}
-            updateAnnotation={updateAnnotation} />
-          
+            updateAnnotation={updateAnnotation}
+          />
         </div>
       </div>
 
@@ -508,8 +495,8 @@ function NewStory() {
         isExporting={isExporting}
         slides={slides}
         SLIDE_WIDTH={SLIDE_WIDTH}
-        SLIDE_HEIGHT={SLIDE_HEIGHT} />
-      
+        SLIDE_HEIGHT={SLIDE_HEIGHT}
+      />
 
       <StoryProjectPickerModal
         showPicker={showPicker}
@@ -517,10 +504,10 @@ function NewStory() {
         search={search}
         setSearch={setSearch}
         availableProjects={availableProjects}
-        handleProjectClick={handleProjectClick} />
-      
-    </>);
-
+        handleProjectClick={handleProjectClick}
+      />
+    </>
+  );
 }
 
 export default NewStory;

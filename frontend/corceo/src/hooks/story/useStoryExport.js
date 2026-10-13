@@ -6,6 +6,34 @@ import {
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+async function waitForCharts(rootElement, timeout = 15000) {
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    if (!rootElement.isConnected) {
+      throw new Error("The export slide was removed during export.");
+    }
+
+    if (rootElement.querySelector('[data-chart-status="error"]')) {
+      throw new Error("A chart could not be loaded.");
+    }
+
+    const loadingChart = rootElement.querySelector(
+      '[data-chart-status="loading"]'
+    );
+
+    if (!loadingChart) {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  throw new Error("Timed out while waiting for charts to load.");
+}
 
 function useStoryExport({
   slides,
@@ -149,6 +177,7 @@ function useStoryExport({
             "First export slide was not rendered"
           );
         }
+        await waitForCharts(firstSlide);
 
         await waitForImages(
           firstSlide
@@ -285,13 +314,8 @@ function useStoryExport({
 
 
 
-        await new Promise(
-          (resolve) => {
-            setTimeout(
-              resolve,
-              1000
-            );
-          }
+        await Promise.all(
+          slideElements.map((element) => waitForCharts(element))
         );
 
         await waitForPaint();
@@ -449,6 +473,7 @@ function useStoryExport({
           "PDF export failed:",
           error
         );
+        throw error;
 
       } finally {
         setIsExporting(false);
