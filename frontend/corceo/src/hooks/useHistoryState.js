@@ -1,388 +1,182 @@
-import {
-  useCallback,
-  useState } from
-"react";
+import { useCallback, useState } from "react";
 
+// Clone external data only when initializing or resetting history.
 function cloneValue(value) {
-  if (
-  typeof structuredClone === "function")
-  {
+  if (typeof structuredClone === "function") {
     return structuredClone(value);
   }
 
-  return JSON.parse(
-    JSON.stringify(value)
-  );
+  return JSON.parse(JSON.stringify(value));
 }
 
-function areEqual(
-firstValue,
-secondValue,
-equalityFn)
-{
-  if (equalityFn) {
-    return equalityFn(
-      firstValue,
-      secondValue
-    );
+function areEqual(first, second, equalityFn) {
+  if (Object.is(first, second)) {
+    return true;
   }
 
-  return (
-    JSON.stringify(firstValue) ===
-    JSON.stringify(secondValue));
+  if (equalityFn) {
+    return equalityFn(first, second);
+  }
 
+  return JSON.stringify(first) === JSON.stringify(second);
 }
 
 function useHistoryState(
-initialValue,
-{
-  maxHistory = 50,
-  equalityFn = null
-} = {})
-{
-
-
-
-
-  const [history, setHistory] =
-  useState(() => {
+  initialValue,
+  { maxHistory = 50, equalityFn = null } = {}
+) {
+  const [history, setHistory] = useState(() => {
     const initial =
-    typeof initialValue ===
-    "function" ?
-    initialValue() :
-    initialValue;
+      typeof initialValue === "function"
+        ? initialValue()
+        : initialValue;
 
     return {
       past: [],
-      present:
-      cloneValue(initial),
-      future: []
+      present: cloneValue(initial),
+      future: [],
     };
   });
 
-
-
-
-
   const set = useCallback(
-    (
-    nextValueOrUpdater,
-    options = {}) =>
-    {
-      const {
-        record = true
-      } = options;
+    (nextValueOrUpdater, { record = true } = {}) => {
+      setHistory((currentHistory) => {
+        const currentValue = currentHistory.present;
 
-      setHistory(
-        (currentHistory) => {
-          const currentValue =
-          currentHistory.present;
+        // The updater must return a new state without mutating
+        // currentValue or its nested objects and arrays.
+        const nextValue =
+          typeof nextValueOrUpdater === "function"
+            ? nextValueOrUpdater(currentValue)
+            : nextValueOrUpdater;
 
-          const nextValue =
-          typeof nextValueOrUpdater ===
-          "function" ?
-          nextValueOrUpdater(
-            cloneValue(
-              currentValue
-            )
-          ) :
-          nextValueOrUpdater;
+        if (areEqual(currentValue, nextValue, equalityFn)) {
+          return currentHistory;
+        }
 
-          const clonedNextValue =
-          cloneValue(
-            nextValue
-          );
-
-          if (
-          areEqual(
-            currentValue,
-            clonedNextValue,
-            equalityFn
-          ))
-          {
-            return currentHistory;
-          }
-
-
-
-          if (!record) {
-            return {
-              ...currentHistory,
-
-              present:
-              clonedNextValue
-            };
-          }
-
-          const updatedPast = [
-          ...currentHistory.past,
-
-          cloneValue(
-            currentValue
-          )].
-          slice(
-            -maxHistory
-          );
-
+        if (!record) {
           return {
-            past:
-            updatedPast,
-
-            present:
-            clonedNextValue,
-
-            future: []
+            ...currentHistory,
+            present: nextValue,
           };
         }
-      );
-    },
-    [
-    equalityFn,
-    maxHistory,
-    setHistory]
 
+        return {
+          past: [
+            ...currentHistory.past,
+            currentValue,
+          ].slice(-maxHistory),
+          present: nextValue,
+          future: [],
+        };
+      });
+    },
+    [equalityFn, maxHistory]
   );
 
-
-
-
-
   const commit = useCallback(
-    (
-    previousValue,
-    nextValue) =>
-    {
-      const previous =
-      cloneValue(
-        previousValue
-      );
-
-      const next =
-      cloneValue(
-        nextValue
-      );
-
-      if (
-      areEqual(
-        previous,
-        next,
-        equalityFn
-      ))
-      {
+    (previousValue, nextValue) => {
+      if (areEqual(previousValue, nextValue, equalityFn)) {
         return;
       }
 
-      setHistory(
-        (currentHistory) => ({
-          past: [
+      setHistory((currentHistory) => ({
+        past: [
           ...currentHistory.past,
-          previous].
-          slice(
-            -maxHistory
-          ),
-
-          present:
-          next,
-
-          future: []
-        })
-      );
+          previousValue,
+        ].slice(-maxHistory),
+        present: nextValue,
+        future: [],
+      }));
     },
-    [
-    equalityFn,
-    maxHistory,
-    setHistory]
-
+    [equalityFn, maxHistory]
   );
 
+  const undo = useCallback(() => {
+    setHistory((currentHistory) => {
+      if (currentHistory.past.length === 0) {
+        return currentHistory;
+      }
 
+      const previous =
+        currentHistory.past[currentHistory.past.length - 1];
 
+      return {
+        past: currentHistory.past.slice(0, -1),
+        present: previous,
+        future: [
+          currentHistory.present,
+          ...currentHistory.future,
+        ],
+      };
+    });
+  }, []);
 
+  const redo = useCallback(() => {
+    setHistory((currentHistory) => {
+      if (currentHistory.future.length === 0) {
+        return currentHistory;
+      }
 
-  const undo = useCallback(
-    () => {
-      setHistory(
-        (currentHistory) => {
-          if (
-          currentHistory.
-          past.length === 0)
-          {
-            return currentHistory;
-          }
+      const next = currentHistory.future[0];
 
-          const previous =
-          currentHistory.past[
-          currentHistory.
-          past.length - 1];
-
-
-          return {
-            past:
-            currentHistory.past.slice(
-              0,
-              -1
-            ),
-
-            present:
-            cloneValue(
-              previous
-            ),
-
-            future: [
-            cloneValue(
-              currentHistory.present
-            ),
-
-            ...currentHistory.future]
-
-          };
-        }
-      );
-    },
-    [setHistory]
-  );
-
-
-
-
-
-  const redo = useCallback(
-    () => {
-      setHistory(
-        (currentHistory) => {
-          if (
-          currentHistory.
-          future.length === 0)
-          {
-            return currentHistory;
-          }
-
-          const next =
-          currentHistory.future[0];
-
-          return {
-            past: [
-            ...currentHistory.past,
-
-            cloneValue(
-              currentHistory.present
-            )].
-            slice(
-              -maxHistory
-            ),
-
-            present:
-            cloneValue(
-              next
-            ),
-
-            future:
-            currentHistory.future.slice(
-              1
-            )
-          };
-        }
-      );
-    },
-    [
-    maxHistory,
-    setHistory]
-
-  );
-
-
-
-
+      return {
+        past: [
+          ...currentHistory.past,
+          currentHistory.present,
+        ].slice(-maxHistory),
+        present: next,
+        future: currentHistory.future.slice(1),
+      };
+    });
+  }, [maxHistory]);
 
   const reset = useCallback(
-    (
-    nextValue,
-    {
-      clearHistory = true
-    } = {}) =>
-    {
+    (nextValue, { clearHistory = true } = {}) => {
       const value =
-      typeof nextValue ===
-      "function" ?
-      nextValue() :
-      nextValue;
+        typeof nextValue === "function"
+          ? nextValue()
+          : nextValue;
 
-      const clonedValue =
-      cloneValue(
-        value
-      );
+      const clonedValue = cloneValue(value);
 
-      setHistory(
-        (currentHistory) => {
-          if (!clearHistory) {
-            return {
-              ...currentHistory,
-
-              present:
-              clonedValue
-            };
-          }
-
+      setHistory((currentHistory) => {
+        if (!clearHistory) {
           return {
-            past: [],
-
-            present:
-            clonedValue,
-
-            future: []
+            ...currentHistory,
+            present: clonedValue,
           };
         }
-      );
-    },
-    [setHistory]
-  );
 
-
-
-
-
-  const clearHistory =
-  useCallback(
-    () => {
-      setHistory(
-        (currentHistory) => ({
+        return {
           past: [],
-
-          present:
-          currentHistory.present,
-
-          future: []
-        })
-      );
+          present: clonedValue,
+          future: [],
+        };
+      });
     },
-    [setHistory]
+    []
   );
 
-
-
-
+  const clearHistory = useCallback(() => {
+    setHistory((currentHistory) => ({
+      past: [],
+      present: currentHistory.present,
+      future: [],
+    }));
+  }, []);
 
   return {
-    state:
-    history.present,
-
-    setState:
-    set,
-
+    state: history.present,
+    setState: set,
     undo,
     redo,
     reset,
     clearHistory,
     commit,
-
-    canUndo:
-    history.past.length > 0,
-
-    canRedo:
-    history.future.length > 0,
-
-    historyLength:
-    history.past.length
+    canUndo: history.past.length > 0,
+    canRedo: history.future.length > 0,
+    historyLength: history.past.length,
   };
 }
 

@@ -173,6 +173,8 @@ function useStoryPersistence({
   const hasLoadedStoryRef =
   useRef(false);
 
+  const loadedStoryIdRef = useRef(null);
+
   const autosaveTimerRef =
   useRef(null);
 
@@ -194,6 +196,74 @@ function useStoryPersistence({
     makeStoryPreviewRef.current =
     makeStoryPreview;
   }, [makeStoryPreview]);
+
+useEffect(() => {
+  let cancelled = false;
+
+  hasLoadedStoryRef.current = false;
+  loadedStoryIdRef.current = null;
+
+  const isNew =
+    !storyId ||
+    storyId === "new" ||
+    storyId === "undefined";
+
+  if (isNew) {
+    resetStoryHistory(createInitialStoryState());
+    return;
+  }
+
+  const loadStory = async () => {
+    try {
+      const data = await apiRequest(
+        `/stories/${storyId}`
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      if (!data || !Array.isArray(data.slides)) {
+        throw new Error(
+          "The server returned an invalid presentation."
+        );
+      }
+
+      const fallbackState = createInitialStoryState();
+
+      resetStoryHistory({
+        storyName: data.name || "Untitled Story",
+
+        slides: data.slides.length
+          ? normalizeStorySlides(data)
+          : fallbackState.slides
+      });
+
+      loadedStoryIdRef.current = String(storyId);
+      hasLoadedStoryRef.current = true;
+    } catch (error) {
+      if (cancelled) {
+        return;
+      }
+
+      console.error("Failed to load story:", error);
+
+      window.alert(
+        "The presentation could not be loaded. Please reopen it before saving."
+      );
+    }
+  };
+
+  loadStory();
+
+  return () => {
+    cancelled = true;
+  };
+}, [
+  storyId,
+  resetStoryHistory,
+  createInitialStoryState
+]);
 
   const reloadSavedStory =
   useCallback(
@@ -239,6 +309,18 @@ function useStoryPersistence({
       !storyId ||
       storyId ===
       "undefined";
+
+      if (
+        !isNew &&
+        (
+          !hasLoadedStoryRef.current ||
+          loadedStoryIdRef.current !== String(storyId)
+        )
+      ) {
+        throw new Error(
+          "The presentation has not loaded successfully. Reopen it before saving."
+        );
+      }
 
       const path =
       isNew ?

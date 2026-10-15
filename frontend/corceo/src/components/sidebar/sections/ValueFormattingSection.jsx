@@ -2,7 +2,7 @@ import {
   ChevronDown,
   Hash } from
 "lucide-react";
-
+import CommitNumberInput from "../CommitNumberInput";
 import { formatValue } from "../../../utils/formatters";
 
 
@@ -192,23 +192,15 @@ function ValueFormattingSection({
               Decimal Places
             </label>
 
-            <input
-            type="number"
-            min="0"
-            max="6"
-            value={settings.decimalPlaces ?? 2}
-            onChange={(e) => {
-              const value = Number(e.target.value);
-
-              updateSetting(
-                "decimalPlaces",
-                Number.isFinite(value) ?
-                Math.min(6, Math.max(0, value)) :
-                0
-              );
-            }}
-            className="app-input w-full rounded px-2 py-1.5 text-sm" />
-          
+            <CommitNumberInput
+              min={0}
+              max={6}
+              step={1}
+              integer
+              value={settings.decimalPlaces ?? 2}
+              onCommit={(value) => updateSetting("decimalPlaces", value)}
+              className="app-input w-full rounded px-2 py-1.5 text-sm"
+            />
           </div>
 
           {}

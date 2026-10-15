@@ -28,8 +28,6 @@ export default function useStoryCharts({
     name,
     imageUrl) =>
     {
-      let newItemId =
-      null;
 
       setSlides(
         (previousSlides) =>
@@ -57,9 +55,6 @@ export default function useStoryCharts({
               content.length
             );
 
-            newItemId =
-            newItem.id;
-
             return {
               ...slide,
 
@@ -73,11 +68,7 @@ export default function useStoryCharts({
         )
       );
 
-      if (newItemId) {
-        setSelectedChartId(
-          newItemId
-        );
-      }
+      setSelectedChartId(null);
 
       setSelectedAnnoId(
         null

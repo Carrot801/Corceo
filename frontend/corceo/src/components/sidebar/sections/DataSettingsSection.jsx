@@ -2,6 +2,7 @@ import {
   ChevronDown,
   ListFilter } from
 "lucide-react";
+import CommitNumberInput from "../CommitNumberInput";
 
 function DataSettingsSection({
   chartConfig,
@@ -781,34 +782,15 @@ function DataSettingsSection({
                     Number of items
                   </label>
 
-                  <input
-                id="ranking-count"
-                type="number"
-                min="1"
-                step="1"
-                value={
-                chartConfig.ranking?.count ??
-                10
-                }
-                onChange={(e) => {
-                  const value =
-                  Number(e.target.value);
-
-                  if (
-                  Number.isInteger(value) &&
-                  value >= 1)
-                  {
-                    updateRanking({
-                      count: value
-                    });
-                  }
-                }}
-                className="
-                      app-input
-                      w-full rounded-lg
-                      px-3 py-2
-                      text-xs
-                    " />
+                  <CommitNumberInput
+                    id="ranking-count"
+                    min={1}
+                    step={1}
+                    integer
+                    value={chartConfig.ranking?.count ?? 10}
+                    onCommit={(value) => updateRanking({ count: value })}
+                    className="app-input w-full rounded-lg px-3 py-2 text-xs"
+                  />
 
 
 

@@ -1,4 +1,5 @@
 import React from "react";
+import StoryChart from "../StoryChart";
 
 function SlideThumbnail({
   slide,
@@ -92,46 +93,25 @@ function SlideThumbnail({
               zIndex: item.zIndex ?? index + 1
             }}>
             
-              {item.imageUrl ?
-            <img
-              src={item.imageUrl}
-              alt=""
-              className="
-                    h-full
-                    w-full
-                    object-contain
-                  "
-
-
-
-
-              draggable={false} /> :
-
-
-            <div
-              className="
-                    flex
-                    h-full
-                    w-full
-                    items-center
-                    justify-center
-                    bg-slate-100
-                    text-[8px]
-                    text-slate-400
-                  ">
-
-
-
-
-
-
-
-
-
-              
-                  Chart
-                </div>
-            }
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <div
+                className="pointer-events-none h-full w-full overflow-hidden"
+                aria-hidden="true"
+              >
+                <StoryChart
+                  chartId={item.chartId}
+                  storyMode
+                  exportMode
+                />
+              </div>
+            )}
             </div>
 
         )}
