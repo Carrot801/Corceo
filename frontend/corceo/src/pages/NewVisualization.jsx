@@ -393,15 +393,21 @@ function NewVisualization() {
     });
   };
 
-  const {
-    chartData,
-    generatedColors,
-    visibleYKeys
-  } = useChartData({
-    data,
-    chartConfig,
-    settings
-  });
+const {
+  chartData,
+  generatedColors,
+  visibleYKeys,
+  isProcessing,
+  processingError,
+} = useChartData({
+  data,
+  chartConfig,
+  settings,
+  useWorker: true,
+});
+
+const chartActionsDisabled =
+  isProcessing || Boolean(processingError);
 
   const {
     exportChartRef,
@@ -862,21 +868,22 @@ function NewVisualization() {
             </button>
             <button
                 onClick={publishChart}
-                className="btn-secondary px-4 py-2 text-sm rounded-lg">
-                
+                disabled={chartActionsDisabled}
+                className="btn-secondary px-4 py-2 text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowe">
               Publish
             </button>
 
             <button
                 onClick={exportPNG}
-                className="btn-secondary px-4 py-2 text-sm rounded-lg">
-                
+                disabled={chartActionsDisabled}
+                className="btn-secondary px-4 py-2 text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowe">
               Export
             </button>
 
             <button
                 onClick={saveChart}
-                className="btn-primary px-4 py-2 text-sm rounded-lg">
+                disabled={chartActionsDisabled}
+                className="btn-primary px-4 py-2 text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowe">
                 
               Save
             </button>
@@ -885,6 +892,23 @@ function NewVisualization() {
             }
       </div>
     </div>
+    {isProcessing && (
+  <div
+    role="status"
+    className="mx-4 mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700"
+  >
+    Processing chart data…
+  </div>
+)}
+
+{processingError && (
+  <div
+    role="alert"
+    className="mx-4 mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+  >
+    Could not process chart data: {processingError}
+  </div>
+)}
     {error &&
         <div className="mx-4 mt-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3">
         <p className="text-sm text-red-700">

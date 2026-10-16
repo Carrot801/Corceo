@@ -332,11 +332,7 @@ function RadarChartView({
 
 
                   false
-                  }
-                  isAnimationActive={
-                  appearance.animate !==
-                  false
-                  } />);
+                  }/>);
 
 
             }

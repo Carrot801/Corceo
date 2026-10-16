@@ -25,7 +25,8 @@ function BarChartView({
   visibleYKeys,
   onChartItemClick,
   selectedChartValues = [],
-  exportMode = false
+  exportMode = false,
+  fullChartTotal,
 }) {
   const yKeys =
   visibleYKeys ?? (
@@ -58,17 +59,18 @@ function BarChartView({
 
 
 
-  const total = chartData.reduce(
+const total =
+  fullChartTotal ??
+  chartData.reduce(
     (sum, row) =>
-    sum +
-    yKeys.reduce(
-      (seriesSum, key) =>
-      seriesSum + (
-      Number(row[key]) || 0),
-      0
-    ),
+      sum +
+      yKeys.reduce(
+        (seriesSum, key) => seriesSum + (Number(row[key]) || 0),
+        0
+      ),
     0
   );
+
   const labelLayout =
   xAxisSettings.labelLayout ?? "auto";
 
@@ -406,7 +408,11 @@ function BarChartView({
               key={key}
               dataKey={key}
               name={key}
-              isAnimationActive={!exportMode}
+              isAnimationActive={
+                !exportMode &&
+                appearance.animate !== false &&
+                chartData.length * yKeys.length <= 200
+              }
               onClick={(data) => {
                 const clickedItem =
                 data?.payload ||

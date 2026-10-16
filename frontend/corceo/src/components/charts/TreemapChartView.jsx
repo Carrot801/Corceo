@@ -377,10 +377,6 @@ function TreemapChartView({
           aspectRatio={
           aspectRatio
           }
-          isAnimationActive={
-          appearance.animate ??
-          true
-          }
           animationDuration={
           appearance.animationDuration ??
           500

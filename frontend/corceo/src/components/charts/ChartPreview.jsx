@@ -25,7 +25,57 @@ function ChartPreview({
   selectedChartValues = [],
   storyMode = false
 }) {
+const CATEGORIES_PER_PAGE = 100;
 
+const [requestedPage, setRequestedPage] = React.useState(0);
+
+const validChartData = React.useMemo(() => {
+  if (!Array.isArray(chartData)) return [];
+
+  return chartData.filter(
+    (item) => item.x != null && String(item.x).trim() !== ""
+  );
+}, [chartData]);
+
+const paginated = chartConfig.type === "bar";
+
+const pageCount = paginated
+  ? Math.max(1, Math.ceil(validChartData.length / CATEGORIES_PER_PAGE))
+  : 1;
+
+const currentPage = Math.min(requestedPage, pageCount - 1);
+
+const pageStart = paginated
+  ? currentPage * CATEGORIES_PER_PAGE
+  : 0;
+
+const pageEnd = paginated
+  ? Math.min(pageStart + CATEGORIES_PER_PAGE, validChartData.length)
+  : validChartData.length;
+
+// Keep percentage formatting based on the complete chart dataset.
+const fullChartTotal = React.useMemo(() => {
+  const keys =
+    visibleYKeys ??
+    (Array.isArray(chartConfig.y)
+      ? chartConfig.y
+      : chartConfig.y
+        ? [chartConfig.y]
+        : []);
+
+  return validChartData.reduce(
+    (sum, row) =>
+      sum + keys.reduce(
+        (subtotal, key) => subtotal + (Number(row[key]) || 0),
+        0
+      ),
+    0
+  );
+}, [validChartData, visibleYKeys, chartConfig.y]);
+
+React.useEffect(() => {
+  setRequestedPage(0);
+}, [chartData, chartConfig.type]);
 
 
 
@@ -42,6 +92,7 @@ function ChartPreview({
     waterfall: WaterfallChartView
   };
 
+
   const ActiveChart =
   chartViews[chartConfig.type] ||
   BarChartView;
@@ -50,35 +101,18 @@ function ChartPreview({
 
 
 
-
-  const processedData =
-  React.useMemo(() => {
-    if (!Array.isArray(chartData)) {
-      return [];
-    }
-
-    return chartData.
-    map((item, index) => ({
+const processedData = React.useMemo(() => {
+  return validChartData
+    .slice(pageStart, pageEnd)
+    .map((item, index) => ({
       ...item,
-
-      x:
-      item.x !== null &&
-      item.x !== undefined ?
-      String(item.x).trim() :
-      "",
-
+      x: String(item.x).trim(),
       color:
-      generatedColors[index] ||
-      "#3b82f6"
-    })).
-    filter(
-      (item) =>
-      item.x !== ""
-    );
-  }, [
-  chartData,
-  generatedColors]
-  );
+        item.color ||
+        generatedColors[pageStart + index] ||
+        "#3b82f6",
+    }));
+}, [validChartData, pageStart, pageEnd, generatedColors]);
 
 
   const filteredColors =
@@ -186,9 +220,40 @@ function ChartPreview({
       undefined
       }>
       
-      {
+      {paginated && pageCount > 1 && (
+  <div className="mb-3 flex shrink-0 items-center justify-between gap-3 text-sm">
+    <span>
+      Categories {pageStart + 1}–{pageEnd} of{" "}
+      {validChartData.length}
+    </span>
 
-      }
+    {!isExport && (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={currentPage === 0}
+          onClick={() => setRequestedPage(currentPage - 1)}
+          className="app-border rounded border px-3 py-1 disabled:opacity-40"
+        >
+          Previous
+        </button>
+
+        <span>
+          {currentPage + 1} / {pageCount}
+        </span>
+
+        <button
+          type="button"
+          disabled={currentPage >= pageCount - 1}
+          onClick={() => setRequestedPage(currentPage + 1)}
+          className="app-border rounded border px-3 py-1 disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
+    )}
+  </div>
+)}
 
       <div
         className={`
@@ -336,6 +401,7 @@ function ChartPreview({
               chartData={
               processedData
               }
+              fullChartTotal={fullChartTotal}
               exportMode={isExport}
               generatedColors={
               filteredColors
