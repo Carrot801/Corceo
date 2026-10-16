@@ -59,37 +59,52 @@ function useChartData({
     ? workerResult.processed
     : synchronousResult;
 
-  const generatedColors = useMemo(() => {
-    const colorCount = Math.max(
-      processed.visibleYKeys.length,
-      processed.rows.length,
-      1
-    );
-
-    return generatePalette(
-      settings.palette ?? "Standard",
-      settings.paletteMode ?? "automatic",
-      colorCount,
-      {
-        useCustomPalette: settings.useCustomPalette ?? false,
-        customColors: settings.customPalette ?? [],
-        extendCustomPalette: settings.extendCustomPalette ?? true,
-        customExtensionMode:
-          settings.customExtensionMode ?? "distinct",
-        ordered: ["heatmap", "waterfall"].includes(chartConfig.type),
-      }
-    );
-  }, [
-    settings.palette,
-    settings.paletteMode,
-    settings.useCustomPalette,
-    settings.customPalette,
-    settings.extendCustomPalette,
-    settings.customExtensionMode,
-    chartConfig.type,
+const generatedColors = useMemo(() => {
+  const colorCount = Math.max(
     processed.visibleYKeys.length,
     processed.rows.length,
-  ]);
+    1
+  );
+
+  // Bound expensive color selection for bar charts.
+  const paletteSize =
+    chartConfig.type === "bar"
+      ? Math.min(colorCount, 20)
+      : colorCount;
+
+  const baseColors = generatePalette(
+    settings.palette ?? "Standard",
+    settings.paletteMode ?? "automatic",
+    paletteSize,
+    {
+      useCustomPalette: settings.useCustomPalette ?? false,
+      customColors: settings.customPalette ?? [],
+      extendCustomPalette: settings.extendCustomPalette ?? true,
+      customExtensionMode:
+        settings.customExtensionMode ?? "distinct",
+      ordered: ["heatmap", "waterfall"].includes(chartConfig.type),
+    }
+  );
+
+  const safeColors =
+    baseColors.length > 0 ? baseColors : ["#3b82f6"];
+
+  // Preserve indexed access for every category and every page.
+  return Array.from(
+    { length: colorCount },
+    (_, index) => safeColors[index % safeColors.length]
+  );
+}, [
+  settings.palette,
+  settings.paletteMode,
+  settings.useCustomPalette,
+  settings.customPalette,
+  settings.extendCustomPalette,
+  settings.customExtensionMode,
+  chartConfig.type,
+  processed.visibleYKeys.length,
+  processed.rows.length,
+]);
 
   return {
     chartData: processed.rows,
