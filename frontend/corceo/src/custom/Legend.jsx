@@ -15,9 +15,10 @@ function Legend({
   );
   const customLegendFields = settings.legendFields || [];
 
-  const limitedRawData = rawData.filter((row) =>
-  topXValues.has(row[xField])
-  );
+const limitedRawData =
+  customLegendFields.length > 0
+    ? rawData.filter((row) => topXValues.has(row[xField]))
+    : [];
 
 
   const legendItems =

@@ -60,19 +60,26 @@ function AreaChartView({
             } />
           
 
-          {yKeys.map((key, index) =>
-          <Area
-            key={key}
-            type="monotone"
-            dataKey={key}
-            isAnimationActive={!exportMode}
-            name={key}
-            stroke={generatedColors[index] || "#3b82f6"}
-            fill={generatedColors[index] || "#3b82f6"}
-            fillOpacity={0.25}
-            strokeWidth={3} />
+          {yKeys.map((key, index) => {
+  const color =
+    generatedColors[
+      index % Math.max(generatedColors.length, 1)
+    ] || "#3b82f6";
 
-          )}
+  return (
+    <Area
+      key={key}
+      type="monotone"
+      dataKey={key}
+      name={key}
+      isAnimationActive={false}
+      stroke={color}
+      fill={color}
+      fillOpacity={0.5}
+      strokeWidth={3}
+    />
+  );
+})}
         </AreaChart>
       </ResponsiveContainer>
     </div>);

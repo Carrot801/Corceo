@@ -65,8 +65,8 @@ function RadarChartView({
   chartConfig = {},
   visibleYKeys,
   onChartItemClick,
-  selectedChartValues = []
-
+  selectedChartValues = [],
+  exportMode = false
 }) {
   const appearance =
   chartConfig.appearance || {};
@@ -108,9 +108,10 @@ function RadarChartView({
     appearance.lineWidth ?? 2
   );
 
-  const showPoints =
-  appearance.showPoints ?? true;
-
+const showPoints =
+  (appearance.showPoints ?? true) &&
+  chartData.length * yKeys.length <= 500;
+  
   const showGrid =
   appearance.showGrid ?? true;
 
@@ -260,8 +261,9 @@ function RadarChartView({
           {yKeys.map(
             (key, index) => {
               const color =
-              generatedColors[index] ||
-              "#3b82f6";
+                generatedColors[
+                  index % Math.max(generatedColors.length, 1)
+                ] || "#3b82f6";
 
               const hasSelection =
               selectedChartValues.length >
@@ -272,7 +274,11 @@ function RadarChartView({
                   key={key}
                   dataKey={key}
                   name={key}
-                  isAnimationActive={!exportMode}
+                  isAnimationActive={
+                    !exportMode &&
+                    appearance.animate !== false &&
+                    chartData.length * yKeys.length <= 200
+                  }
                   stroke={color}
                   fill={color}
                   strokeWidth={lineWidth}

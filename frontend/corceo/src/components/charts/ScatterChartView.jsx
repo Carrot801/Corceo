@@ -431,12 +431,8 @@ function ScatterChartView({
             tickFormatter={(
             value) =>
             {
-              const item =
-              data.find(
-                (row) =>
-                row.xIndex ===
-                Number(value)
-              );
+              const index = Number(value) - 1;
+const item = Number.isInteger(index) ? data[index] : undefined;
 
               if (!item) {
                 return "";
@@ -595,7 +591,11 @@ function ScatterChartView({
           <Scatter
             data={data}
             dataKey="y"
-            isAnimationActive={!exportMode}
+            isAnimationActive={
+  !exportMode &&
+  animate &&
+  data.length <= 200
+}
             animationDuration={
             appearance.animationDuration ??
             500

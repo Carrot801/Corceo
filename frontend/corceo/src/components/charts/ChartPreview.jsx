@@ -13,6 +13,71 @@ import AreaChartView from "./AreaChartView";
 
 import Legend from "../../custom/Legend";
 
+function prepareCircularChart(
+  rows,
+  yKey,
+  colors,
+  maxSlices = 20
+) {
+  const largest = [];
+  let otherTotal = 0;
+  let groupedCount = 0;
+
+  const shouldGroup = rows.length > maxSlices;
+const keepCount = maxSlices;
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const value = Number(row[yKey] ?? 0);
+
+    if (!Number.isFinite(value) || value < 0) {
+      return {
+        rows: [],
+        groupedCount: 0,
+        error:
+          "Pie and donut charts require finite, non-negative values.",
+      };
+    }
+
+    if (value === 0) continue;
+
+    const candidate = { row, index, value };
+    let position = largest.length;
+
+    if (shouldGroup) {
+      position = 0;
+
+      while (
+        position < largest.length &&
+        largest[position].value >= value
+      ) {
+        position += 1;
+      }
+    }
+
+    largest.splice(position, 0, candidate);
+
+    if (largest.length > keepCount) {
+      const removed = largest.pop();
+      otherTotal += removed.value;
+      groupedCount += 1;
+    }
+  }
+
+  const result = largest.map(({ row, index, value }) => ({
+    ...row,
+    [yKey]: value,
+    color:
+      row.color ||
+      colors[index % Math.max(colors.length, 1)] ||
+      "#3b82f6",
+  }));
+
+  return {
+    rows: result,
+    groupedCount,
+    error: null,
+  };
+}
 
 function ChartPreview({
   chartData = [],
@@ -101,18 +166,60 @@ React.useEffect(() => {
 
 
 
+const isCircularChart =
+  chartConfig.type === "pie" ||
+  chartConfig.type === "donut";
+
+const circularYKey = Array.isArray(chartConfig.y)
+  ? chartConfig.y[0]
+  : chartConfig.y || "y";
+
+const circularResult = React.useMemo(() => {
+  if (!isCircularChart) return null;
+
+  return prepareCircularChart(
+    validChartData,
+    circularYKey,
+    generatedColors,
+    20
+  );
+}, [
+  isCircularChart,
+  validChartData,
+  circularYKey,
+  generatedColors,
+]);
+
 const processedData = React.useMemo(() => {
-  return validChartData
-    .slice(pageStart, pageEnd)
-    .map((item, index) => ({
-      ...item,
-      x: String(item.x).trim(),
-      color:
-        item.color ||
-        generatedColors[pageStart + index] ||
-        "#3b82f6",
-    }));
-}, [validChartData, pageStart, pageEnd, generatedColors]);
+  const rows = isCircularChart
+    ? circularResult.rows
+    : validChartData.slice(pageStart, pageEnd);
+
+  return rows.map((item, index) => ({
+    ...item,
+    x: String(item.x).trim(),
+    color:
+      item.color ||
+      generatedColors[pageStart + index] ||
+      "#3b82f6",
+  }));
+}, [
+  isCircularChart,
+  circularResult,
+  validChartData,
+  pageStart,
+  pageEnd,
+  generatedColors,
+]);
+
+const legendSettings = React.useMemo(() => {
+  if (!circularResult?.groupedCount) return settings;
+
+  return {
+    ...settings,
+    legendFields: [],
+  };
+}, [settings, circularResult]);
 
 
   const filteredColors =
@@ -201,6 +308,17 @@ const processedData = React.useMemo(() => {
   "min-h-0 overflow-hidden";
 
 
+  if (circularResult?.error) {
+  return (
+    <div
+      role="alert"
+      className="flex h-full items-center justify-center p-4 text-sm text-red-600"
+    >
+      {circularResult.error}
+    </div>
+  );
+}
+
   return (
     <div
       className={`
@@ -219,7 +337,13 @@ const processedData = React.useMemo(() => {
       } :
       undefined
       }>
-      
+      {circularResult?.groupedCount > 0 && (
+        <p className="app-text-muted mb-3 text-sm">
+          The largest entries are shown individually.
+          Remaining values are included in “Other”.
+        </p>
+      )}
+
       {paginated && pageCount > 1 && (
   <div className="mb-3 flex shrink-0 items-center justify-between gap-3 text-sm">
     <span>
@@ -326,9 +450,11 @@ const processedData = React.useMemo(() => {
             }
             rawData={rawData}
             generatedColors={
-            filteredColors
+              ["area", "line", "radar"].includes(chartConfig.type)
+                ? generatedColors
+                : filteredColors
             }
-            settings={settings}
+            settings={legendSettings}
             xField={
             chartConfig.x
             } />
@@ -369,7 +495,7 @@ const processedData = React.useMemo(() => {
             xField={
             chartConfig.x
             }
-            settings={settings} />
+            settings={legendSettings} />
           
             </div>
         }
@@ -414,7 +540,12 @@ const processedData = React.useMemo(() => {
               visibleYKeys
               }
               onChartItemClick={
-              onChartItemClick
+                onChartItemClick
+                  ? (item) => {
+                      if (item?.__corceoOther) return;
+                      onChartItemClick(item);
+                    }
+                  : undefined
               }
               selectedChartValues={
               selectedChartValues
@@ -446,7 +577,7 @@ const processedData = React.useMemo(() => {
             xField={
             chartConfig.x
             }
-            settings={settings} />
+            settings={legendSettings} />
           
             </div>
         }
@@ -484,7 +615,7 @@ const processedData = React.useMemo(() => {
             xField={
             chartConfig.x
             }
-            settings={settings} />
+            settings={legendSettings} />
           
             </div>
         }

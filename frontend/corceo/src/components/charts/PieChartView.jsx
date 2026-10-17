@@ -244,8 +244,10 @@ function PieChartView({
             outerRadius
             }
             isAnimationActive={
-            !exportMode
-            }
+  !exportMode &&
+  appearance.animate !== false &&
+  chartData.length <= 20
+}
             paddingAngle={
             paddingAngle
             }
@@ -290,14 +292,12 @@ function PieChartView({
             "outside"
             }
             onClick={(data) => {
-              const clickedItem =
-              data?.payload ||
-              data;
+  const clickedItem = data?.payload || data;
 
-              onChartItemClick?.(
-                clickedItem
-              );
-            }}
+  if (clickedItem?.__corceoOther) return;
+
+  onChartItemClick?.(clickedItem);
+}}
             className={
             onChartItemClick ?
             "cursor-pointer" :

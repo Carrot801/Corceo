@@ -170,28 +170,18 @@ function HeatmapChartView({
 
   }
 
-  const total = chartData.reduce(
-    (sum, row) =>
-    sum + (
-    Number(row[yKey]) || 0),
-    0
-  );
+let total = 0;
+let minimumValue = 0;
+let maximumValue = 1;
 
-  const numericValues =
-  chartData.map(
-    (row) =>
-    Number(row[yKey]) || 0
-  );
+for (const row of chartData) {
+  const parsed = Number(row[yKey]);
+  const value = Number.isFinite(parsed) ? parsed : 0;
 
-  const minimumValue = Math.min(
-    ...numericValues,
-    0
-  );
-
-  const maximumValue = Math.max(
-    ...numericValues,
-    1
-  );
+  total += value;
+  minimumValue = Math.min(minimumValue, value);
+  maximumValue = Math.max(maximumValue, value);
+}
 
   const valueRange =
   maximumValue - minimumValue || 1;
@@ -200,15 +190,11 @@ function HeatmapChartView({
   appearance.colorScale ??
   "sequential";
 
-  const lowColor =
-  appearance.lowColor ??
-  generatedColors[0] ??
-  "#dbeafe";
+const lowColor =
+  appearance.lowColor || "#dbeafe";
 
-  const highColor =
-  appearance.highColor ??
-  generatedColors[
-  generatedColors.length - 1] ??
+const highColor =
+  appearance.highColor || "#1d4ed8";
 
   "#1d4ed8";
 
@@ -305,8 +291,8 @@ function HeatmapChartView({
 
   const data = chartData.map(
     (item, index) => {
-      const value =
-      Number(item[yKey]) || 0;
+      const parsed = Number(item[yKey]);
+const value = Number.isFinite(parsed) ? parsed : 0;
 
       return {
         ...item,
@@ -324,10 +310,7 @@ function HeatmapChartView({
         percentage:
         getPercentage(value),
 
-        cellColor:
-        item.color ||
-        getCellColor(value),
-
+        cellColor: getCellColor(value),
 
 
 
@@ -524,7 +507,11 @@ function HeatmapChartView({
 
           <Scatter
             data={data}
-            isAnimationActive={!exportMode}
+            isAnimationActive={
+  !exportMode &&
+  appearance.animate !== false &&
+  data.length <= 200
+}
             shape={(props) => {
               const entry =
               props.payload;

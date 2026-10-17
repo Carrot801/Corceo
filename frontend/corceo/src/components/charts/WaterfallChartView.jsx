@@ -185,37 +185,20 @@ function WaterfallChartView({
   appearance.totalLabel]
   );
 
+  const { chartMinimum, chartMaximum } = useMemo(() => {
+  let minimum = 0;
+  let maximum = 0;
 
+  for (const row of waterfallData) {
+    minimum = Math.min(minimum, row.start, row.end);
+    maximum = Math.max(maximum, row.start, row.end);
+  }
 
-
-  const chartMinimum =
-  waterfallData.length > 0 ?
-  Math.min(
-    0,
-    ...waterfallData.flatMap(
-      (row) => [
-      row.start,
-      row.end]
-
-    )
-  ) :
-  0;
-
-  const chartMaximum =
-  waterfallData.length > 0 ?
-  Math.max(
-    0,
-    ...waterfallData.flatMap(
-      (row) => [
-      row.start,
-      row.end]
-
-    )
-  ) :
-  0;
-
-
-
+  return {
+    chartMinimum: minimum,
+    chartMaximum: maximum,
+  };
+}, [waterfallData]);
 
   const labelLayout =
   xAxisSettings.labelLayout ??
@@ -523,6 +506,11 @@ function WaterfallChartView({
       "#22c55e");
 
   };
+
+  const selectedValuesSet = useMemo(
+  () => new Set(selectedChartValues.map(String)),
+  [selectedChartValues]
+);
 
   if (
   !yKey ||
@@ -939,19 +927,8 @@ function WaterfallChartView({
               index) =>
               {
                 const isSelected =
-                selectedChartValues.length ===
-                0 ||
-                selectedChartValues.some(
-                  (
-                  selectedValue) =>
-
-                  String(
-                    selectedValue
-                  ) ===
-                  String(
-                    entry.x
-                  )
-                );
+                  selectedValuesSet.size === 0 ||
+                  selectedValuesSet.has(String(entry.x));
 
                 return (
                   <Cell

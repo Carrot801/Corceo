@@ -66,11 +66,7 @@ const generatedColors = useMemo(() => {
     1
   );
 
-  // Bound expensive color selection for bar charts.
-  const paletteSize =
-    chartConfig.type === "bar"
-      ? Math.min(colorCount, 20)
-      : colorCount;
+const paletteSize = Math.min(colorCount, 20);
 
   const baseColors = generatePalette(
     settings.palette ?? "Standard",

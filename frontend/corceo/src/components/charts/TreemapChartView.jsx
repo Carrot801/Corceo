@@ -88,6 +88,7 @@ function TreemapContent({
   renderedWidth > 70 &&
   renderedHeight > 48;
 
+  
   return (
     <g
       onClick={() =>
@@ -208,7 +209,8 @@ function TreemapChartView({
   settings = {},
   chartConfig = {},
   onChartItemClick,
-  selectedChartValues = []
+  selectedChartValues = [],
+  exportMode = false
 }) {
   const appearance =
   chartConfig.appearance || {};
@@ -347,7 +349,11 @@ function TreemapChartView({
         <Treemap
           data={data}
           dataKey="size"
-          isAnimationActive={!exportMode}
+          isAnimationActive={
+            !exportMode &&
+            appearance.animate !== false &&
+            chartData.length <= 200
+          }
           nameKey="name"
           content={
           <TreemapContent

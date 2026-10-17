@@ -131,8 +131,9 @@ function CustomLegend({
       {yKeys.map(
         (key, index) => {
           const color =
-          generatedColors[index] ||
-          "#3b82f6";
+  generatedColors[
+    index % Math.max(generatedColors.length, 1)
+  ] || "#3b82f6";
 
           const shape =
           SHAPES[
@@ -207,9 +208,9 @@ function LineChartView({
     4
   );
 
-  const showPoints =
-  appearance.showPoints ??
-  true;
+const showPoints =
+  (appearance.showPoints ?? true) &&
+  chartData.length * yKeys.length <= 500;
 
   const connectNulls =
   appearance.connectNulls ??
@@ -669,10 +670,9 @@ function LineChartView({
             index) =>
             {
               const color =
-              generatedColors[
-              index] ||
-
-              "#3b82f6";
+  generatedColors[
+    index % Math.max(generatedColors.length, 1)
+  ] || "#3b82f6";
 
               const shape =
               SHAPES[
@@ -699,8 +699,9 @@ function LineChartView({
                   seriesOpacity
                   }
                   isAnimationActive={
-                  !exportMode &&
-                  appearance.animate !== false
+                    !exportMode &&
+                    appearance.animate !== false &&
+                    chartData.length * yKeys.length <= 200
                   }
                   onClick={(
                   data) =>
