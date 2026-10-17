@@ -416,26 +416,26 @@ const chartActionsDisabled =
   } = useChartExport({
     chartConfig,
     chartData,
-    settings
-  });
-
-
-
-  const {
-    saveChart,
-    publishChart
-  } = useChartPersistence({
-    chartConfig,
     settings,
-
-    saveDataset,
-    saveChartToBackend,
-
-    createExportImage,
-
-    navigate
+    visibleChartRef
   });
 
+const {
+  saveChart,
+  publishChart
+} = useChartPersistence({
+  chartConfig,
+
+  settings: {
+    ...settings,
+    chartHeight,
+  },
+
+  saveDataset,
+  saveChartToBackend,
+  createExportImage,
+  navigate,
+});
 
   const isUsed = (col) =>
   col === chartConfig.x ||

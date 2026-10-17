@@ -241,6 +241,12 @@ function PublishedChart() {
     settings: parsedSettings
   });
 
+  const savedHeight = Number(parsedSettings.chartHeight);
+
+const publishedChartHeight =
+  Number.isFinite(savedHeight) && savedHeight > 0
+    ? savedHeight
+    : 600;
 
   if (loading) {
     return (
@@ -275,39 +281,38 @@ function PublishedChart() {
   }
 
   return (
-    <div className="app-page min-h-screen p-6">
+  <div className="app-page min-h-screen p-6">
+    <div
+      className="
+        app-card
+        mx-auto
+        w-full
+        max-w-[1400px]
+        rounded-xl
+        p-6
+      "
+    >
       <div
-        className="
-          app-card
-          mx-auto
-          h-[calc(100vh-48px)]
-          min-h-[600px]
-          w-full
-          max-w-[1400px]
-          rounded-xl
-          p-6
-        ">
-
-
-
-
-
-
-
-
-
-        
+        className="w-full overflow-hidden"
+        style={{
+          height: `${publishedChartHeight}px`,
+        }}
+      >
         <ChartPreview
           chartData={chartData}
           rawData={preparedRows}
           chartConfig={chartConfig}
           generatedColors={generatedColors}
           visibleYKeys={visibleYKeys}
-          settings={parsedSettings} />
-        
+          settings={{
+            ...parsedSettings,
+            exportMode: false,
+          }}
+        />
       </div>
-    </div>);
-
+    </div>
+  </div>
+);
 }
 
 export default PublishedChart;

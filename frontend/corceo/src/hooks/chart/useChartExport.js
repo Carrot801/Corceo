@@ -55,93 +55,56 @@ async function waitForExportRender() {
 function useChartExport({
   chartConfig,
   chartData,
-  settings
+  settings,
+  visibleChartRef
 }) {
   const exportChartRef =
   useRef(null);
 
-  const createExportImage =
-  useCallback(
-    async (
-    pixelRatio = 2) =>
-    {
-      const node =
-      exportChartRef.current;
+const createExportImage = useCallback(
+  async (pixelRatio = 2) => {
+    await waitForExportRender();
 
-      if (!node) {
-        throw new Error(
-          "The export chart element was not found."
-        );
-      }
+    const visibleNode = visibleChartRef?.current;
 
-      await waitForExportRender();
+    const hasVisiblePreview =
+      visibleNode &&
+      visibleNode.clientWidth > 0 &&
+      visibleNode.clientHeight > 0;
 
-      const width = 1400;
-      const height = 900;
+    const node = hasVisiblePreview
+      ? visibleNode
+      : exportChartRef.current;
 
-      return toPng(
-        node,
-        {
-          cacheBust: true,
-
-          pixelRatio,
-
-          backgroundColor:
-          "#ffffff",
-
-          width,
-          height,
-
-          canvasWidth:
-          width *
-          pixelRatio,
-
-          canvasHeight:
-          height *
-          pixelRatio,
-
-          style: {
-            width:
-            `${width}px`,
-
-            height:
-            `${height}px`,
-
-            minWidth:
-            `${width}px`,
-
-            minHeight:
-            `${height}px`,
-
-            maxWidth:
-            "none",
-
-            maxHeight:
-            "none",
-
-            overflow:
-            "visible",
-
-            transform:
-            "none",
-
-            backgroundColor:
-            "#ffffff"
-          },
-
-          filter:
-          (element) =>
-          !element?.
-          classList?.
-          contains(
-            "no-export"
-          )
-        }
+    if (!node) {
+      throw new Error(
+        "The chart element was not found."
       );
-    },
-    []
-  );
+    }
 
+    const width = node.clientWidth;
+    const height = node.clientHeight;
+
+    if (width <= 0 || height <= 0) {
+      throw new Error(
+        "The chart must have a visible width and height."
+      );
+    }
+
+    return toPng(node, {
+      cacheBust: true,
+      pixelRatio,
+      backgroundColor: "#ffffff",
+
+      width,
+      height,
+
+      filter: (element) =>
+        !element?.classList?.contains("no-export"),
+    });
+  },
+  [visibleChartRef]
+);
   const exportPNG =
   useCallback(
     async () => {
