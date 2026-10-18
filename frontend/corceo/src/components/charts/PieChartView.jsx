@@ -249,8 +249,8 @@ function PieChartView({
   chartData.length <= 20
 }
             paddingAngle={
-            paddingAngle
-            }
+  chartData.length > 200 ? 0 : paddingAngle
+}
             startAngle={
             startAngle
             }
@@ -258,9 +258,10 @@ function PieChartView({
             endAngle
             }
             minAngle={
-            appearance.minSliceAngle ??
-            0
-            }
+  chartData.length > 200
+    ? 0
+    : appearance.minSliceAngle ?? 0
+}
             cornerRadius={
             appearance.sliceRadius ??
             0
@@ -273,12 +274,11 @@ function PieChartView({
             "#ffffff"
             }
             strokeWidth={
-            appearance.showSliceBorder ===
-            false ?
-            0 :
-            appearance.sliceBorderWidth ??
-            1
-            }
+  chartData.length > 200 ||
+  appearance.showSliceBorder === false
+    ? 0
+    : appearance.sliceBorderWidth ?? 1
+}
             label={
             settings.showLabels !==
             false ?
@@ -383,6 +383,7 @@ function PieChartView({
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             content={
             <CustomChartTooltip
               settings={

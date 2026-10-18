@@ -432,6 +432,7 @@ const value = Number.isFinite(parsed) ? parsed : 0;
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             cursor={
             appearance.showHoverCursor ===
             false ?

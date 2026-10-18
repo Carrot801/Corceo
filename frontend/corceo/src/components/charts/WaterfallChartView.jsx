@@ -738,6 +738,7 @@ function WaterfallChartView({
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             cursor={
             showHoverGuide ?
             {

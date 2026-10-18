@@ -9,7 +9,8 @@ function CustomChartTooltip({
   payload = [],
   label,
   settings = {},
-  total = 0
+  total = 0,
+  storyMode = false,
 }) {
 
   const storyScale =

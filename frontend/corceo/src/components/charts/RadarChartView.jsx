@@ -111,7 +111,7 @@ function RadarChartView({
 const showPoints =
   (appearance.showPoints ?? true) &&
   chartData.length * yKeys.length <= 500;
-  
+
   const showGrid =
   appearance.showGrid ?? true;
 
@@ -248,6 +248,7 @@ const showPoints =
 
           {settings.showTooltip !== false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             content={
             <CustomChartTooltip
               settings={settings}

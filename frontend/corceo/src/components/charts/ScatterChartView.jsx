@@ -565,6 +565,7 @@ const item = Number.isInteger(index) ? data[index] : undefined;
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             cursor={
             appearance.showHoverCursor ===
             false ?

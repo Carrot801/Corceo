@@ -650,6 +650,7 @@ const showPoints =
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             content={
             <CustomChartTooltip
               settings={

@@ -391,6 +391,7 @@ function TreemapChartView({
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             content={({
               active,
               payload

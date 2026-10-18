@@ -370,10 +370,7 @@ const total =
           {settings.showTooltip !==
           false &&
           <Tooltip
-            allowEscapeViewBox={{
-              x: true,
-              y: true
-            }}
+          allowEscapeViewBox={{ x: false, y: false }}
 
             wrapperStyle={{
               zIndex: 999999,

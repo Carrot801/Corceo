@@ -239,7 +239,7 @@ function DonutChartView({
             outerRadius
             }
             paddingAngle={
-            paddingAngle
+              chartData.length > 200 ? 0 : paddingAngle
             }
             startAngle={
             startAngle
@@ -251,8 +251,9 @@ function DonutChartView({
             chartOpacity
             }
             minAngle={
-            appearance.minSliceAngle ??
-            0
+              chartData.length > 200
+                ? 0
+                : appearance.minSliceAngle ?? 0
             }
             cornerRadius={
             appearance.sliceRadius ??
@@ -265,12 +266,11 @@ function DonutChartView({
             appearance.sliceBorderColor ||
             "#ffffff"
             }
-            strokeWidth={
-            appearance.showSliceBorder ===
-            false ?
-            0 :
-            appearance.sliceBorderWidth ??
-            1
+           strokeWidth={
+              chartData.length > 200 ||
+              appearance.showSliceBorder === false
+                ? 0
+                : appearance.sliceBorderWidth ?? 1
             }
             label={
             settings.showLabels !==
@@ -350,6 +350,7 @@ function DonutChartView({
           {settings.showTooltip !==
           false &&
           <Tooltip
+          allowEscapeViewBox={{ x: false, y: false }}
             content={
             <CustomChartTooltip
               settings={

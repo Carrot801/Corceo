@@ -13,18 +13,9 @@ import AreaChartView from "./AreaChartView";
 
 import Legend from "../../custom/Legend";
 
-function prepareCircularChart(
-  rows,
-  yKey,
-  colors,
-  maxSlices = 20
-) {
-  const largest = [];
-  let otherTotal = 0;
-  let groupedCount = 0;
+function prepareCircularChart(rows, yKey, colors) {
+  const result = [];
 
-  const shouldGroup = rows.length > maxSlices;
-const keepCount = maxSlices;
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index];
     const value = Number(row[yKey] ?? 0);
@@ -38,43 +29,19 @@ const keepCount = maxSlices;
       };
     }
 
-    if (value === 0) continue;
-
-    const candidate = { row, index, value };
-    let position = largest.length;
-
-    if (shouldGroup) {
-      position = 0;
-
-      while (
-        position < largest.length &&
-        largest[position].value >= value
-      ) {
-        position += 1;
-      }
-    }
-
-    largest.splice(position, 0, candidate);
-
-    if (largest.length > keepCount) {
-      const removed = largest.pop();
-      otherTotal += removed.value;
-      groupedCount += 1;
-    }
+    result.push({
+      ...row,
+      [yKey]: value,
+      color:
+        row.color ||
+        colors[index % Math.max(colors.length, 1)] ||
+        "#3b82f6",
+    });
   }
-
-  const result = largest.map(({ row, index, value }) => ({
-    ...row,
-    [yKey]: value,
-    color:
-      row.color ||
-      colors[index % Math.max(colors.length, 1)] ||
-      "#3b82f6",
-  }));
 
   return {
     rows: result,
-    groupedCount,
+    groupedCount: 0,
     error: null,
   };
 }
@@ -102,7 +69,7 @@ const validChartData = React.useMemo(() => {
   );
 }, [chartData]);
 
-const paginated = chartConfig.type === "bar";
+const paginated = false;
 
 const pageCount = paginated
   ? Math.max(1, Math.ceil(validChartData.length / CATEGORIES_PER_PAGE))
@@ -178,11 +145,10 @@ const circularResult = React.useMemo(() => {
   if (!isCircularChart) return null;
 
   return prepareCircularChart(
-    validChartData,
-    circularYKey,
-    generatedColors,
-    20
-  );
+  validChartData,
+  circularYKey,
+  generatedColors
+);
 }, [
   isCircularChart,
   validChartData,
