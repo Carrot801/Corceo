@@ -30,7 +30,6 @@ function EditableCell({
   const commit = () => {
     const next = draftRef.current;
 
-    // Keep the original value and type when nothing changed.
     if (String(next) !== String(value ?? "")) {
       onCommit(rowIndex, columnName, next);
     }
@@ -83,7 +82,6 @@ function DataTable({
   isUploadingFile = false
 }) {
 
-  // Measure the existing row styling instead of imposing a new row height.
   const [rowHeight, setRowHeight] = useState(29);
   const ROW_HEIGHT = rowHeight;
   const bodyRef = useRef(null);
@@ -233,7 +231,6 @@ if (
       const row = body.querySelector("tr[data-table-row]");
       const measuredHeight = row?.getBoundingClientRect().height;
       if (measuredHeight > 0) setRowHeight(measuredHeight);
-      // Use the existing scrolling ancestor (or page), without adding a new viewport.
       let top = 0;
       let bottom = window.innerHeight;
       for (let parent = body.parentElement; parent; parent = parent.parentElement) {

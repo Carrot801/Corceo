@@ -21,6 +21,20 @@ function AreaChartView({
   storyMode = false,
   exportMode = false,
 }) {
+  const appearance = chartConfig.appearance ?? {};
+
+const areaMode = appearance.areaMode ?? "normal";
+
+const curveType =
+  {
+    smooth: "monotone",
+    linear: "linear",
+    step: "step",
+  }[appearance.lineStyle ?? "smooth"] ?? "monotone";
+
+const showPoints =
+  appearance.showPoints !== false &&
+  (appearance.pointSize ?? 4) > 0;
   const yKeys =
     visibleYKeys ??
     (
@@ -48,14 +62,15 @@ function AreaChartView({
     <div className="w-full h-full min-h-0">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={chartData}
-          margin={{
-            top: 20,
-            right: 30,
-            left: 20,
-            bottom: 20,
-          }}
-        >
+  data={chartData}
+  stackOffset={areaMode === "percent" ? "expand" : "none"}
+  margin={{
+    top: 20,
+    right: 30,
+    left: 20,
+    bottom: 20,
+  }}
+>
           {settings.showGrid !== false && (
             <CartesianGrid strokeDasharray="3 3" />
           )}
@@ -71,9 +86,16 @@ function AreaChartView({
             tick={{
               fontSize: settings.labelSize || 12,
             }}
-            tickFormatter={(value) =>
-              formatValue(value, settings, total)
-            }
+            domain={
+  areaMode === "percent"
+    ? [0, 1]
+    : ["auto", "auto"]
+}
+tickFormatter={(value) =>
+  areaMode === "percent"
+    ? `${Math.round(Number(value) * 100)}%`
+    : formatValue(value, settings, total)
+}
           />
 
           {settings.showTooltip !== false && !exportMode && (
@@ -109,16 +131,35 @@ function AreaChartView({
 
             return (
               <Area
-                key={key}
-                type="monotone"
-                dataKey={key}
-                name={key}
-                isAnimationActive={false}
-                stroke={color}
-                fill={color}
-                fillOpacity={0.5}
-                strokeWidth={3}
-              />
+  key={key}
+  type={curveType}
+  dataKey={key}
+  name={key}
+  stackId={areaMode === "normal" ? undefined : "area-stack"}
+  isAnimationActive={false}
+  stroke={color}
+  fill={color}
+  fillOpacity={appearance.fillOpacity ?? 0.3}
+  strokeWidth={appearance.lineWidth ?? 3}
+  opacity={appearance.opacity ?? 1}
+  connectNulls={appearance.connectNulls ?? false}
+  dot={
+    showPoints
+      ? {
+          r: appearance.pointSize ?? 4,
+          fill: color,
+          stroke: color,
+        }
+      : false
+  }
+  activeDot={
+    showPoints
+      ? {
+          r: (appearance.pointSize ?? 4) + 2,
+        }
+      : false
+  }
+/>
             );
           })}
         </AreaChart>

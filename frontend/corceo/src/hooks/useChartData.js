@@ -44,7 +44,6 @@ function useChartData({
 
   const workerResult = useWorkerChartData(request, useWorker);
 
-  // Existing callers remain synchronous unless they opt in.
   const synchronousResult = useMemo(() => {
     if (useWorker) return null;
 
@@ -85,7 +84,6 @@ const paletteSize = Math.min(colorCount, 20);
   const safeColors =
     baseColors.length > 0 ? baseColors : ["#3b82f6"];
 
-  // Preserve indexed access for every category and every page.
   return Array.from(
     { length: colorCount },
     (_, index) => safeColors[index % safeColors.length]

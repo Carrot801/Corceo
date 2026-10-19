@@ -85,7 +85,6 @@ const pageEnd = paginated
   ? Math.min(pageStart + CATEGORIES_PER_PAGE, validChartData.length)
   : validChartData.length;
 
-// Keep percentage formatting based on the complete chart dataset.
 const fullChartTotal = React.useMemo(() => {
   const keys =
     visibleYKeys ??

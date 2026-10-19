@@ -40,7 +40,7 @@ function StoryMainCanvas({
         flex-col
         items-center
         justify-center
-        overflow-hidden
+        overflow-visible
       ">
 
 

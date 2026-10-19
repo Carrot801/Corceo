@@ -164,7 +164,6 @@ function StoryChart({
           return;
         }
 
-        // Publish the chart and its rows together.
         setLoadState({
           chartId,
           chart: chartData,

@@ -135,19 +135,19 @@ function StorySlideContent({
 
   return (
     <div
-      ref={canvasRef}
-      className="
-        story-visual-canvas
-        relative
-        h-full
-        w-full
-        overflow-hidden
-        rounded-xl
-        border
-        border-slate-200
-        bg-white
-      "
-      onClick={(event) => {
+  ref={canvasRef}
+  className={`
+    story-visual-canvas
+    relative
+    h-full
+    w-full
+    ${isInteractive ? "overflow-visible" : "overflow-hidden"}
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+  `}
+  onClick={(event) => {
         if (
           !isInteractive ||
           event.target !== event.currentTarget

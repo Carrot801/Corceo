@@ -31,10 +31,7 @@ export default function useWorkerChartData(request, enabled) {
       worker?.terminate();
       setFatalError(message);
     };
-
-    // At most one calculation runs at a time.
-    // New submissions replace the pending request.
-    const pump = () => {
+const pump = () => {
       if (stopped || active || !pending) return;
 
       const currentRequest = pending;
@@ -135,7 +132,6 @@ export default function useWorkerChartData(request, enabled) {
     : null;
 
   return {
-    // Never display old results using a newer configuration.
     processed:
       enabled && matchesCurrentRequest && !error
         ? reply.processed

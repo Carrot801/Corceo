@@ -7,6 +7,7 @@ export default function CommitNumberInput({
   max,
   integer = false,
   allowEmpty = false,
+  commitOnChange = false,
   ...props
 }) {
   const [draft, setDraft] = useState(String(value ?? ""));
@@ -15,8 +16,8 @@ export default function CommitNumberInput({
     setDraft(String(value ?? ""));
   }, [value]);
 
-  const commit = () => {
-    const text = draft.trim();
+const commit = (rawValue = draft) => {
+  const text = rawValue.trim();
 
     if (text === "") {
       if (allowEmpty) {
@@ -52,8 +53,27 @@ export default function CommitNumberInput({
       min={min}
       max={max}
       value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
+onChange={(event) => {
+  const startedAt = performance.now();
+  const nextDraft = event.target.value;
+
+  setDraft(nextDraft);
+
+  if (commitOnChange && nextDraft.trim() !== "") {
+    commit(nextDraft);
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const elapsed = performance.now() - startedAt;
+
+      console.log(
+        `Reakcja po wpisaniu "${nextDraft}": ${elapsed.toFixed(1)} ms`
+      );
+    });
+  });
+}}
+onBlur={() => commit()}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
           event.preventDefault();

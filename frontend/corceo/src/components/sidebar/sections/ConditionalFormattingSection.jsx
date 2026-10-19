@@ -7,7 +7,7 @@ import {
 
 import SettingToggle from "../SettingToggle";
 import SettingSelect from "../SettingSelect";
-import CommitNumberInput from "../CommitNumberInput";
+
 function createRule(
 defaultField = "")
 {
@@ -432,14 +432,32 @@ function ConditionalFormattingSection({
                           Value
                         </label>
 
-                        <CommitNumberInput
-                          step="any"
-                          allowEmpty
-                          value={rule.value ?? ""}
-                          onCommit={(value) => updateRule(rule.id, "value", value)}
-                          className="app-input w-full text-sm"
-                          placeholder="1000"
-                        />
+                        <input
+                  type="number"
+                  value={
+                  rule.value ??
+                  ""
+                  }
+                  onChange={(
+                  event) =>
+
+                  updateRule(
+                    rule.id,
+                    "value",
+                    event.
+                    target.
+                    value ===
+                    "" ?
+                    "" :
+                    Number(
+                      event.
+                      target.
+                      value
+                    )
+                  )
+                  }
+                  className="app-input w-full text-sm"
+                  placeholder="1000" />
                 
                       </div>
 

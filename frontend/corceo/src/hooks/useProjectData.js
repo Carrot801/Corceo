@@ -202,7 +202,6 @@ function useProjectData(id) {
       resetEmptySheet();
       setSavedChart(null);
 
-      // Finish loading only after both requests have settled.
       const results = await Promise.allSettled([
         loadProject(controller.signal),
         loadChart(controller.signal),
@@ -279,7 +278,6 @@ function useProjectData(id) {
 
       setDatasetId(newDatasetId);
 
-      // Display the imported data after server confirmation.
       applyRows(rows, columnsToUpload, true);
 
       return {

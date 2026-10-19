@@ -14,7 +14,6 @@ function parseConditionalNumber(value) {
     .replace(/%$/, "")
     .replace(/,/g, ".");
 
-  // Accept one decimal separator; reject mixed or repeated separators.
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
     return null;
   }

@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 
-// Clone external data only when initializing or resetting history.
 function cloneValue(value) {
   if (typeof structuredClone === "function") {
     return structuredClone(value);
@@ -43,8 +42,6 @@ function useHistoryState(
       setHistory((currentHistory) => {
         const currentValue = currentHistory.present;
 
-        // The updater must return a new state without mutating
-        // currentValue or its nested objects and arrays.
         const nextValue =
           typeof nextValueOrUpdater === "function"
             ? nextValueOrUpdater(currentValue)
