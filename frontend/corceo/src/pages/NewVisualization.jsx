@@ -892,14 +892,6 @@ const {
             }
       </div>
     </div>
-    {isProcessing && (
-  <div
-    role="status"
-    className="mx-4 mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700"
-  >
-    Processing chart data…
-  </div>
-)}
 
 {processingError && (
   <div
