@@ -133,19 +133,6 @@ function StoryAnnotationsSidebar({
                           </div>
 
                           {}
-                          {anno.markerType !== "none" &&
-                <div className="flex flex-col gap-1">
-                              <label className="app-text-muted text-[10px] font-bold uppercase tracking-wide">Marker Center Label</label>
-                              <input
-                    type="text" maxLength={2} placeholder="e.g. 1"
-                    value={anno.markerLabel || ""}
-                    onChange={(e) => updateAnnotation(anno.id, "markerLabel", e.target.value)}
-                    className="app-input w-full h-8 rounded-lg px-2" />
-                  
-                            </div>
-                }
-
-                          {}
                           <div className="app-border border-t pt-3 flex flex-col gap-3">
                             <span className="app-text-muted text-[10px] font-bold uppercase tracking-wider block mb-1">Text and Connector Styles</span>
                         
