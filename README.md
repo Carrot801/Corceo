@@ -1,121 +1,82 @@
-# Corceo
 
-Corceo is a web application for creating interactive data visualizations and data-driven stories from CSV and XLSX files.
+# Instrukcja uruchomienia projektu Corceo
 
-The application allows users to import and edit tabular data, create configurable visualizations, filter and group data, organize projects, build presentation-style data stories, add annotations, export charts as PNG images, and publish charts or stories through public links.
+## 1. Wymagania
 
-## Running the Application
+Przed uruchomieniem projektu należy zainstalować:
 
-### Database
-
-1. Open PostgreSQL in pgAdmin.
-2. Create a database named `corceo_db`.
-3. Select `corceo_db` and open Query Tool.
-4. Open `database/schema.sql` and execute it.
-
-### Backend
-
-3. Open a terminal in the `backend` folder and run:
-
-    npm install
-    npm run dev
-
-### Frontend
-
-1. Open a second terminal in the `frontend/corceo` folder and run:
-
-    npm install
-    npm run dev
-
-### Application
-
-Open:
-
-    http://localhost:5173
-
-
-## Main Features
-
-- User registration and authentication
-- JWT-based authorization
-- CSV and XLSX import
-- Editable datasets
-- Automatic field type detection
-- Multiple chart types
-- Data aggregation
-- Sorting and filtering
-- Date range filtering
-- Time grouping by day, week, month, quarter, or year
-- Ranking by highest or lowest values
-- Number formatting
-- Conditional formatting
-- Chart appearance customization
-- Project management
-- Folder management
-- Presentation builder
-- Slide annotations
-- Chart positioning and resizing
-- Publishing charts and stories through public links
-- PNG chart export
-- PDF presentation export
-- Undo and redo for visualization changes
-
-## Supported Visualizations
-
-Corceo supports the following visualization types:
-
-- Bar chart
-- Line chart
-- Area chart
-- Pie chart
-- Donut chart
-- Scatter plot
-- Radar chart
-- Heatmap
-- Treemap
-- Waterfall chart
-
-## Technologies
-
-### Frontend
-
-- React
-- Vite
-- JavaScript
-- Tailwind CSS
-- Recharts
-- html-to-image
-- html2canvas
-- jsPDF
-
-### Backend
-
-- Node.js
-- Express.js
-
-### Database
-
+- Node.js (wersja 20 lub nowsza)
+- npm
 - PostgreSQL
-- JSONB for flexible storage of dataset rows and visualization configuration
 
-### Authentication
+## 2. Przygotowanie bazy danych
 
-- JSON Web Tokens (JWT)
-- bcrypt password hashing
+1. Uruchomić serwer PostgreSQL.
+2. Utworzyć nową bazę danych, np. `corceo`.
+3. Wykonać skrypt SQL znajdujący się w pliku:
 
-## System Architecture
+   `database/schema.sql`
 
-Corceo uses a client-server architecture.
+Skrypt tworzy tabele niezbędne do działania aplikacji.
 
-User
-  |
-  v
-React Frontend
-  |
-  | REST API
-  v
-Node.js / Express Backend
-  |
-  | SQL
-  v
-PostgreSQL Database
+## 3. Uruchomienie backendu
+
+Przejść do katalogu backendu:
+
+cd backend
+
+Zainstalować zależności:
+
+npm install
+
+Utworzyć plik `.env` na podstawie `.env.example` i uzupełnić konfigurację, w szczególności:
+
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/corceo
+JWT_SECRET=twoj_tajny_klucz
+
+Wartości `USER`, `PASSWORD` i `JWT_SECRET` należy zastąpić własnymi danymi.
+
+Uruchomić serwer:
+
+npm run dev
+
+Serwer backendu musi pozostać uruchomiony podczas korzystania z aplikacji.
+
+## 4. Uruchomienie frontendu
+
+Otworzyć drugi terminal i przejść do katalogu frontendu:
+
+cd frontend/corceo
+
+Zainstalować zależności:
+
+npm install
+
+W razie potrzeby utworzyć plik `.env` na podstawie `.env.example` i ustawić adres lokalnego API.
+
+Uruchomić aplikację:
+
+npm run dev
+
+Po uruchomieniu terminal wyświetli adres aplikacji, zwykle:
+
+`http://localhost:5173`
+
+Adres należy otworzyć w przeglądarce internetowej.
+
+## 5. Uruchamianie testów
+
+### Testy backendu
+
+W katalogu `backend` wykonać:
+
+
+npm test
+
+
+### Testy frontendu
+
+W katalogu `frontend/corceo` wykonać:
+
+
+npm run test:run
